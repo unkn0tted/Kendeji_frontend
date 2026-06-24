@@ -74,6 +74,78 @@ cd frontend
 bun install
 ```
 
+## Protocol Config Sidecar
+
+This repository includes a standalone sidecar service at `apps/protocol-config`.
+It stores user-facing subscription protocol selector settings without changing
+the existing PPanel backend:
+
+- `default_protocol`
+- `recommended_protocol`
+- `selector_style`, currently `cards` or `compact`
+
+When admin web saves the config, the sidecar receives the existing
+`Authorization` header and verifies it against the current backend
+`/v1/admin/user/current` endpoint before writing the local config file.
+
+### Docker
+
+Build the image from the repository root:
+
+```bash
+bun --filter ppanel-protocol-config-service build:binary
+docker build -f apps/protocol-config/Dockerfile -t ppanel-protocol-config .
+```
+
+If the existing backend container is in the same Docker network, point
+`PPANEL_API_BASE` to that container and port:
+
+```bash
+docker run -d \
+  --name ppanel-protocol-config \
+  --restart unless-stopped \
+  -p 3002:3002 \
+  -e PPANEL_API_BASE=http://ppanel-server:8080 \
+  -v ppanel-protocol-config-data:/data \
+  ppanel-protocol-config
+```
+
+If the existing backend is only exposed on the host, for example host port
+`8080`, add `--add-host=host.docker.internal:host-gateway` on Linux Docker and
+use `PPANEL_API_BASE=http://host.docker.internal:8080`.
+
+You can also start from the example compose file:
+
+```bash
+docker compose -f apps/protocol-config/docker-compose.example.yml up -d
+```
+
+For Docker Hub publishing and upgrade instructions, see
+[`apps/protocol-config/README.md`](./apps/protocol-config/README.md).
+
+### Nginx Reverse Proxy
+
+Expose the sidecar under the same frontend domain:
+
+```nginx
+location ^~ /protocol-config {
+    proxy_pass http://127.0.0.1:3002;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Authorization $http_authorization;
+}
+```
+
+Keep your existing `/api` or `/v1` proxy to the original backend. The frontend
+uses `/protocol-config` on the current origin by default. For a separate
+config-service domain, set this before building the frontend:
+
+```bash
+VITE_PROTOCOL_CONFIG_BASE_URL=https://config.example.com
+```
+
 ## 🤝 Contributing
 
 Contributions of all types are more than welcome,

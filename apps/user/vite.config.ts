@@ -54,6 +54,11 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
+        "/api/protocol-config": {
+          target: env.VITE_PROTOCOL_CONFIG_BASE_URL || "http://localhost:3002",
+          changeOrigin: true,
+          secure: false,
+        },
         "/api": {
           target: env.VITE_API_BASE_URL || "https://api.ppanel.dev",
           changeOrigin: true,

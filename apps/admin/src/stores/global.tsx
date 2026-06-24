@@ -1,5 +1,6 @@
 import { currentUser } from "@workspace/ui/services/admin/user";
 import { isBrowser } from "@workspace/ui/utils/index";
+import { normalizeSubscriptionProtocol } from "@workspace/ui/utils/subscription-protocol";
 import { create } from "zustand";
 
 export interface GlobalStore {
@@ -16,8 +17,6 @@ export interface GlobalStore {
   getAppSubLink: (url: string, schema?: string) => string;
 }
 
-const DEFAULT_SUBSCRIPTION_PROTOCOL = "vless";
-
 function normalizeSubscribePath(path?: string): string {
   if (!path) return "";
   return path.startsWith("/") ? path : `/${path}`;
@@ -28,6 +27,7 @@ function createSubscribeUrl({
   short,
   token,
   protocol,
+  defaultProtocol,
   panDomain,
   subscribePath,
 }: {
@@ -35,6 +35,7 @@ function createSubscribeUrl({
   short: string;
   token: string;
   protocol?: string;
+  defaultProtocol?: string;
   panDomain?: boolean;
   subscribePath?: string;
 }): string {
@@ -44,7 +45,10 @@ function createSubscribeUrl({
   );
 
   url.searchParams.set("token", token);
-  url.searchParams.set("protocol", protocol || DEFAULT_SUBSCRIPTION_PROTOCOL);
+  url.searchParams.set(
+    "protocol",
+    normalizeSubscriptionProtocol(protocol || defaultProtocol)
+  );
 
   return url.toString();
 }
@@ -146,6 +150,9 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       pan_domain: false,
       user_agent_limit: false,
       user_agent_list: "",
+      default_protocol: "vless",
+      recommended_protocol: "vless",
+      selector_style: "cards",
     },
     verify_code: {
       verify_code_expire_time: 5,
@@ -173,7 +180,7 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
     }
   },
   getUserSubscribe: (short: string, token: string, protocol?: string) => {
-    const { pan_domain, subscribe_domain, subscribe_path } =
+    const { default_protocol, pan_domain, subscribe_domain, subscribe_path } =
       get().common.subscribe || {};
     const fallbackDomain = extractDomain(window.location.origin, pan_domain);
     const domains = subscribe_domain
@@ -191,6 +198,7 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
         short,
         token,
         protocol,
+        defaultProtocol: default_protocol,
         panDomain: pan_domain,
         subscribePath: subscribe_path,
       })

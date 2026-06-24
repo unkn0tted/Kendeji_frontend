@@ -22,6 +22,16 @@
   },
   "config": {
     "description": "Manage subscription system settings",
+    "defaultProtocol": "Default Protocol",
+    "defaultProtocolDescription": "Protocol selected by default on the user dashboard and used when no protocol is specified",
+    "recommendedProtocol": "Recommended Protocol",
+    "recommendedProtocolDescription": "Protocol marked as recommended in the user dashboard selector",
+    "protocolSelectorStyle": "Protocol Selector Style",
+    "protocolSelectorStyleDescription": "Display style for the user dashboard protocol selector",
+    "protocolSelectorStyleOptions": {
+      "cards": "Cards",
+      "compact": "Compact"
+    },
     "singleSubscriptionMode": "Single Subscription Mode",
     "singleSubscriptionModeDescription": "Limit users to one active subscription. Existing subscriptions unaffected",
     "showTutorial": "Show Tutorial Section",

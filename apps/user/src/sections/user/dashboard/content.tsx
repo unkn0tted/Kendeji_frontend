@@ -36,6 +36,12 @@ import {
 } from "@workspace/ui/services/user/user";
 import { differenceInDays, formatDate } from "@workspace/ui/utils/formatting";
 import { isBrowser } from "@workspace/ui/utils/index";
+import {
+  getSubscriptionProtocolLabel,
+  normalizeProtocolSelectorStyle,
+  normalizeSubscriptionProtocol,
+  type SubscriptionProtocol,
+} from "@workspace/ui/utils/subscription-protocol";
 import { QRCodeCanvas } from "qrcode.react";
 import React, { useState } from "react";
 import CopyToClipboard from "react-copy-to-clipboard";
@@ -58,8 +64,6 @@ const platforms: (keyof API.DownloadLink)[] = [
   "android",
   "harmony",
 ];
-
-type SubscriptionProtocol = "vless" | "anytls";
 
 const protocolOptions: Array<{
   value: SubscriptionProtocol;
@@ -86,9 +90,27 @@ const protocolOptions: Array<{
 
 export default function Content() {
   const { t, i18n } = useTranslation("dashboard");
-  const { getUserSubscribe, getAppSubLink } = useGlobalStore();
+  const { common, getUserSubscribe, getAppSubLink } = useGlobalStore();
 
-  const [protocol, setProtocol] = useState<SubscriptionProtocol>("vless");
+  const defaultProtocol = normalizeSubscriptionProtocol(
+    common.subscribe?.default_protocol
+  );
+  const recommendedProtocol = normalizeSubscriptionProtocol(
+    common.subscribe?.recommended_protocol
+  );
+  const selectorStyle = normalizeProtocolSelectorStyle(
+    common.subscribe?.selector_style
+  );
+  const [protocol, setProtocol] =
+    useState<SubscriptionProtocol>(defaultProtocol);
+  const [manualProtocolSelected, setManualProtocolSelected] = useState(false);
+
+  React.useEffect(() => {
+    if (!manualProtocolSelected) {
+      setProtocol(defaultProtocol);
+    }
+  }, [defaultProtocol, manualProtocolSelected]);
+
   const {
     data: userSubscribe = [],
     refetch,
@@ -163,6 +185,21 @@ export default function Content() {
     4: t("deducted", "Deducted"),
   };
 
+  const selectProtocol = (value: SubscriptionProtocol) => {
+    setManualProtocolSelected(true);
+    setProtocol(value);
+  };
+
+  const getProtocolDescription = (option: (typeof protocolOptions)[number]) =>
+    t(
+      option.value === recommendedProtocol
+        ? "protocolSelectorRecommendedDescription"
+        : option.descriptionKey,
+      option.value === recommendedProtocol
+        ? "Recommended protocol"
+        : option.descriptionDefault
+    );
+
   return (
     <>
       {userSubscribe.length ? (
@@ -211,74 +248,113 @@ export default function Content() {
                     </div>
                   </div>
                   <span className="inline-flex w-fit rounded-md border border-primary/15 bg-background/85 px-3 py-1 font-medium text-primary text-xs">
-                    {t("protocolSelectorDefault", "Default: VLESS")}
+                    {t("protocolSelectorDefault", "Default: {{protocol}}", {
+                      protocol: getSubscriptionProtocolLabel(defaultProtocol),
+                    })}
                   </span>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[420px]">
-                  {protocolOptions.map((option) => {
-                    const isActive = protocol === option.value;
+                {selectorStyle === "compact" ? (
+                  <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:min-w-[360px] lg:justify-end">
+                    {protocolOptions.map((option) => {
+                      const isActive = protocol === option.value;
 
-                    return (
-                      <button
-                        aria-pressed={isActive}
-                        className={cn(
-                          "rounded-md border px-4 py-3 text-left transition-all",
-                          isActive
-                            ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                            : "border-border/70 bg-background/85 hover:border-primary/35 hover:bg-background"
-                        )}
-                        key={option.value}
-                        onClick={() => setProtocol(option.value)}
-                        type="button"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3">
-                            <div
+                      return (
+                        <button
+                          aria-label={`${option.label}: ${getProtocolDescription(option)}`}
+                          aria-pressed={isActive}
+                          className={cn(
+                            "inline-flex h-10 min-w-32 items-center justify-center gap-2 rounded-md border px-4 font-semibold text-sm transition-all",
+                            isActive
+                              ? "border-primary bg-primary text-primary-foreground shadow-primary/20 shadow-sm"
+                              : "border-border/70 bg-background/85 text-foreground hover:border-primary/35 hover:bg-background"
+                          )}
+                          key={option.value}
+                          onClick={() => selectProtocol(option.value)}
+                          title={getProtocolDescription(option)}
+                          type="button"
+                        >
+                          <Icon className="size-4" icon={option.icon} />
+                          <span>{option.label}</span>
+                          {option.value === recommendedProtocol && (
+                            <span
                               className={cn(
-                                "mt-0.5 flex size-9 items-center justify-center rounded-md transition-colors",
+                                "rounded-sm px-1.5 py-0.5 font-medium text-[10px]",
                                 isActive
                                   ? "bg-primary-foreground/15 text-primary-foreground"
                                   : "bg-primary/10 text-primary"
                               )}
                             >
-                              <Icon className="size-5" icon={option.icon} />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-sm uppercase tracking-[0.18em]">
-                                {option.label}
-                              </p>
-                              <p
+                              {t("protocolSelectorRecommendedTag", "REC")}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[420px]">
+                    {protocolOptions.map((option) => {
+                      const isActive = protocol === option.value;
+
+                      return (
+                        <button
+                          aria-pressed={isActive}
+                          className={cn(
+                            "rounded-md border px-4 py-3 text-left transition-all",
+                            isActive
+                              ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                              : "border-border/70 bg-background/85 hover:border-primary/35 hover:bg-background"
+                          )}
+                          key={option.value}
+                          onClick={() => selectProtocol(option.value)}
+                          type="button"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div
                                 className={cn(
-                                  "mt-1 text-xs",
+                                  "mt-0.5 flex size-9 items-center justify-center rounded-md transition-colors",
                                   isActive
-                                    ? "text-primary-foreground/80"
-                                    : "text-muted-foreground"
+                                    ? "bg-primary-foreground/15 text-primary-foreground"
+                                    : "bg-primary/10 text-primary"
                                 )}
                               >
-                                {t(
-                                  option.descriptionKey,
-                                  option.descriptionDefault
-                                )}
-                              </p>
+                                <Icon className="size-5" icon={option.icon} />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-sm uppercase tracking-[0.18em]">
+                                  {option.label}
+                                </p>
+                                <p
+                                  className={cn(
+                                    "mt-1 text-xs",
+                                    isActive
+                                      ? "text-primary-foreground/80"
+                                      : "text-muted-foreground"
+                                  )}
+                                >
+                                  {getProtocolDescription(option)}
+                                </p>
+                              </div>
                             </div>
+                            <Icon
+                              className={cn(
+                                "mt-1 size-5 transition-opacity",
+                                isActive ? "opacity-100" : "opacity-20"
+                              )}
+                              icon={
+                                isActive
+                                  ? "mdi:check-circle"
+                                  : "mdi:circle-outline"
+                              }
+                            />
                           </div>
-                          <Icon
-                            className={cn(
-                              "mt-1 size-5 transition-opacity",
-                              isActive ? "opacity-100" : "opacity-20"
-                            )}
-                            icon={
-                              isActive
-                                ? "mdi:check-circle"
-                                : "mdi:circle-outline"
-                            }
-                          />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -20,6 +20,16 @@
   },
   "config": {
     "description": "管理订阅系统设置",
+    "defaultProtocol": "默认协议",
+    "defaultProtocolDescription": "用户端仪表盘默认选中的协议；未指定协议时也会使用它",
+    "recommendedProtocol": "推荐协议",
+    "recommendedProtocolDescription": "在用户端协议选择器中标记为推荐的协议",
+    "protocolSelectorStyle": "协议选择器样式",
+    "protocolSelectorStyleDescription": "用户端仪表盘协议选择器的展示样式",
+    "protocolSelectorStyleOptions": {
+      "cards": "卡片模式",
+      "compact": "紧凑模式"
+    },
     "singleSubscriptionMode": "单一订阅模式",
     "singleSubscriptionModeDescription": "限制用户只能有一个活跃订阅。现有订阅不受影响",
     "showTutorial": "显示教程板块",

@@ -11,6 +11,13 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+*.local
+
+# Local docker/runtime files
+get-docker.sh
+docker-compose.override.yml
+compose.override.yml
+protocol-config.json
 
 # Testing
 coverage
@@ -30,6 +37,7 @@ dist
 
 # Debug
 npm-debug.log*
+*.log
 
 # Misc
 .DS_Store

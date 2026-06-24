@@ -74,6 +74,75 @@ cd frontend
 bun install
 ```
 
+## 协议配置小后端
+
+本仓库包含一个独立的小后端 `apps/protocol-config`，用于在不修改现有
+PPanel 后端的情况下，保存用户端订阅协议选择器配置：
+
+- 默认协议：`default_protocol`
+- 推荐协议：`recommended_protocol`
+- 用户端选择器样式：`selector_style`，支持 `cards` 和 `compact`
+
+管理端保存时会携带现有登录态 `Authorization`，小后端会请求现有后端
+`/v1/admin/user/current` 校验管理员身份，校验通过后才写入本地配置文件。
+
+### Docker 部署
+
+在仓库根目录构建镜像：
+
+```bash
+bun --filter ppanel-protocol-config-service build:binary
+docker build -f apps/protocol-config/Dockerfile -t ppanel-protocol-config .
+```
+
+如果现有后端容器在同一个 Docker 网络里，`PPANEL_API_BASE` 可以填写原后端
+容器名和端口，例如 `http://ppanel-server:8080`：
+
+```bash
+docker run -d \
+  --name ppanel-protocol-config \
+  --restart unless-stopped \
+  -p 3002:3002 \
+  -e PPANEL_API_BASE=http://ppanel-server:8080 \
+  -v ppanel-protocol-config-data:/data \
+  ppanel-protocol-config
+```
+
+如果现有后端只通过宿主机端口暴露，例如宿主机 `8080`，Linux Docker 可以加
+`--add-host=host.docker.internal:host-gateway`，然后使用
+`PPANEL_API_BASE=http://host.docker.internal:8080`。
+
+也可以参考示例：
+
+```bash
+docker compose -f apps/protocol-config/docker-compose.example.yml up -d
+```
+
+如果你要把小后端发布到 Docker Hub，完整发布和升级流程见
+[`apps/protocol-config/README.md`](./apps/protocol-config/README.md)。
+
+### Nginx 反代
+
+将新接口挂到前端同域名下，避免跨域问题：
+
+```nginx
+location ^~ /protocol-config {
+    proxy_pass http://127.0.0.1:3002;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Authorization $http_authorization;
+}
+```
+
+保留你现有的 `/api` 或 `/v1` 后端反代即可。前端默认会访问当前域名的
+`/protocol-config`；如果你把小后端部署到独立域名，可以在构建前端时设置：
+
+```bash
+VITE_PROTOCOL_CONFIG_BASE_URL=https://config.example.com
+```
+
 ## 🤝 贡献
 
 欢迎各种类型的贡献，

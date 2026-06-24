@@ -1,0 +1,15 @@
+.git
+.turbo
+.vercel
+node_modules
+**/node_modules
+dist
+**/dist
+# The protocol-config Dockerfile copies this compiled binary into the runtime image.
+!apps/protocol-config/dist
+!apps/protocol-config/dist/ppanel-protocol-config
+coverage
+.env
+.env.*
+npm-debug.log*
+.DS_Store

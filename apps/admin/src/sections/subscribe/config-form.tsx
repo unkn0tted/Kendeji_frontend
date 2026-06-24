@@ -14,6 +14,13 @@ import {
 } from "@workspace/ui/components/form";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import {
   Sheet,
   SheetContent,
   SheetFooter,
@@ -29,6 +36,17 @@ import {
   getSubscribeConfig,
   updateSubscribeConfig,
 } from "@workspace/ui/services/admin/system";
+import {
+  getProtocolConfig,
+  updateProtocolConfig,
+} from "@workspace/ui/services/protocol-config";
+import {
+  getSubscriptionProtocolLabel,
+  normalizeProtocolSelectorStyle,
+  normalizeSubscriptionProtocol,
+  PROTOCOL_SELECTOR_STYLES,
+  SUBSCRIPTION_PROTOCOLS,
+} from "@workspace/ui/utils/subscription-protocol";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -40,6 +58,9 @@ const subscribeConfigSchema = z.object({
   pan_domain: z.boolean().optional(),
   subscribe_path: z.string().optional(),
   subscribe_domain: z.string().optional(),
+  default_protocol: z.enum(SUBSCRIPTION_PROTOCOLS).optional(),
+  recommended_protocol: z.enum(SUBSCRIPTION_PROTOCOLS).optional(),
+  selector_style: z.enum(PROTOCOL_SELECTOR_STYLES).optional(),
   user_agent_limit: z.boolean().optional(),
   user_agent_list: z.string().optional(),
   show_tutorial: z.boolean().optional(),
@@ -56,7 +77,18 @@ export default function ConfigForm() {
     queryKey: ["getSubscribeConfig"],
     queryFn: async () => {
       const { data } = await getSubscribeConfig();
-      return data.data;
+      const subscribeConfig = data.data;
+
+      try {
+        const protocolConfigResponse = await getProtocolConfig();
+
+        return {
+          ...subscribeConfig,
+          ...protocolConfigResponse.data.data,
+        };
+      } catch {
+        return subscribeConfig;
+      }
     },
     enabled: open,
   });
@@ -68,6 +100,9 @@ export default function ConfigForm() {
       pan_domain: false,
       subscribe_path: "",
       subscribe_domain: "",
+      default_protocol: "vless",
+      recommended_protocol: "vless",
+      selector_style: "cards",
       user_agent_limit: false,
       user_agent_list: "",
       show_tutorial: true,
@@ -76,14 +111,33 @@ export default function ConfigForm() {
 
   useEffect(() => {
     if (data) {
-      form.reset(data);
+      form.reset({
+        ...data,
+        default_protocol: normalizeSubscriptionProtocol(data.default_protocol),
+        recommended_protocol: normalizeSubscriptionProtocol(
+          data.recommended_protocol
+        ),
+        selector_style: normalizeProtocolSelectorStyle(data.selector_style),
+      });
     }
   }, [data, form]);
 
   async function onSubmit(values: SubscribeConfigFormData) {
     setLoading(true);
     try {
-      await updateSubscribeConfig(values as API.SubscribeConfig);
+      const {
+        default_protocol,
+        recommended_protocol,
+        selector_style,
+        ...subscribeConfig
+      } = values;
+
+      await updateSubscribeConfig(subscribeConfig as API.SubscribeConfig);
+      await updateProtocolConfig({
+        default_protocol,
+        recommended_protocol,
+        selector_style,
+      });
       toast.success(t("config.updateSuccess", "Settings updated successfully"));
       refetch();
       setOpen(false);
@@ -174,6 +228,117 @@ export default function ConfigForm() {
                       {t(
                         "config.singleSubscriptionModeDescription",
                         "Limit users to one active subscription. Existing subscriptions unaffected"
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="default_protocol"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t("config.defaultProtocol", "Default Protocol")}
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || "vless"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SUBSCRIPTION_PROTOCOLS.map((protocol) => (
+                          <SelectItem key={protocol} value={protocol}>
+                            {getSubscriptionProtocolLabel(protocol)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t(
+                        "config.defaultProtocolDescription",
+                        "Protocol selected by default on the user dashboard and used when no protocol is specified"
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="recommended_protocol"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t("config.recommendedProtocol", "Recommended Protocol")}
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || "vless"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SUBSCRIPTION_PROTOCOLS.map((protocol) => (
+                          <SelectItem key={protocol} value={protocol}>
+                            {getSubscriptionProtocolLabel(protocol)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t(
+                        "config.recommendedProtocolDescription",
+                        "Protocol marked as recommended in the user dashboard selector"
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="selector_style"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t("config.protocolSelectorStyle", "Selector Style")}
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || "cards"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PROTOCOL_SELECTOR_STYLES.map((style) => (
+                          <SelectItem key={style} value={style}>
+                            {t(
+                              `config.protocolSelectorStyleOptions.${style}`,
+                              style === "cards" ? "Cards" : "Compact"
+                            )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t(
+                        "config.protocolSelectorStyleDescription",
+                        "Display style for the user dashboard protocol selector"
                       )}
                     </FormDescription>
                     <FormMessage />

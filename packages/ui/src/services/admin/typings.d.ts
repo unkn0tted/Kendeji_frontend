@@ -2115,6 +2115,9 @@ declare namespace API {
     pan_domain: boolean;
     user_agent_limit: boolean;
     user_agent_list: string;
+    default_protocol?: string;
+    recommended_protocol?: string;
+    selector_style?: string;
     show_tutorial?: boolean;
   };
 

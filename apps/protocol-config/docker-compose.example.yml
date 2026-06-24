@@ -1,0 +1,23 @@
+services:
+  protocol-config:
+    build:
+      context: ../..
+      dockerfile: apps/protocol-config/Dockerfile
+    container_name: ppanel-protocol-config
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      CONFIG_FILE: /data/protocol-config.json
+      PPANEL_API_BASE: http://ppanel-server:8080
+    # If the existing backend is exposed on the Docker host instead of the same
+    # Docker network, uncomment this and set:
+    # PPANEL_API_BASE: http://host.docker.internal:8080
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    volumes:
+      - ppanel-protocol-config-data:/data
+
+volumes:
+  ppanel-protocol-config-data:

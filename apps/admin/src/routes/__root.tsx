@@ -6,6 +6,7 @@ import { NavigationProgress } from "@workspace/ui/composed/navigation-progress";
 import { TanStackQueryDevtools } from "@workspace/ui/integrations/tanstack-query-devtools";
 import { getCookie } from "@workspace/ui/lib/cookies";
 import { getGlobalConfig } from "@workspace/ui/services/common/common";
+import { getProtocolConfig } from "@workspace/ui/services/protocol-config";
 import { isBrowser } from "@workspace/ui/utils/index";
 import { useEffect } from "react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
@@ -18,8 +19,24 @@ export const Route = createRootRouteWithContext()({
       const initializeApp = async () => {
         try {
           const configResponse = await getGlobalConfig();
-          if (configResponse.data?.data) {
-            setCommon(configResponse.data.data);
+          const globalConfig = configResponse.data.data;
+          if (globalConfig) {
+            setCommon(globalConfig);
+          }
+          try {
+            const protocolConfigResponse = await getProtocolConfig();
+            const protocolConfig = protocolConfigResponse.data.data;
+            if (protocolConfig) {
+              setCommon({
+                subscribe: {
+                  ...common.subscribe,
+                  ...globalConfig?.subscribe,
+                  ...protocolConfig,
+                },
+              });
+            }
+          } catch {
+            /* empty */
           }
           try {
             if (getCookie("Authorization")) {

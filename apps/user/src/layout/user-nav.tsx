@@ -40,7 +40,7 @@ export function UserNav() {
               <AvatarImage
                 alt={user?.avatar ?? ""}
                 className="object-cover"
-                src={user?.auth_methods?.[0]?.auth_identifier ?? ""}
+                src={user?.avatar || undefined}
               />
               <AvatarFallback className="bg-linear-to-br from-primary via-rose-500 to-pink-500 font-medium text-primary-foreground">
                 {user?.auth_methods?.[0]?.auth_identifier
@@ -63,7 +63,7 @@ export function UserNav() {
               <AvatarImage
                 alt={user?.avatar ?? ""}
                 className="object-cover"
-                src={user?.avatar ?? ""}
+                src={user?.avatar || undefined}
               />
               <AvatarFallback className="bg-linear-to-br from-primary via-rose-500 to-pink-500 text-primary-foreground">
                 {user?.auth_methods?.[0]?.auth_identifier

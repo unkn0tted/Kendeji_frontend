@@ -72,6 +72,22 @@ export function useProtocolFields() {
             ].includes(p.cipher),
         },
         {
+          name: "uot",
+          type: "switch",
+          label: t("uot", "UDP over TCP (UoT)"),
+          defaultValue: false,
+          group: "basic",
+        },
+        {
+          name: "uot_version",
+          type: "select",
+          label: t("uot_version", "UoT Version"),
+          options: ["1", "2"],
+          defaultValue: "2",
+          group: "basic",
+          condition: (p) => p.uot === true,
+        },
+        {
           name: "obfs",
           type: "select",
           label: t("obfs", "Obfuscation"),

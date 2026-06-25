@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 interface PaymentMethodsProps {
   value: number;
   onChange: (value: number) => void;
+  onAvailableMethodsChange?: (count: number) => void;
   balance?: boolean;
 }
 
@@ -22,6 +23,7 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({
   value,
   onChange,
   balance = true,
+  onAvailableMethodsChange,
 }) => {
   const { t } = useTranslation("subscribe");
 
@@ -45,6 +47,11 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({
     const preferred = data.find((m) => m.id !== -1)?.id ?? data[0]!.id;
     onChange(preferred);
   }, [data, onChange, value]);
+
+  useEffect(() => {
+    onAvailableMethodsChange?.(data?.length ?? 0);
+  }, [data, onAvailableMethodsChange]);
+
   return (
     <>
       <div className="font-semibold">

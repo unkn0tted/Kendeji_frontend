@@ -412,6 +412,11 @@ export default function Content() {
                                   const downloadUrl =
                                     application.download_link?.[platform];
 
+                                  // Check if scheme template outputs the raw URL (which would be http(s)://)
+                                  // rather than the scheme prefix itself
+                                  const isHttpLink =
+                                    application.scheme?.startsWith("${url}");
+
                                   const handleCopy = (
                                     _: string,
                                     result: boolean
@@ -421,6 +426,20 @@ export default function Content() {
                                         url,
                                         application.scheme
                                       );
+
+                                      // Check if the generated link is a plain HTTP/HTTPS URL
+                                      // If so, only copy to clipboard without triggering redirect
+                                      const isPlainHttpUrl = /^https?:/i.test(
+                                        href
+                                      );
+
+                                      if (isPlainHttpUrl) {
+                                        toast.success(
+                                          t("copySuccess", "Copy Success")
+                                        );
+                                        return;
+                                      }
+
                                       const showSuccessMessage = () => {
                                         toast.success(
                                           <>
@@ -438,7 +457,7 @@ export default function Content() {
                                         );
                                       };
 
-                                      if (isBrowser() && href) {
+                                      if (isBrowser() && href && !isHttpLink) {
                                         window.location.href = href;
                                         const checkRedirect = setTimeout(() => {
                                           if (window.location.href !== href) {
@@ -507,7 +526,12 @@ export default function Content() {
                                               }
                                               size="sm"
                                             >
-                                              {t("import", "Import")}
+                                              {isHttpLink
+                                                ? t(
+                                                    "clickToCopy",
+                                                    "Click to Copy"
+                                                  )
+                                                : t("import", "Import")}
                                             </Button>
                                           </CopyToClipboard>
                                         )}

@@ -30,11 +30,15 @@ export default function Recharge(
 
   const [open, setOpen] = useState<boolean>(false);
   const [loading, startTransition] = useTransition();
+  const [availableMethodsCount, setAvailableMethodsCount] = useState<number>(0);
 
   const [params, setParams] = useState<API.RechargeOrderRequest>({
     amount: 0,
     payment: 1,
   });
+
+  const hasNoPaymentMethods = availableMethodsCount === 0;
+  const isButtonDisabled = loading || !params.amount || hasNoPaymentMethods;
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -75,13 +79,22 @@ export default function Recharge(
             </div>
             <PaymentMethods
               balance={false}
+              onAvailableMethodsChange={setAvailableMethodsCount}
               onChange={(value) => setParams({ ...params, payment: value })}
               value={params.payment}
             />
+            {hasNoPaymentMethods && (
+              <div className="text-muted-foreground text-sm">
+                {t(
+                  "noPaymentMethodsAvailable",
+                  "No payment methods available for recharge"
+                )}
+              </div>
+            )}
           </div>
           <Button
             className="fixed bottom-0 left-0 w-full rounded-none md:relative md:mt-6"
-            disabled={loading || !params.amount}
+            disabled={isButtonDisabled}
             onClick={() => {
               startTransition(async () => {
                 try {

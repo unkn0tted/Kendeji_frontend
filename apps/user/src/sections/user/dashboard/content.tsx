@@ -73,11 +73,11 @@ const protocolOptions: Array<{
   descriptionDefault: string;
 }> = [
   {
-    value: "vless",
-    label: "VLESS",
+    value: "tuic",
+    label: "TUIC",
     icon: "mdi:rocket-launch-outline",
-    descriptionKey: "protocolSelectorVlessDescription",
-    descriptionDefault: "Default recommended protocol",
+    descriptionKey: "protocolSelectorTuicDescription",
+    descriptionDefault: "TUIC subscription output",
   },
   {
     value: "anytls",

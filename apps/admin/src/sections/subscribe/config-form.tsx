@@ -100,8 +100,8 @@ export default function ConfigForm() {
       pan_domain: false,
       subscribe_path: "",
       subscribe_domain: "",
-      default_protocol: "vless",
-      recommended_protocol: "vless",
+      default_protocol: "tuic",
+      recommended_protocol: "tuic",
       selector_style: "cards",
       user_agent_limit: false,
       user_agent_list: "",
@@ -245,7 +245,7 @@ export default function ConfigForm() {
                     </FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || "vless"}
+                      value={field.value || "tuic"}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -281,7 +281,7 @@ export default function ConfigForm() {
                     </FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || "vless"}
+                      value={field.value || "tuic"}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">

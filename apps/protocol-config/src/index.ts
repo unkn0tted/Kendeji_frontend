@@ -6,7 +6,7 @@ import {
 } from "node:http";
 import { dirname } from "node:path";
 
-const SUPPORTED_PROTOCOLS = ["vless", "anytls"] as const;
+const SUPPORTED_PROTOCOLS = ["tuic", "anytls"] as const;
 const SELECTOR_STYLES = ["cards", "compact"] as const;
 
 type SupportedProtocol = (typeof SUPPORTED_PROTOCOLS)[number];
@@ -25,8 +25,8 @@ type ApiResponse<T = unknown> = {
 };
 
 const defaultConfig: ProtocolConfig = {
-  default_protocol: "vless",
-  recommended_protocol: "vless",
+  default_protocol: "tuic",
+  recommended_protocol: "tuic",
   selector_style: "cards",
 };
 

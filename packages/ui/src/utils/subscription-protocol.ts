@@ -1,7 +1,7 @@
-export const DEFAULT_SUBSCRIPTION_PROTOCOL = "vless";
+export const DEFAULT_SUBSCRIPTION_PROTOCOL = "tuic";
 export const DEFAULT_PROTOCOL_SELECTOR_STYLE = "cards";
 
-export const SUBSCRIPTION_PROTOCOLS = ["vless", "anytls"] as const;
+export const SUBSCRIPTION_PROTOCOLS = ["tuic", "anytls"] as const;
 export const PROTOCOL_SELECTOR_STYLES = ["cards", "compact"] as const;
 
 export type SubscriptionProtocol = (typeof SUBSCRIPTION_PROTOCOLS)[number];
@@ -11,7 +11,7 @@ export const SUBSCRIPTION_PROTOCOL_LABELS: Record<
   SubscriptionProtocol,
   string
 > = {
-  vless: "VLESS",
+  tuic: "TUIC",
   anytls: "AnyTLS",
 };
 

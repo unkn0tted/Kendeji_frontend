@@ -150,8 +150,8 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       pan_domain: false,
       user_agent_limit: false,
       user_agent_list: "",
-      default_protocol: "vless",
-      recommended_protocol: "vless",
+      default_protocol: "tuic",
+      recommended_protocol: "tuic",
       selector_style: "cards",
     },
     verify_code: {

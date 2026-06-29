@@ -10,8 +10,8 @@
 
 | 字段 | 可选值 | 说明 |
 | --- | --- | --- |
-| `default_protocol` | `vless`, `anytls` | 用户端默认选中的协议 |
-| `recommended_protocol` | `vless`, `anytls` | 用户端标记为推荐的协议 |
+| `default_protocol` | `tuic`, `anytls` | 用户端默认选中的协议 |
+| `recommended_protocol` | `tuic`, `anytls` | 用户端标记为推荐的协议 |
 | `selector_style` | `cards`, `compact` | 用户端协议选择器展示样式 |
 
 接口：
@@ -69,8 +69,8 @@ curl -X PUT http://localhost:3002/protocol-config \
   -H "Content-Type: application/json" \
   -H "Authorization: YOUR_ADMIN_TOKEN" \
   -d '{
-    "default_protocol": "anytls",
-    "recommended_protocol": "anytls",
+    "default_protocol": "tuic",
+    "recommended_protocol": "tuic",
     "selector_style": "compact"
   }'
 ```

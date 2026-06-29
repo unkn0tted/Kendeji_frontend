@@ -27,7 +27,7 @@
   "protocolSelectorRecommendedDescription": "推荐协议",
   "protocolSelectorRecommendedTag": "荐",
   "protocolSelectorTitle": "订阅协议",
-  "protocolSelectorVlessDescription": "获取 VLESS 节点",
+  "protocolSelectorTuicDescription": "获取 TUIC 节点",
   "resetSubscription": "重置订阅",
   "resetSuccess": "重置成功",
   "scanToSubscribe": "扫码订阅",

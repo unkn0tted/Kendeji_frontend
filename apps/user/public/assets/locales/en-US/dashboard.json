@@ -26,7 +26,7 @@
   "protocolSelectorRecommendedDescription": "Recommended protocol",
   "protocolSelectorRecommendedTag": "REC",
   "protocolSelectorTitle": "Subscription Protocol",
-  "protocolSelectorVlessDescription": "VLESS subscription output",
+  "protocolSelectorTuicDescription": "TUIC subscription output",
   "resetSubscription": "Reset Subscription",
   "resetSuccess": "Reset Success",
   "scanToSubscribe": "Scan to Subscribe",

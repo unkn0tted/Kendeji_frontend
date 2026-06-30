@@ -41,11 +41,13 @@ import {
   updateProtocolConfig,
 } from "@workspace/ui/services/protocol-config";
 import {
-  getSubscriptionProtocolLabel,
+  DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS,
+  getEnabledSubscriptionProtocolOptions,
   normalizeProtocolSelectorStyle,
   normalizeSubscriptionProtocol,
+  normalizeSubscriptionProtocolOptions,
   PROTOCOL_SELECTOR_STYLES,
-  SUBSCRIPTION_PROTOCOLS,
+  type SubscriptionProtocolOption,
 } from "@workspace/ui/utils/subscription-protocol";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -58,15 +60,37 @@ const subscribeConfigSchema = z.object({
   pan_domain: z.boolean().optional(),
   subscribe_path: z.string().optional(),
   subscribe_domain: z.string().optional(),
-  default_protocol: z.enum(SUBSCRIPTION_PROTOCOLS).optional(),
-  recommended_protocol: z.enum(SUBSCRIPTION_PROTOCOLS).optional(),
+  default_protocol: z.string().optional(),
+  recommended_protocol: z.string().optional(),
   selector_style: z.enum(PROTOCOL_SELECTOR_STYLES).optional(),
+  protocol_options: z
+    .array(
+      z.object({
+        value: z.string().trim().min(1),
+        label: z.string().trim().min(1),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        enabled: z.boolean().optional(),
+      })
+    )
+    .min(1)
+    .optional(),
   user_agent_limit: z.boolean().optional(),
   user_agent_list: z.string().optional(),
   show_tutorial: z.boolean().optional(),
 });
 
 type SubscribeConfigFormData = z.infer<typeof subscribeConfigSchema>;
+
+function createProtocolOption(index: number): SubscriptionProtocolOption {
+  return {
+    value: `protocol-${index + 1}`,
+    label: `Protocol ${index + 1}`,
+    description: "",
+    icon: "mdi:connection",
+    enabled: true,
+  };
+}
 
 export default function ConfigForm() {
   const { t } = useTranslation("subscribe");
@@ -103,19 +127,37 @@ export default function ConfigForm() {
       default_protocol: "tuic",
       recommended_protocol: "tuic",
       selector_style: "cards",
+      protocol_options: normalizeSubscriptionProtocolOptions(
+        DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS
+      ),
       user_agent_limit: false,
       user_agent_list: "",
       show_tutorial: true,
     },
   });
 
+  const protocolOptions = normalizeSubscriptionProtocolOptions(
+    form.watch("protocol_options")
+  );
+  const enabledProtocolOptions =
+    getEnabledSubscriptionProtocolOptions(protocolOptions);
+
   useEffect(() => {
     if (data) {
+      const protocolOptions = normalizeSubscriptionProtocolOptions(
+        data.protocol_options
+      );
+
       form.reset({
         ...data,
-        default_protocol: normalizeSubscriptionProtocol(data.default_protocol),
+        protocol_options: protocolOptions,
+        default_protocol: normalizeSubscriptionProtocol(
+          data.default_protocol,
+          protocolOptions
+        ),
         recommended_protocol: normalizeSubscriptionProtocol(
-          data.recommended_protocol
+          data.recommended_protocol,
+          protocolOptions
         ),
         selector_style: normalizeProtocolSelectorStyle(data.selector_style),
       });
@@ -129,14 +171,24 @@ export default function ConfigForm() {
         default_protocol,
         recommended_protocol,
         selector_style,
+        protocol_options,
         ...subscribeConfig
       } = values;
+      const normalizedProtocolOptions =
+        normalizeSubscriptionProtocolOptions(protocol_options);
 
       await updateSubscribeConfig(subscribeConfig as API.SubscribeConfig);
       await updateProtocolConfig({
-        default_protocol,
-        recommended_protocol,
+        default_protocol: normalizeSubscriptionProtocol(
+          default_protocol,
+          normalizedProtocolOptions
+        ),
+        recommended_protocol: normalizeSubscriptionProtocol(
+          recommended_protocol,
+          normalizedProtocolOptions
+        ),
         selector_style,
+        protocol_options: normalizedProtocolOptions,
       });
       toast.success(t("config.updateSuccess", "Settings updated successfully"));
       refetch();
@@ -245,7 +297,9 @@ export default function ConfigForm() {
                     </FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || "tuic"}
+                      value={
+                        field.value || enabledProtocolOptions[0]?.value || ""
+                      }
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -253,9 +307,12 @@ export default function ConfigForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {SUBSCRIPTION_PROTOCOLS.map((protocol) => (
-                          <SelectItem key={protocol} value={protocol}>
-                            {getSubscriptionProtocolLabel(protocol)}
+                        {enabledProtocolOptions.map((protocol) => (
+                          <SelectItem
+                            key={protocol.value}
+                            value={protocol.value}
+                          >
+                            {protocol.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -281,7 +338,9 @@ export default function ConfigForm() {
                     </FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || "tuic"}
+                      value={
+                        field.value || enabledProtocolOptions[0]?.value || ""
+                      }
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -289,9 +348,12 @@ export default function ConfigForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {SUBSCRIPTION_PROTOCOLS.map((protocol) => (
-                          <SelectItem key={protocol} value={protocol}>
-                            {getSubscriptionProtocolLabel(protocol)}
+                        {enabledProtocolOptions.map((protocol) => (
+                          <SelectItem
+                            key={protocol.value}
+                            value={protocol.value}
+                          >
+                            {protocol.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -305,6 +367,188 @@ export default function ConfigForm() {
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+
+              <FormField
+                control={form.control}
+                name="protocol_options"
+                render={({ field }) => {
+                  const options =
+                    field.value && field.value.length > 0
+                      ? field.value
+                      : normalizeSubscriptionProtocolOptions(
+                          DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS
+                        );
+
+                  const updateOption = (
+                    index: number,
+                    next: Partial<SubscriptionProtocolOption>
+                  ) => {
+                    const nextOptions = options.map((option, optionIndex) =>
+                      optionIndex === index ? { ...option, ...next } : option
+                    );
+                    field.onChange(nextOptions);
+
+                    const enabledOptions =
+                      getEnabledSubscriptionProtocolOptions(nextOptions);
+                    const enabledValues = enabledOptions.map(
+                      (option) => option.value
+                    );
+                    const defaultProtocol =
+                      form.getValues("default_protocol") || "";
+                    const recommendedProtocol =
+                      form.getValues("recommended_protocol") || "";
+
+                    if (!enabledValues.includes(defaultProtocol)) {
+                      form.setValue(
+                        "default_protocol",
+                        enabledOptions[0]?.value || ""
+                      );
+                    }
+                    if (!enabledValues.includes(recommendedProtocol)) {
+                      form.setValue(
+                        "recommended_protocol",
+                        enabledOptions[0]?.value || ""
+                      );
+                    }
+                  };
+
+                  const removeOption = (index: number) => {
+                    const nextOptions = options.filter(
+                      (_option, optionIndex) => optionIndex !== index
+                    );
+                    const normalizedOptions =
+                      normalizeSubscriptionProtocolOptions(nextOptions);
+                    field.onChange(normalizedOptions);
+
+                    const enabledOptions =
+                      getEnabledSubscriptionProtocolOptions(normalizedOptions);
+                    form.setValue(
+                      "default_protocol",
+                      normalizeSubscriptionProtocol(
+                        form.getValues("default_protocol"),
+                        normalizedOptions
+                      )
+                    );
+                    form.setValue(
+                      "recommended_protocol",
+                      normalizeSubscriptionProtocol(
+                        form.getValues("recommended_protocol"),
+                        normalizedOptions
+                      )
+                    );
+                    if (enabledOptions.length === 0) {
+                      form.setValue("default_protocol", "");
+                      form.setValue("recommended_protocol", "");
+                    }
+                  };
+
+                  return (
+                    <FormItem>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <FormLabel>
+                            {t("config.protocolOptions", "Protocol Options")}
+                          </FormLabel>
+                          <FormDescription>
+                            {t(
+                              "config.protocolOptionsDescription",
+                              "Configure the protocol parameter, display name, and description shown on the user dashboard"
+                            )}
+                          </FormDescription>
+                        </div>
+                        <Button
+                          onClick={() =>
+                            field.onChange([
+                              ...options,
+                              createProtocolOption(options.length),
+                            ])
+                          }
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <Icon icon="mdi:plus" />
+                          {t("actions.add", "Add")}
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {options.map((option, index) => (
+                          <div
+                            className="rounded-md border bg-background/60 p-3"
+                            key={`${option.value}-${index}`}
+                          >
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={option.enabled !== false}
+                                  onCheckedChange={(checked) =>
+                                    updateOption(index, { enabled: checked })
+                                  }
+                                />
+                                <span className="font-medium text-sm">
+                                  {option.label || option.value}
+                                </span>
+                              </div>
+                              <Button
+                                disabled={options.length <= 1}
+                                onClick={() => removeOption(index)}
+                                size="icon"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <Icon icon="mdi:trash-can-outline" />
+                              </Button>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <EnhancedInput
+                                onValueChange={(value) =>
+                                  updateOption(index, { value })
+                                }
+                                placeholder={t(
+                                  "config.protocolValuePlaceholder",
+                                  "protocol value, e.g. tuic"
+                                )}
+                                value={option.value}
+                              />
+                              <EnhancedInput
+                                onValueChange={(value) =>
+                                  updateOption(index, { label: value })
+                                }
+                                placeholder={t(
+                                  "config.protocolLabelPlaceholder",
+                                  "Display name"
+                                )}
+                                value={option.label}
+                              />
+                              <EnhancedInput
+                                onValueChange={(value) =>
+                                  updateOption(index, { icon: value })
+                                }
+                                placeholder={t(
+                                  "config.protocolIconPlaceholder",
+                                  "Icon, e.g. mdi:connection"
+                                )}
+                                value={option.icon}
+                              />
+                              <EnhancedInput
+                                onValueChange={(value) =>
+                                  updateOption(index, { description: value })
+                                }
+                                placeholder={t(
+                                  "config.protocolDescriptionPlaceholder",
+                                  "Description below the protocol name"
+                                )}
+                                value={option.description}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField

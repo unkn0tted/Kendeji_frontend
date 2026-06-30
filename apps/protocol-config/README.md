@@ -6,13 +6,24 @@
 
 ## 功能
 
-保存并返回下面三个字段：
+保存并返回下面这些字段：
 
 | 字段 | 可选值 | 说明 |
 | --- | --- | --- |
-| `default_protocol` | `tuic`, `anytls` | 用户端默认选中的协议 |
-| `recommended_protocol` | `tuic`, `anytls` | 用户端标记为推荐的协议 |
+| `default_protocol` | 任意启用的 `protocol_options[].value` | 用户端默认选中的协议 |
+| `recommended_protocol` | 任意启用的 `protocol_options[].value` | 用户端标记为推荐的协议 |
 | `selector_style` | `cards`, `compact` | 用户端协议选择器展示样式 |
+| `protocol_options` | 数组 | 用户端可选择的协议列表 |
+
+`protocol_options` 每一项支持：
+
+| 字段 | 说明 |
+| --- | --- |
+| `value` | 写入订阅链接的协议参数，例如最终生成 `protocol=tuic` |
+| `label` | 用户端按钮显示名称 |
+| `description` | 用户端按钮下方说明文字 |
+| `icon` | Iconify 图标名，例如 `mdi:connection` |
+| `enabled` | 是否在用户端显示 |
 
 接口：
 
@@ -71,7 +82,23 @@ curl -X PUT http://localhost:3002/protocol-config \
   -d '{
     "default_protocol": "tuic",
     "recommended_protocol": "tuic",
-    "selector_style": "compact"
+    "selector_style": "compact",
+    "protocol_options": [
+      {
+        "value": "tuic",
+        "label": "TUIC",
+        "description": "获取 TUIC 节点",
+        "icon": "mdi:rocket-launch-outline",
+        "enabled": true
+      },
+      {
+        "value": "anytls",
+        "label": "AnyTLS",
+        "description": "获取 AnyTLS 节点",
+        "icon": "mdi:shield-lock-outline",
+        "enabled": true
+      }
+    ]
   }'
 ```
 

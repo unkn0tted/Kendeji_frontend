@@ -1,10 +1,12 @@
 import request from "@workspace/ui/lib/request";
+import type { SubscriptionProtocolOption } from "@workspace/ui/utils/subscription-protocol";
 import type { AxiosRequestConfig } from "axios";
 
 export type ProtocolSelectorConfig = {
   default_protocol?: string;
   recommended_protocol?: string;
   selector_style?: string;
+  protocol_options?: SubscriptionProtocolOption[];
 };
 
 const PROTOCOL_CONFIG_PATH = "/protocol-config";

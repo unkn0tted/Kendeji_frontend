@@ -1023,6 +1023,13 @@ declare namespace API {
     default_protocol?: string;
     recommended_protocol?: string;
     selector_style?: string;
+    protocol_options?: {
+      value: string;
+      label: string;
+      description?: string;
+      icon?: string;
+      enabled?: boolean;
+    }[];
     show_tutorial?: boolean;
   };
 

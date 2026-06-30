@@ -6,16 +6,23 @@ import {
 } from "node:http";
 import { dirname } from "node:path";
 
-const SUPPORTED_PROTOCOLS = ["tuic", "anytls"] as const;
 const SELECTOR_STYLES = ["cards", "compact"] as const;
 
-type SupportedProtocol = (typeof SUPPORTED_PROTOCOLS)[number];
 type SelectorStyle = (typeof SELECTOR_STYLES)[number];
 
+type ProtocolOption = {
+  value: string;
+  label: string;
+  description: string;
+  icon: string;
+  enabled: boolean;
+};
+
 type ProtocolConfig = {
-  default_protocol: SupportedProtocol;
-  recommended_protocol: SupportedProtocol;
+  default_protocol: string;
+  recommended_protocol: string;
   selector_style: SelectorStyle;
+  protocol_options: ProtocolOption[];
 };
 
 type ApiResponse<T = unknown> = {
@@ -28,6 +35,22 @@ const defaultConfig: ProtocolConfig = {
   default_protocol: "tuic",
   recommended_protocol: "tuic",
   selector_style: "cards",
+  protocol_options: [
+    {
+      value: "tuic",
+      label: "TUIC",
+      description: "TUIC subscription output",
+      icon: "mdi:rocket-launch-outline",
+      enabled: true,
+    },
+    {
+      value: "anytls",
+      label: "AnyTLS",
+      description: "Only get AnyTLS nodes",
+      icon: "mdi:shield-lock-outline",
+      enabled: true,
+    },
+  ],
 };
 
 const port = Number(process.env.PORT || "3002");
@@ -37,13 +60,6 @@ const ppanelAdminCurrentPath =
   process.env.PPANEL_ADMIN_CURRENT_PATH || "/v1/admin/user/current";
 const corsOrigin = process.env.CORS_ORIGIN || "*";
 
-function isSupportedProtocol(value: unknown): value is SupportedProtocol {
-  return (
-    typeof value === "string" &&
-    SUPPORTED_PROTOCOLS.includes(value as SupportedProtocol)
-  );
-}
-
 function isSelectorStyle(value: unknown): value is SelectorStyle {
   return (
     typeof value === "string" &&
@@ -51,17 +67,87 @@ function isSelectorStyle(value: unknown): value is SelectorStyle {
   );
 }
 
-function normalizeConfig(value: Partial<ProtocolConfig> = {}): ProtocolConfig {
+function normalizeProtocolOption(value: unknown): ProtocolOption | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const option = value as Partial<ProtocolOption>;
+  const protocolValue = String(option.value || "").trim();
+  if (!protocolValue) {
+    return null;
+  }
+
+  const label = String(option.label || protocolValue.toUpperCase()).trim();
+
   return {
-    default_protocol: isSupportedProtocol(value.default_protocol)
-      ? value.default_protocol
-      : defaultConfig.default_protocol,
-    recommended_protocol: isSupportedProtocol(value.recommended_protocol)
-      ? value.recommended_protocol
-      : defaultConfig.recommended_protocol,
+    value: protocolValue,
+    label: label || protocolValue,
+    description: String(option.description || "").trim(),
+    icon: String(option.icon || "mdi:connection").trim(),
+    enabled: option.enabled !== false,
+  };
+}
+
+function normalizeProtocolOptions(value: unknown): ProtocolOption[] {
+  const options = Array.isArray(value) ? value : defaultConfig.protocol_options;
+  const normalized: ProtocolOption[] = [];
+  const seen = new Set<string>();
+
+  for (const option of options) {
+    const normalizedOption = normalizeProtocolOption(option);
+    if (!(normalizedOption && !seen.has(normalizedOption.value))) {
+      continue;
+    }
+
+    normalized.push(normalizedOption);
+    seen.add(normalizedOption.value);
+  }
+
+  if (normalized.length === 0) {
+    return defaultConfig.protocol_options;
+  }
+
+  if (!normalized.some((option) => option.enabled)) {
+    normalized[0] = { ...normalized[0]!, enabled: true };
+  }
+
+  return normalized;
+}
+
+function getEnabledProtocolValues(options: ProtocolOption[]) {
+  const enabledValues = options
+    .filter((option) => option.enabled)
+    .map((option) => option.value);
+
+  return enabledValues.length > 0
+    ? enabledValues
+    : options.slice(0, 1).map((option) => option.value);
+}
+
+function normalizeConfig(value: Partial<ProtocolConfig> = {}): ProtocolConfig {
+  const protocolOptions = normalizeProtocolOptions(value.protocol_options);
+  const enabledProtocolValues = getEnabledProtocolValues(protocolOptions);
+  const fallbackProtocol =
+    enabledProtocolValues[0] || defaultConfig.default_protocol;
+  const defaultProtocol = enabledProtocolValues.includes(
+    String(value.default_protocol || "")
+  )
+    ? String(value.default_protocol)
+    : fallbackProtocol;
+  const recommendedProtocol = enabledProtocolValues.includes(
+    String(value.recommended_protocol || "")
+  )
+    ? String(value.recommended_protocol)
+    : defaultProtocol;
+
+  return {
+    default_protocol: defaultProtocol,
+    recommended_protocol: recommendedProtocol,
     selector_style: isSelectorStyle(value.selector_style)
       ? value.selector_style
       : defaultConfig.selector_style,
+    protocol_options: protocolOptions,
   };
 }
 

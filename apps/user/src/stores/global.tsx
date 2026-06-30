@@ -1,6 +1,10 @@
 import { queryUserInfo } from "@workspace/ui/services/user/user";
 import { isBrowser } from "@workspace/ui/utils/index";
-import { normalizeSubscriptionProtocol } from "@workspace/ui/utils/subscription-protocol";
+import {
+  DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS,
+  normalizeSubscriptionProtocol,
+  normalizeSubscriptionProtocolOptions,
+} from "@workspace/ui/utils/subscription-protocol";
 import { create } from "zustand";
 
 export interface GlobalStore {
@@ -30,6 +34,7 @@ function createSubscribeUrl({
   token,
   protocol,
   defaultProtocol,
+  protocolOptions,
   panDomain,
   subscribePath,
 }: {
@@ -38,6 +43,7 @@ function createSubscribeUrl({
   token: string;
   protocol?: string;
   defaultProtocol?: string;
+  protocolOptions?: API.SubscribeConfig["protocol_options"];
   panDomain?: boolean;
   subscribePath?: string;
 }): string {
@@ -49,7 +55,7 @@ function createSubscribeUrl({
   url.searchParams.set("token", token);
   url.searchParams.set(
     "protocol",
-    normalizeSubscriptionProtocol(protocol || defaultProtocol)
+    normalizeSubscriptionProtocol(protocol || defaultProtocol, protocolOptions)
   );
 
   return url.toString();
@@ -155,6 +161,9 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       default_protocol: "tuic",
       recommended_protocol: "tuic",
       selector_style: "cards",
+      protocol_options: normalizeSubscriptionProtocolOptions(
+        DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS
+      ),
     },
     verify_code: {
       verify_code_expire_time: 5,
@@ -191,6 +200,7 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
   getUserSubscribe: (short: string, token: string, protocol?: string) => {
     const { default_protocol, pan_domain, subscribe_domain, subscribe_path } =
       get().common.subscribe || {};
+    const protocolOptions = get().common.subscribe?.protocol_options;
     const fallbackDomain = extractDomain(window.location.origin, pan_domain);
     const domains = subscribe_domain
       ? subscribe_domain
@@ -207,7 +217,11 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
         short,
         token,
         protocol,
-        defaultProtocol: default_protocol,
+        defaultProtocol: normalizeSubscriptionProtocol(
+          default_protocol,
+          protocolOptions
+        ),
+        protocolOptions,
         panDomain: pan_domain,
         subscribePath: subscribe_path,
       })

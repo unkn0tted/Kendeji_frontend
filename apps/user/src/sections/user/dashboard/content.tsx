@@ -37,6 +37,7 @@ import {
 import { differenceInDays, formatDate } from "@workspace/ui/utils/formatting";
 import { isBrowser } from "@workspace/ui/utils/index";
 import {
+  getEnabledSubscriptionProtocolOptions,
   getSubscriptionProtocolLabel,
   normalizeProtocolSelectorStyle,
   normalizeSubscriptionProtocol,
@@ -65,38 +66,22 @@ const platforms: (keyof API.DownloadLink)[] = [
   "harmony",
 ];
 
-const protocolOptions: Array<{
-  value: SubscriptionProtocol;
-  label: string;
-  icon: string;
-  descriptionKey: string;
-  descriptionDefault: string;
-}> = [
-  {
-    value: "tuic",
-    label: "TUIC",
-    icon: "mdi:rocket-launch-outline",
-    descriptionKey: "protocolSelectorTuicDescription",
-    descriptionDefault: "TUIC subscription output",
-  },
-  {
-    value: "anytls",
-    label: "AnyTLS",
-    icon: "mdi:shield-lock-outline",
-    descriptionKey: "protocolSelectorAnytlsDescription",
-    descriptionDefault: "Only get AnyTLS nodes",
-  },
-];
-
 export default function Content() {
   const { t, i18n } = useTranslation("dashboard");
   const { common, getUserSubscribe, getAppSubLink } = useGlobalStore();
 
+  const protocolOptions = React.useMemo(
+    () =>
+      getEnabledSubscriptionProtocolOptions(common.subscribe?.protocol_options),
+    [common.subscribe?.protocol_options]
+  );
   const defaultProtocol = normalizeSubscriptionProtocol(
-    common.subscribe?.default_protocol
+    common.subscribe?.default_protocol,
+    protocolOptions
   );
   const recommendedProtocol = normalizeSubscriptionProtocol(
-    common.subscribe?.recommended_protocol
+    common.subscribe?.recommended_protocol,
+    protocolOptions
   );
   const selectorStyle = normalizeProtocolSelectorStyle(
     common.subscribe?.selector_style
@@ -110,6 +95,13 @@ export default function Content() {
       setProtocol(defaultProtocol);
     }
   }, [defaultProtocol, manualProtocolSelected]);
+
+  React.useEffect(() => {
+    if (!protocolOptions.some((option) => option.value === protocol)) {
+      setProtocol(defaultProtocol);
+      setManualProtocolSelected(false);
+    }
+  }, [defaultProtocol, protocol, protocolOptions]);
 
   const {
     data: userSubscribe = [],
@@ -191,14 +183,10 @@ export default function Content() {
   };
 
   const getProtocolDescription = (option: (typeof protocolOptions)[number]) =>
-    t(
-      option.value === recommendedProtocol
-        ? "protocolSelectorRecommendedDescription"
-        : option.descriptionKey,
-      option.value === recommendedProtocol
-        ? "Recommended protocol"
-        : option.descriptionDefault
-    );
+    option.description ||
+    (option.value === recommendedProtocol
+      ? t("protocolSelectorRecommendedDescription", "Recommended protocol")
+      : "");
 
   return (
     <>
@@ -249,13 +237,16 @@ export default function Content() {
                   </div>
                   <span className="inline-flex w-fit rounded-md border border-primary/15 bg-background/85 px-3 py-1 font-medium text-primary text-xs">
                     {t("protocolSelectorDefault", "Default: {{protocol}}", {
-                      protocol: getSubscriptionProtocolLabel(defaultProtocol),
+                      protocol: getSubscriptionProtocolLabel(
+                        defaultProtocol,
+                        protocolOptions
+                      ),
                     })}
                   </span>
                 </div>
 
                 {selectorStyle === "compact" ? (
-                  <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:min-w-[360px] lg:justify-end">
+                  <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:max-w-[620px] lg:justify-end">
                     {protocolOptions.map((option) => {
                       const isActive = protocol === option.value;
 
@@ -274,8 +265,11 @@ export default function Content() {
                           title={getProtocolDescription(option)}
                           type="button"
                         >
-                          <Icon className="size-4" icon={option.icon} />
-                          <span>{option.label}</span>
+                          <Icon
+                            className="size-4 shrink-0"
+                            icon={option.icon || "mdi:connection"}
+                          />
+                          <span className="truncate">{option.label}</span>
                           {option.value === recommendedProtocol && (
                             <span
                               className={cn(
@@ -293,7 +287,7 @@ export default function Content() {
                     })}
                   </div>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[420px]">
+                  <div className="grid w-full gap-2 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] lg:min-w-[420px] lg:max-w-[720px]">
                     {protocolOptions.map((option) => {
                       const isActive = protocol === option.value;
 
@@ -314,16 +308,19 @@ export default function Content() {
                             <div className="flex items-start gap-3">
                               <div
                                 className={cn(
-                                  "mt-0.5 flex size-9 items-center justify-center rounded-md transition-colors",
+                                  "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md transition-colors",
                                   isActive
                                     ? "bg-primary-foreground/15 text-primary-foreground"
                                     : "bg-primary/10 text-primary"
                                 )}
                               >
-                                <Icon className="size-5" icon={option.icon} />
+                                <Icon
+                                  className="size-5"
+                                  icon={option.icon || "mdi:connection"}
+                                />
                               </div>
-                              <div>
-                                <p className="font-semibold text-sm uppercase tracking-[0.18em]">
+                              <div className="min-w-0">
+                                <p className="break-words font-semibold text-sm">
                                   {option.label}
                                 </p>
                                 <p

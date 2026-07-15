@@ -164,6 +164,7 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       protocol_options: normalizeSubscriptionProtocolOptions(
         DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS
       ),
+      show_tutorial: false,
     },
     verify_code: {
       verify_code_expire_time: 5,

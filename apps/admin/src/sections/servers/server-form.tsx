@@ -234,8 +234,19 @@ function DynamicField({
               <FormLabel>{getFieldLabel(field)}</FormLabel>
               <FormControl>
                 <Select
-                  onValueChange={(v) => fieldProps.onChange(v)}
-                  value={fieldProps.value ?? field.defaultValue}
+                  onValueChange={(v) =>
+                    field.name === "ech_enable"
+                      ? fieldProps.onChange(v === "true")
+                      : fieldProps.onChange(v)
+                  }
+                  value={
+                    field.name === "ech_enable"
+                      ? String(
+                          (fieldProps.value ?? field.defaultValue ?? false) ===
+                            true
+                        )
+                      : (fieldProps.value ?? field.defaultValue)
+                  }
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -515,9 +526,37 @@ export default function ServerForm(props: {
       return;
     }
 
-    const filteredProtocols = (values?.protocols || []).filter(
-      (protocol: any) => protocol?.enable
-    );
+    const filteredProtocols = (values?.protocols || [])
+      .filter((protocol: any) => protocol?.enable)
+      .map((protocol: any) => {
+        const protocolType = protocol.type as ProtocolType;
+        const fields = PROTOCOL_FIELDS[protocolType] || [];
+        const hiddenFieldNames = new Set(
+          fields
+            .filter(
+              (field) => field.condition && !field.condition(protocol, {})
+            )
+            .map((field) => field.name)
+        );
+        const shouldStripEch = protocol.ech_enable !== true;
+
+        return Object.fromEntries(
+          Object.entries(protocol).filter(([key]) => {
+            if (hiddenFieldNames.has(key)) {
+              return false;
+            }
+
+            if (
+              shouldStripEch &&
+              (key === "ech_enable" || key === "ech_server_name")
+            ) {
+              return false;
+            }
+
+            return true;
+          })
+        );
+      });
 
     const result = {
       name: values.name,

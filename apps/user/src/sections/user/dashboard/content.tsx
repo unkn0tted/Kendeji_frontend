@@ -730,10 +730,7 @@ export default function Content() {
                                         {application.scheme && (
                                           <CopyToClipboard
                                             onCopy={handleCopy}
-                                            text={getAppSubLink(
-                                              url,
-                                              application.scheme
-                                            )}
+                                            text={url}
                                           >
                                             <Button
                                               className={

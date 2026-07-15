@@ -1,17 +1,21 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # Dependencies
-node_modules
+node_modules/
 .pnp
-.pnp.js
+.pnp.*
 
 # Local env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!**/.env.example
 *.local
+
+# Local tool configuration
+/mise.toml
+mise.local.toml
+.mise.local.toml
 
 # Local docker/runtime files
 get-docker.sh
@@ -20,25 +24,36 @@ compose.override.yml
 protocol-config.json
 
 # Testing
-coverage
+coverage/
 
-# Turbo
-.turbo
+# Tool caches
+.turbo/
+.vite/
+.cache/
+.eslintcache
+*.tsbuildinfo
 
 # Vercel
-.vercel
+.vercel/
 
 # Build Outputs
 .next/
 out/
-build
-dist
+build/
+dist/
 
 
 # Debug
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 *.log
 
 # Misc
 .DS_Store
+Thumbs.db
 *.pem
+*.swp
+*.swo
+*~

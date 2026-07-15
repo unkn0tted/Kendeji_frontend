@@ -8,6 +8,10 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import {
+  normalizePageSize,
+  PAGE_SIZE_OPTIONS,
+} from "@workspace/ui/composed/pagination-config";
+import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
@@ -37,7 +41,7 @@ export function Pagination<TData>({ table }: PaginationProps<TData>) {
           </p>
           <Select
             onValueChange={(value) => {
-              table.setPageSize(Number(value));
+              table.setPageSize(normalizePageSize(Number(value)));
             }}
             value={`${table.getState().pagination.pageSize}`}
           >
@@ -45,7 +49,7 @@ export function Pagination<TData>({ table }: PaginationProps<TData>) {
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 50, 100].map((pageSize) => (
+              {PAGE_SIZE_OPTIONS.map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}
                 </SelectItem>

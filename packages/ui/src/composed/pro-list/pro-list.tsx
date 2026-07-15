@@ -15,6 +15,7 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import Empty from "@workspace/ui/composed/empty";
+import { normalizePageSize } from "@workspace/ui/composed/pagination-config";
 import {
   ColumnFilter,
   type IParams,
@@ -100,7 +101,7 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
       const response = await request(
         {
           page: pagination.pageIndex + 1,
-          size: pagination.pageSize,
+          size: normalizePageSize(pagination.pageSize),
         },
         Object.fromEntries(
           columnFilters.map((item) => [item.id, item.value])

@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import Empty from "@workspace/ui/composed/empty";
+import { normalizePageSize } from "@workspace/ui/composed/pagination-config";
 import {
   ColumnFilter,
   type IParams,
@@ -203,7 +204,7 @@ export function ProTable<
       const response = await request(
         {
           page: pagination.pageIndex + 1,
-          size: pagination.pageSize,
+          size: normalizePageSize(pagination.pageSize),
         },
         Object.fromEntries(
           columnFilters.map((item) => [item.id, item.value])

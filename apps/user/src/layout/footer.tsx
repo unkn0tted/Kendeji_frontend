@@ -174,7 +174,7 @@ export default function Footer() {
                         `footer.social.${item.name}`,
                         `Visit our ${item.name}`
                       )}
-                      className="hover:-translate-y-0.5 flex h-9 w-9 items-center justify-center rounded-full border border-primary/12 bg-white/65 transition-all duration-200 hover:border-primary/30 hover:bg-white/90 dark:border-white/8 dark:bg-white/6 dark:hover:bg-white/12"
+                      className="flex h-9 w-9 items-center justify-center rounded-md border bg-card transition-colors hover:border-primary/30 hover:bg-accent"
                       href={item.href}
                       key={item.name}
                       rel="noopener noreferrer"
@@ -217,7 +217,7 @@ export default function Footer() {
                       `footer.social.${item.name}`,
                       `Visit our ${item.name}`
                     )}
-                    className="hover:-translate-y-0.5 flex h-10 w-10 items-center justify-center rounded-full border border-primary/12 bg-white/70 transition-all duration-200 hover:border-primary/30 hover:bg-white/95 dark:border-white/8 dark:bg-white/6 dark:hover:bg-white/12"
+                    className="flex h-10 w-10 items-center justify-center rounded-md border bg-card transition-colors hover:border-primary/30 hover:bg-accent"
                     href={item.href}
                     key={item.name}
                     rel="noopener noreferrer"

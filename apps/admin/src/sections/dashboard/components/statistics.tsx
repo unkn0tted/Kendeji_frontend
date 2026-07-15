@@ -203,8 +203,8 @@ export default function Statistics() {
             subtitle: t("currentlyOnline", "Currently Online"),
             icon: "uil:users-alt",
             href: "/dashboard/servers",
-            color: "text-blue-600 dark:text-blue-400",
-            iconBg: "bg-blue-100 dark:bg-blue-900/30",
+            color: "text-foreground",
+            iconBg: "border bg-muted text-muted-foreground",
           },
 
           {
@@ -215,8 +215,8 @@ export default function Statistics() {
             ),
             subtitle: `↑${formatBytes(ServerTotal?.today_upload || 0)} ↓${formatBytes(ServerTotal?.today_download || 0)}`,
             icon: "uil:exchange-alt",
-            color: "text-purple-600 dark:text-purple-400",
-            iconBg: "bg-purple-100 dark:bg-purple-900/30",
+            color: "text-foreground",
+            iconBg: "border bg-muted text-muted-foreground",
           },
           {
             title: t("monthTraffic", "Month Traffic"),
@@ -226,8 +226,8 @@ export default function Statistics() {
             ),
             subtitle: `↑${formatBytes(ServerTotal?.monthly_upload || 0)} ↓${formatBytes(ServerTotal?.monthly_download || 0)}`,
             icon: "uil:cloud-data-connection",
-            color: "text-orange-600 dark:text-orange-400",
-            iconBg: "bg-orange-100 dark:bg-orange-900/30",
+            color: "text-foreground",
+            iconBg: "border bg-muted text-muted-foreground",
           },
           {
             title: t("totalServers", "Total Servers"),
@@ -237,8 +237,8 @@ export default function Statistics() {
             subtitle: `${t("online", "Online")} ${ServerTotal?.online_servers || 0} ${t("offline", "Offline")} ${ServerTotal?.offline_servers || 0}`,
             icon: "uil:server-network",
             href: "/dashboard/servers",
-            color: "text-green-600 dark:text-green-400",
-            iconBg: "bg-green-100 dark:bg-green-900/30",
+            color: "text-foreground",
+            iconBg: "border bg-muted text-muted-foreground",
           },
           {
             title: t("pendingTickets", "Pending Tickets"),
@@ -246,8 +246,8 @@ export default function Statistics() {
             subtitle: t("pending", "Pending"),
             icon: "uil:clipboard-notes",
             href: "/dashboard/ticket",
-            color: "text-red-600 dark:text-red-400",
-            iconBg: "bg-red-100 dark:bg-red-900/30",
+            color: "text-foreground",
+            iconBg: "border bg-muted text-muted-foreground",
           },
         ].map((item, index) => (
           <Link
@@ -255,27 +255,26 @@ export default function Statistics() {
             key={index}
             to={item.href || "#"}
           >
-            <Card className={`group ${item.href ? "cursor-pointer" : ""}`}>
+            <Card
+              className={`group transition-colors hover:border-primary/25 ${item.href ? "cursor-pointer" : ""}`}
+            >
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <p className="mb-2 font-medium text-muted-foreground text-sm">
                       {item.title}
                     </p>
-                    <div className={`mb-1 font-bold text-2xl ${item.color}`}>
+                    <div
+                      className={`mb-1 font-semibold text-2xl tabular-nums ${item.color}`}
+                    >
                       {item.value}
                     </div>
                     <div className="h-4 text-muted-foreground text-xs">
                       {item.subtitle}
                     </div>
                   </div>
-                  <div
-                    className={`rounded-full p-3 ${item.iconBg} transition-transform duration-300 group-hover:scale-110`}
-                  >
-                    <Icon
-                      className={`h-6 w-6 ${item.color}`}
-                      icon={item.icon}
-                    />
+                  <div className={`rounded-md p-2.5 ${item.iconBg}`}>
+                    <Icon className="h-5 w-5 text-primary" icon={item.icon} />
                   </div>
                 </div>
               </CardContent>

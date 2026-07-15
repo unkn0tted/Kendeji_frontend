@@ -27,13 +27,13 @@ export function UserNav() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            className="size-10 border border-primary/18 bg-background/90 p-1 shadow-primary/10 shadow-sm hover:border-primary/30 hover:bg-accent/65"
+            className="size-10 border bg-background p-1 hover:border-primary/30 hover:bg-accent"
             size="icon"
             variant="ghost"
           >
             <Avatar className="size-8">
               <AvatarImage alt={user?.avatar ?? ""} src={user?.avatar ?? ""} />
-              <AvatarFallback className="bg-linear-to-br from-primary via-rose-500 to-pink-500 font-medium text-primary-foreground">
+              <AvatarFallback className="bg-primary font-medium text-primary-foreground">
                 {user?.auth_methods?.[0]?.auth_identifier
                   .toUpperCase()
                   .charAt(0)}
@@ -49,7 +49,7 @@ export function UserNav() {
                   alt={user?.avatar ?? ""}
                   src={user?.avatar ?? ""}
                 />
-                <AvatarFallback className="bg-linear-to-br from-primary via-rose-500 to-pink-500 text-primary-foreground">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {user?.auth_methods?.[0]?.auth_identifier
                     .toUpperCase()
                     .charAt(0)}

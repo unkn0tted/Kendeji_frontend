@@ -1,0 +1,507 @@
+/*
+ * New UI visual system
+ *
+ * This layer intentionally contains presentation only. It sits after the
+ * existing theme so application behavior and component APIs remain unchanged.
+ */
+
+:root {
+  --background: oklch(0.978 0.006 355);
+  --foreground: oklch(0.235 0.018 350);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.235 0.018 350);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.235 0.018 350);
+  --primary: oklch(0.64 0.19 354);
+  --primary-foreground: oklch(0.985 0.004 355);
+  --secondary: oklch(0.952 0.014 355);
+  --secondary-foreground: oklch(0.3 0.026 350);
+  --muted: oklch(0.955 0.009 355);
+  --muted-foreground: oklch(0.52 0.02 350);
+  --accent: oklch(0.94 0.025 355);
+  --accent-foreground: oklch(0.34 0.07 350);
+  --destructive: oklch(0.59 0.22 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.89 0.015 355);
+  --input: oklch(0.87 0.018 355);
+  --ring: oklch(0.68 0.15 354);
+  --chart-1: oklch(0.64 0.19 354);
+  --chart-2: oklch(0.7 0.14 338);
+  --chart-3: oklch(0.74 0.12 10);
+  --chart-4: oklch(0.6 0.14 325);
+  --chart-5: oklch(0.68 0.16 2);
+  --theme-color-light: #faf5f7;
+  --theme-color-dark: #1d171a;
+  --radius: 0.5rem;
+  --rose-radius-shell: 0.625rem;
+  --rose-radius-panel: 0.5rem;
+  --rose-radius-control: 0.375rem;
+  --rose-radius-tight: 0.25rem;
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-display: var(--font-sans);
+  --sidebar: oklch(0.992 0.004 355);
+  --sidebar-foreground: oklch(0.3 0.026 350);
+  --sidebar-primary: oklch(0.64 0.19 354);
+  --sidebar-primary-foreground: oklch(0.985 0.004 355);
+  --sidebar-accent: oklch(0.94 0.025 355);
+  --sidebar-accent-foreground: oklch(0.34 0.07 350);
+  --sidebar-border: oklch(0.89 0.015 355);
+  --sidebar-ring: oklch(0.68 0.15 354);
+}
+
+.dark {
+  --background: oklch(0.17 0.014 350);
+  --foreground: oklch(0.94 0.008 355);
+  --card: oklch(0.21 0.016 350);
+  --card-foreground: oklch(0.94 0.008 355);
+  --popover: oklch(0.22 0.018 350);
+  --popover-foreground: oklch(0.94 0.008 355);
+  --primary: oklch(0.72 0.16 354);
+  --primary-foreground: oklch(0.2 0.035 350);
+  --secondary: oklch(0.27 0.018 350);
+  --secondary-foreground: oklch(0.92 0.008 355);
+  --muted: oklch(0.26 0.016 350);
+  --muted-foreground: oklch(0.7 0.016 355);
+  --accent: oklch(0.3 0.038 350);
+  --accent-foreground: oklch(0.94 0.008 355);
+  --destructive: oklch(0.65 0.19 25);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.16);
+  --ring: oklch(0.7 0.14 354);
+  --sidebar: oklch(0.19 0.015 350);
+  --sidebar-foreground: oklch(0.91 0.009 355);
+  --sidebar-primary: oklch(0.72 0.16 354);
+  --sidebar-primary-foreground: oklch(0.2 0.035 350);
+  --sidebar-accent: oklch(0.3 0.038 350);
+  --sidebar-accent-foreground: oklch(0.94 0.008 355);
+  --sidebar-border: oklch(1 0 0 / 0.1);
+  --sidebar-ring: oklch(0.7 0.14 354);
+}
+
+body,
+.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Remove decorative effects that make data-heavy screens visually noisy. */
+.rose-grid,
+.main-hero__aura {
+  display: none;
+}
+
+.rose-shell,
+.rose-panel,
+.dark .rose-shell,
+.dark .rose-panel {
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+  backdrop-filter: none;
+}
+
+.rose-shell::before,
+.rose-panel::before,
+.dark .rose-shell::before,
+.dark .rose-panel::before {
+  display: none;
+}
+
+.rose-pill,
+.dark .rose-pill {
+  border-color: color-mix(in oklab, var(--primary) 20%, var(--border));
+  background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  color: var(--primary);
+  box-shadow: none;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.rose-nav-shell,
+.dark .rose-nav-shell {
+  border-color: var(--border);
+  background: color-mix(in oklab, var(--card) 96%, transparent);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.main-hero,
+.dark .main-hero,
+.subscribe-hero,
+.dark .subscribe-hero {
+  background: var(--card);
+}
+
+.main-feature-card,
+.main-plan-card,
+.dark .main-feature-card,
+.dark .main-plan-card {
+  box-shadow: none;
+}
+
+.main-feature-card:hover,
+.main-plan-card:hover {
+  transform: none;
+  border-color: color-mix(in oklab, var(--primary) 24%, var(--border));
+  box-shadow: 0 4px 14px oklch(0 0 0 / 0.055);
+}
+
+/* Shared shadcn primitives: compact, consistent, dashboard-oriented. */
+[data-slot="card"] {
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+}
+
+[data-slot="card-header"] {
+  gap: 0.375rem;
+}
+
+[data-slot="button"] {
+  box-shadow: none;
+}
+
+[data-slot="button"]:active {
+  transform: none;
+}
+
+[data-slot="input"],
+[data-slot="textarea"],
+[data-slot="select-trigger"] {
+  background: var(--card);
+  box-shadow: none;
+}
+
+.dark [data-slot="input"],
+.dark [data-slot="textarea"],
+.dark [data-slot="select-trigger"] {
+  background: color-mix(in oklab, var(--card) 88%, white 2%);
+}
+
+[data-slot="table-header"] {
+  background: var(--muted);
+}
+
+[data-slot="table-head"] {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+[data-slot="table-row"]:hover {
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
+}
+
+[data-slot="dialog-content"],
+[data-slot="sheet-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="popover-content"] {
+  border-color: var(--border);
+  box-shadow: 0 12px 32px oklch(0 0 0 / 0.12);
+}
+
+.app-quick-actions {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+/* User dashboard and subscription surfaces */
+.dashboard-subscription-name,
+.dark .dashboard-subscription-name {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  transition: none;
+}
+
+.dashboard-subscription-name__text,
+.dark .dashboard-subscription-name__text {
+  color: var(--foreground);
+  font-size: 1.125rem;
+  font-weight: 650;
+  line-height: 1.35;
+  text-shadow: none;
+}
+
+.dashboard-subscription-card:hover .dashboard-subscription-name,
+.dashboard-subscription-name:hover,
+.dark .dashboard-subscription-card:hover .dashboard-subscription-name,
+.dark .dashboard-subscription-name:hover {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+  filter: none;
+}
+
+.user-layout__inset--subscribe,
+.dark .user-layout__inset--subscribe {
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+}
+
+.user-layout__aside--subscribe::before {
+  display: none;
+}
+
+.subscribe-side-rail__panel,
+.dark .subscribe-side-rail__panel {
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+}
+
+.subscribe-side-rail__panel::before,
+.dark .subscribe-side-rail__panel::before {
+  display: none;
+}
+
+.subscribe-side-rail__eyebrow,
+.dark .subscribe-side-rail__eyebrow {
+  color: var(--primary);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.subscribe-side-rail__title,
+.subscribe-side-rail__balance-value,
+.subscribe-side-rail__invite-code,
+.dark .subscribe-side-rail__title,
+.dark .subscribe-side-rail__balance-value,
+.dark .subscribe-side-rail__invite-code {
+  color: var(--foreground);
+}
+
+.subscribe-side-rail__action,
+.subscribe-side-rail__balance,
+.subscribe-side-rail__metric,
+.subscribe-side-rail__copy,
+.subscribe-side-rail__invite-code,
+.dark .subscribe-side-rail__action,
+.dark .subscribe-side-rail__balance,
+.dark .subscribe-side-rail__metric,
+.dark .subscribe-side-rail__copy,
+.dark .subscribe-side-rail__invite-code {
+  border-color: var(--border);
+  background: var(--muted);
+  box-shadow: none;
+}
+
+/* Public landing: keep the brand, remove decorative motion and fake depth. */
+.main-hero__scan,
+.main-hero__particles,
+.main-orbit,
+.main-map-stage__grid,
+.main-map-stage__route,
+.main-map-stage__node {
+  display: none;
+}
+
+.main-hero__title-gradient,
+.dark .main-hero__title-gradient {
+  background: none;
+  color: var(--foreground);
+  animation: none;
+}
+
+.main-hero__visual {
+  min-height: auto;
+  perspective: none;
+}
+
+.main-hero-console,
+.main-hero-floating,
+.main-map-stage,
+.dark .main-hero-console,
+.dark .main-hero-floating,
+.dark .main-map-stage {
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+  backdrop-filter: none;
+}
+
+.main-hero-console {
+  margin-top: 1.5rem;
+  transform: none;
+}
+
+.main-hero-console::before,
+.main-hero-console::after,
+.main-hero-floating::before,
+.main-feature-card::before,
+.main-plan-card::after,
+.main-map-stage::before {
+  display: none;
+}
+
+.main-hero-console__meter span {
+  background: var(--primary);
+  animation: none;
+}
+
+.main-status-card,
+.main-map-region {
+  border-color: var(--border);
+  background: var(--muted);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.main-map-region:hover {
+  transform: none;
+  border-color: color-mix(in oklab, var(--primary) 24%, var(--border));
+  background: var(--muted);
+}
+
+/* Authentication and checkout use simple two-column surfaces. */
+.rose-form {
+  background: var(--background);
+}
+
+.rose-form form [data-slot="button"]:not(:disabled) {
+  background: var(--primary);
+}
+
+.rose-form form [data-slot="button"]:not(:disabled):hover {
+  transform: none;
+  background: color-mix(in oklab, var(--primary) 90%, black);
+}
+
+/* Subscription catalogue */
+.subscribe-hero::after,
+.subscribe-plan-stage::before,
+.subscribe-card__shell::before,
+.subscribe-card__shell::after,
+.subscribe-card__button::before {
+  display: none;
+}
+
+.subscribe-hero__metric,
+.dark .subscribe-hero__metric {
+  border-color: var(--border);
+  background: var(--muted);
+  box-shadow: none;
+}
+
+.subscribe-hero__metric-label,
+.dark .subscribe-hero__metric-label,
+.subscribe-card__eyebrow {
+  color: var(--muted-foreground);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.subscribe-plan-stage,
+.dark .subscribe-plan-stage {
+  border-color: var(--border);
+  background: transparent;
+  box-shadow: none;
+}
+
+.subscribe-card,
+.dark .subscribe-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+  transition: border-color 150ms ease;
+}
+
+.subscribe-card:hover {
+  transform: none;
+  border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  filter: none;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.035);
+}
+
+.subscribe-card__shell,
+.dark .subscribe-card__shell {
+  border-radius: inherit;
+  background: var(--card);
+  box-shadow: none;
+}
+
+.subscribe-card__title,
+.dark .subscribe-card__title,
+.subscribe-card__price-display {
+  color: var(--foreground);
+}
+
+.subscribe-card__title {
+  font-size: clamp(1.75rem, 3vw, 2.15rem);
+  line-height: 1.1;
+}
+
+.subscribe-card__badge,
+.dark .subscribe-card__badge {
+  border-color: color-mix(in oklab, var(--primary) 20%, var(--border));
+  background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  color: var(--primary);
+  box-shadow: none;
+  backdrop-filter: none;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.subscribe-card__badge--discount {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.subscribe-card__icon-shell,
+.dark .subscribe-card__icon-shell {
+  border-color: color-mix(in oklab, var(--primary) 18%, var(--border));
+  background: color-mix(in oklab, var(--primary) 9%, var(--card));
+  color: var(--primary);
+  box-shadow: none;
+}
+
+.subscribe-card__highlights,
+.subscribe-card__price-band,
+.subscribe-card__stat-tile,
+.dark .subscribe-card__highlights,
+.dark .subscribe-card__price-band,
+.dark .subscribe-card__stat-tile {
+  border-color: var(--border);
+  background: var(--muted);
+  box-shadow: none;
+}
+
+.subscribe-card__feature,
+.dark .subscribe-card__feature {
+  border-color: var(--border);
+  background: var(--card);
+  transition: border-color 150ms ease;
+}
+
+.subscribe-card__feature:hover {
+  transform: none;
+  border-color: color-mix(in oklab, var(--primary) 24%, var(--border));
+}
+
+.subscribe-card__button,
+.dark .subscribe-card__button {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: none;
+  color: var(--primary-foreground);
+}
+
+.subscribe-card__button:hover {
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+@media (max-width: 640px) {
+  [data-slot="card"] {
+    border-radius: var(--radius);
+  }
+}

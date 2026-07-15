@@ -35,14 +35,14 @@ export function UserNav() {
     return (
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <div className="flex cursor-pointer items-center gap-2 rounded-md border border-primary/18 bg-background/90 px-2 py-1.5 shadow-lg shadow-primary/10 transition-all duration-200 hover:border-primary/30 hover:bg-accent/65">
+          <div className="flex cursor-pointer items-center gap-2 rounded-md border bg-background px-2 py-1.5 transition-colors hover:border-primary/30 hover:bg-accent">
             <Avatar className="h-6 w-6">
               <AvatarImage
                 alt={user?.avatar ?? ""}
                 className="object-cover"
                 src={user?.avatar || undefined}
               />
-              <AvatarFallback className="bg-linear-to-br from-primary via-rose-500 to-pink-500 font-medium text-primary-foreground">
+              <AvatarFallback className="bg-primary font-medium text-primary-foreground">
                 {user?.auth_methods?.[0]?.auth_identifier
                   .toUpperCase()
                   .charAt(0)}
@@ -65,7 +65,7 @@ export function UserNav() {
                 className="object-cover"
                 src={user?.avatar || undefined}
               />
-              <AvatarFallback className="bg-linear-to-br from-primary via-rose-500 to-pink-500 text-primary-foreground">
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {user?.auth_methods?.[0]?.auth_identifier
                   .toUpperCase()
                   .charAt(0)}

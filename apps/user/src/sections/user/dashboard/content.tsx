@@ -192,9 +192,9 @@ export default function Content() {
     <>
       {userSubscribe.length ? (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-1.5 font-semibold">
-              <Icon className="size-5" icon="uil:servers" />
+          <div className="flex items-center justify-between border-b pb-4">
+            <h2 className="flex items-center gap-2 font-semibold text-lg">
+              <Icon className="size-5 text-primary" icon="uil:servers" />
               {t("mySubscriptions", "My Subscriptions")}
             </h2>
             <div className="flex gap-2">
@@ -216,11 +216,11 @@ export default function Content() {
             </div>
           </div>
           <div className="space-y-5">
-            <div className="rounded-xl border border-primary/20 bg-card/88 p-5 shadow-primary/10 shadow-sm">
+            <div className="rounded-lg border bg-muted/30 p-5">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-primary/20 shadow-sm">
+                    <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
                       <Icon className="size-5" icon="mdi:tune-variant" />
                     </div>
                     <div>
@@ -235,7 +235,7 @@ export default function Content() {
                       </p>
                     </div>
                   </div>
-                  <span className="inline-flex w-fit rounded-md border border-primary/15 bg-background/85 px-3 py-1 font-medium text-primary text-xs">
+                  <span className="inline-flex w-fit rounded-md border bg-card px-2.5 py-1 font-medium text-muted-foreground text-xs">
                     {t("protocolSelectorDefault", "Default: {{protocol}}", {
                       protocol: getSubscriptionProtocolLabel(
                         defaultProtocol,
@@ -255,10 +255,10 @@ export default function Content() {
                           aria-label={`${option.label}: ${getProtocolDescription(option)}`}
                           aria-pressed={isActive}
                           className={cn(
-                            "inline-flex h-10 min-w-32 items-center justify-center gap-2 rounded-md border px-4 font-semibold text-sm transition-all",
+                            "inline-flex h-10 min-w-32 items-center justify-center gap-2 rounded-md border px-4 font-medium text-sm transition-colors",
                             isActive
-                              ? "border-primary bg-primary text-primary-foreground shadow-primary/20 shadow-sm"
-                              : "border-border/70 bg-background/85 text-foreground hover:border-primary/35 hover:bg-background"
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "bg-card text-foreground hover:border-primary/35 hover:bg-accent"
                           )}
                           key={option.value}
                           onClick={() => selectProtocol(option.value)}
@@ -295,10 +295,10 @@ export default function Content() {
                         <button
                           aria-pressed={isActive}
                           className={cn(
-                            "rounded-md border px-4 py-3 text-left transition-all",
+                            "rounded-md border px-4 py-3 text-left transition-colors",
                             isActive
-                              ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                              : "border-border/70 bg-background/85 hover:border-primary/35 hover:bg-background"
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "bg-card hover:border-primary/35 hover:bg-accent"
                           )}
                           key={option.value}
                           onClick={() => selectProtocol(option.value)}
@@ -520,12 +520,12 @@ export default function Content() {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <ul className="grid grid-cols-2 gap-4 *:flex *:flex-col *:justify-between lg:grid-cols-4">
+                  <ul className="grid grid-cols-2 overflow-hidden rounded-lg border bg-muted/20 *:flex *:min-h-24 *:flex-col *:justify-between *:p-4 lg:grid-cols-4 lg:*:border-r lg:*:last:border-r-0">
                     <li>
                       <span className="text-muted-foreground">
                         {t("used", "Used")}
                       </span>
-                      <span className="font-bold text-2xl">
+                      <span className="font-semibold text-2xl tabular-nums">
                         <Display
                           type="traffic"
                           unlimited={!item.traffic}
@@ -537,7 +537,7 @@ export default function Content() {
                       <span className="text-muted-foreground">
                         {t("totalTraffic", "Total Traffic")}
                       </span>
-                      <span className="font-bold text-2xl">
+                      <span className="font-semibold text-2xl tabular-nums">
                         <Display
                           type="traffic"
                           unlimited={!item.traffic}
@@ -549,7 +549,7 @@ export default function Content() {
                       <span className="text-muted-foreground">
                         {t("nextResetDays", "Next Reset Days")}
                       </span>
-                      <span className="font-semibold text-2xl">
+                      <span className="font-semibold text-2xl tabular-nums">
                         {item.reset_time
                           ? differenceInDays(
                               new Date(item.reset_time),
@@ -562,7 +562,7 @@ export default function Content() {
                       <span className="text-muted-foreground">
                         {t("expirationDays", "Expiration Days")}
                       </span>
-                      <span className="font-semibold text-2xl">
+                      <span className="font-semibold text-2xl tabular-nums">
                         {}
                         {item.expire_time
                           ? differenceInDays(
@@ -778,8 +778,8 @@ export default function Content() {
         </>
       ) : (
         <>
-          <h2 className="flex items-center gap-1.5 font-semibold">
-            <Icon className="size-5" icon="uil:shop" />
+          <h2 className="flex items-center gap-2 border-b pb-4 font-semibold text-lg">
+            <Icon className="size-5 text-primary" icon="uil:shop" />
             {t("purchaseSubscription", "Purchase Subscription")}
           </h2>
           <Subscribe />

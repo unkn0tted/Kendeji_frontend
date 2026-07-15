@@ -144,12 +144,8 @@ export function SidebarLeft({
   };
 
   return (
-    <Sidebar
-      className="border-r-0 bg-transparent p-3 pr-0"
-      collapsible="icon"
-      {...props}
-    >
-      <SidebarHeader className="rose-shell mb-3 p-2">
+    <Sidebar className="border-r bg-sidebar" collapsible="icon" {...props}>
+      <SidebarHeader className="border-b p-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -158,7 +154,7 @@ export function SidebarLeft({
               size="sm"
             >
               <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-white/65 ring-1 ring-primary/16 dark:bg-white/5 dark:ring-white/10">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-md border bg-card">
                   <img
                     alt="logo"
                     className="size-6 rounded-md"
@@ -181,7 +177,7 @@ export function SidebarLeft({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="rose-shell p-2">
+      <SidebarContent className="p-2">
         <SidebarMenu>
           {!isMobile && state === "collapsed"
             ? navs.map((nav) => (

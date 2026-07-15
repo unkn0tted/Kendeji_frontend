@@ -119,7 +119,7 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
               return (
                 <article
                   className={cn(
-                    "rose-panel main-plan-card group hover:-translate-y-1 flex h-full flex-col p-6 transition-all duration-300",
+                    "rose-panel main-plan-card group flex h-full flex-col p-6 transition-colors",
                     isHighlighted &&
                       "main-plan-card--highlight border-primary/28 bg-primary/8 shadow-[0_18px_44px_-34px_oklch(0.64_0.16_11_/0.52)] dark:bg-primary/10"
                   )}
@@ -188,7 +188,7 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
                       title={t("product_showcase_detail_label", "Core Details")}
                     />
                   </div>
-                  <div className="mt-6 h-px bg-gradient-to-r from-primary/12 via-primary/34 to-transparent" />
+                  <div className="mt-6 h-px bg-border" />
                   <div className="mt-6 flex flex-col gap-5">
                     {(() => {
                       const hasDiscount =
@@ -237,10 +237,10 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
                       <Button
                         asChild={canPurchase}
                         className={cn(
-                          "w-full font-semibold shadow-sm sm:w-auto sm:min-w-36",
+                          "w-full font-semibold sm:w-auto sm:min-w-36",
                           isHighlighted
-                            ? "shadow-primary/15"
-                            : "border-primary/14 bg-white/68 text-foreground hover:bg-white/90 dark:bg-white/6 dark:hover:bg-white/10"
+                            ? ""
+                            : "border-border bg-card text-foreground hover:bg-accent"
                         )}
                         disabled={!canPurchase}
                         variant={isHighlighted ? "default" : "outline"}

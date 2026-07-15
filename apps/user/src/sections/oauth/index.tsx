@@ -24,7 +24,7 @@ export default function OAuthPage({
             <Spinner className="size-8" />
           </div>
           <div className="flex flex-col items-center gap-2">
-            <h1 className="bg-gradient-to-r from-pink-400 via-rose-400 to-red-400 bg-clip-text font-black text-transparent text-xl uppercase md:text-2xl dark:from-pink-300 dark:via-rose-300 dark:to-red-300">
+            <h1 className="font-semibold text-primary text-xl md:text-2xl">
               {platform}
             </h1>
             <p className="text-lg text-muted-foreground md:text-xl">

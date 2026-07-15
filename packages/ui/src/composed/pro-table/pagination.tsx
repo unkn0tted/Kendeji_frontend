@@ -23,7 +23,7 @@ export function Pagination<TData>({ table }: PaginationProps<TData>) {
   const { t } = useTranslation("components");
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
       <div className="flex-1 whitespace-nowrap text-center text-muted-foreground sm:text-left">
         {t("pagination.pageInfo", "Page {{page}} of {{total}}", {
           page: table.getState().pagination.pageIndex + 1,
@@ -32,7 +32,7 @@ export function Pagination<TData>({ table }: PaginationProps<TData>) {
       </div>
       <div className="flex flex-grow items-center justify-center gap-2 sm:justify-end">
         <div className="flex items-center space-x-2">
-          <p className="font-medium">
+          <p className="font-medium text-muted-foreground text-sm">
             {t("pagination.rowsPerPage", "Rows per page")}
           </p>
           <Select

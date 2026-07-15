@@ -24,18 +24,18 @@ export function Header() {
   const { site } = common;
   const items = useMemo(() => findNavByUrl(navs, pathname), [pathname]);
   return (
-    <header className="sticky top-0 z-50 shrink-0 bg-background/90 px-3 pt-3 pb-3 backdrop-blur-md sm:px-5">
-      <div className="rose-nav-shell px-3 py-2 sm:px-4">
+    <header className="sticky top-0 z-50 shrink-0 border-b bg-card/95 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px]">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <SidebarTrigger className="border border-primary/12 bg-white/60 shadow-none hover:border-primary/25 hover:bg-white/90 dark:border-white/8 dark:bg-white/5 dark:hover:bg-white/10" />
+            <SidebarTrigger className="border bg-background shadow-none hover:bg-accent" />
             <Link
               className="hidden min-w-0 items-center gap-2.5 font-semibold text-sm tracking-tight sm:flex"
               to="/dashboard"
             >
               <img
                 alt="logo"
-                className="size-8 rounded-md ring-1 ring-primary/18"
+                className="size-8 rounded-md border"
                 height={32}
                 src={site.site_logo || "/favicon.svg"}
                 width={32}
@@ -44,7 +44,7 @@ export function Header() {
                 {site.site_name}
               </span>
             </Link>
-            <div className="hidden h-8 w-px bg-primary/12 md:block dark:bg-white/10" />
+            <div className="hidden h-7 w-px bg-border md:block" />
             <Breadcrumb className="min-w-0">
               <BreadcrumbList className="flex-nowrap overflow-hidden">
                 {items.length ? (
@@ -81,7 +81,7 @@ export function Header() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="app-quick-actions flex shrink-0 items-center gap-1 rounded-md border border-primary/10 bg-white/55 p-1 dark:border-white/8 dark:bg-white/5">
+          <div className="app-quick-actions flex shrink-0 items-center gap-1 rounded-md border p-1">
             <LanguageSwitch />
             <TimezoneSwitch />
             <ThemeSwitch />

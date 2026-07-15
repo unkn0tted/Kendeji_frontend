@@ -14,6 +14,7 @@ import { routeTree } from "./routeTree.gen";
 // Styles
 import "@workspace/ui/globals.css";
 import "@workspace/ui/rose-theme.css";
+import "@workspace/ui/newui-theme.css";
 import { DirectionProvider } from "@workspace/ui/integrations/direction";
 import { LanguageProvider } from "@workspace/ui/integrations/language";
 import { ThemeProvider } from "@workspace/ui/integrations/theme";

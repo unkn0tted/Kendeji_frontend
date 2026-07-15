@@ -72,7 +72,7 @@ export default function Main() {
               <Link className="group inline-flex items-center gap-3" to="/">
                 <img
                   alt="logo"
-                  className="rounded-md ring-1 ring-primary/18 transition-all duration-200 group-hover:ring-primary/35"
+                  className="rounded-md border"
                   height={44}
                   src={site.site_logo}
                   width={44}
@@ -122,7 +122,7 @@ export default function Main() {
                 {site.site_logo && (
                   <img
                     alt="logo"
-                    className="rounded-md ring-1 ring-primary/18 transition-all duration-200 group-hover:ring-primary/35"
+                    className="rounded-md border"
                     height={40}
                     src={site.site_logo}
                     width={40}

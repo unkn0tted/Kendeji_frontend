@@ -97,6 +97,7 @@
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./rose-theme.css": "./src/styles/rose-theme.css",
+    "./newui-theme.css": "./src/styles/newui-theme.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
     "./utils/*": "./src/utils/*.ts",

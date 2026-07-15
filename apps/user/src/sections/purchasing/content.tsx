@@ -185,7 +185,7 @@ export default function Content({
           <div className="flex flex-wrap gap-2.5 lg:justify-end">
             {checkoutTags.map((item) => (
               <span
-                className="rounded-md border border-primary/12 bg-white/70 px-3.5 py-2 font-medium text-foreground/90 text-sm shadow-[0_14px_28px_-26px_oklch(0.64_0.16_11_/0.4)] dark:border-white/8 dark:bg-white/6"
+                className="rounded-md border bg-card px-3.5 py-2 font-medium text-foreground/90 text-sm"
                 key={item}
               >
                 {item}
@@ -417,7 +417,7 @@ export default function Content({
               )}
             </div>
           )}
-          <div className="mt-6 h-px bg-gradient-to-r from-primary/10 via-primary/35 to-transparent" />
+          <div className="mt-6 h-px bg-border" />
           <div className="mt-6">
             <SubscribeBilling
               order={{
@@ -431,7 +431,7 @@ export default function Content({
             />
           </div>
           <Button
-            className="mt-6 h-12 w-full font-semibold shadow-lg shadow-primary/20"
+            className="mt-6 h-12 w-full font-semibold"
             disabled={
               !(canPurchase && isEmailValid.valid) ||
               loading ||

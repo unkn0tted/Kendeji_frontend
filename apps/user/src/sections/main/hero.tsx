@@ -86,10 +86,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 18 }}
             transition={{ duration: 0.58, delay: 0.22, ease: "easeOut" }}
           >
-            <Button
-              asChild
-              className="h-12 px-6 font-semibold shadow-primary/15 shadow-sm"
-            >
+            <Button asChild className="h-12 px-6 font-semibold">
               <Link to={user ? "/dashboard" : "/auth"}>
                 {t("started", "Get Started")}
               </Link>
@@ -97,7 +94,7 @@ export function Hero() {
             {!user && (
               <Button
                 asChild
-                className="hidden h-12 border-primary/14 bg-white/70 px-6 font-semibold text-foreground hover:bg-white/95 sm:inline-flex dark:bg-white/6 dark:hover:bg-white/10"
+                className="hidden h-12 border-border bg-card px-6 font-semibold text-foreground hover:bg-accent sm:inline-flex"
                 variant="outline"
               >
                 <Link to="/purchasing">

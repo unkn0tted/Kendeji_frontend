@@ -287,7 +287,7 @@ export function ProTable<
         </Alert>
       )}
 
-      <div className="relative w-full min-w-0 overflow-x-auto rounded-md border">
+      <div className="relative w-full min-w-0 overflow-x-auto rounded-lg border bg-card">
         <ProTableWrapper data={data} onSort={onSort} setData={setData}>
           <Table className="w-full">
             <TableHeader>
@@ -417,20 +417,20 @@ function createSelectColumn<TData, TValue>(): ColumnDef<TData, TValue> {
 
 function getTableHeaderClass(columnId: string) {
   if (["sortable", "selected"].includes(columnId)) {
-    return "sticky left-0 z-10 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] [&:has([role=checkbox])]:pr-2";
+    return "sticky left-0 z-10 border-r bg-muted [&:has([role=checkbox])]:pr-2";
   }
   if (columnId === "actions") {
-    return "sticky right-0 z-10 text-right bg-background shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+    return "sticky right-0 z-10 border-l bg-muted text-right";
   }
   return "truncate";
 }
 
 function getTableCellClass(columnId: string) {
   if (["sortable", "selected"].includes(columnId)) {
-    return "sticky left-0 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+    return "sticky left-0 border-r bg-card";
   }
   if (columnId === "actions") {
-    return "sticky right-0 bg-background shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+    return "sticky right-0 border-l bg-card";
   }
   return "truncate";
 }

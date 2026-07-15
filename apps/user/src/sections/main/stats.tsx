@@ -54,7 +54,7 @@ export function Stats() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {list.map((item, index) => (
             <motion.article
-              className="rose-panel main-feature-card group hover:-translate-y-1 flex min-h-[176px] flex-col p-5 transition-all duration-300"
+              className="rose-panel main-feature-card group flex min-h-[176px] flex-col p-5 transition-colors"
               custom={index}
               key={item.name}
               variants={cardReveal}
@@ -71,7 +71,7 @@ export function Stats() {
                 {item.description}
               </p>
               <div className="mt-auto pt-8">
-                <div className="h-px bg-gradient-to-r from-primary/18 via-primary/28 to-transparent" />
+                <div className="h-px bg-border" />
               </div>
             </motion.article>
           ))}

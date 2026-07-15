@@ -17,43 +17,54 @@ export const Route = createRootRouteWithContext()({
     const { common, setCommon, getUserInfo, clearUserLoading } =
       useGlobalStore();
     useEffect(() => {
-      const initializeApp = async () => {
-        try {
-          const configResponse = await getGlobalConfig();
-          const globalConfig = configResponse.data.data;
-          if (globalConfig) {
-            setCommon(globalConfig);
-          }
-          try {
-            const protocolConfigResponse = await getProtocolConfig();
-            const protocolConfig = protocolConfigResponse.data.data;
-            if (protocolConfig) {
-              setCommon({
-                subscribe: {
-                  ...common.subscribe,
-                  ...globalConfig?.subscribe,
-                  ...protocolConfig,
-                },
-              });
+      const loadConfig = async () => {
+        const globalConfigPromise = getGlobalConfig()
+          .then((response) => {
+            const globalConfig = response.data.data;
+            if (globalConfig) {
+              setCommon(globalConfig);
             }
-          } catch {
-            /* empty */
-          }
-          try {
-            if (getCookie("Authorization")) {
-              await getUserInfo();
-            } else {
-              clearUserLoading();
-            }
-          } catch {
-            /* empty */
-          }
-        } catch (error) {
-          console.error("Failed to initialize app:", error);
+            return globalConfig;
+          })
+          .catch((error) => {
+            console.error("Failed to load global config:", error);
+          });
+        const protocolConfigPromise = getProtocolConfig()
+          .then((response) => response.data.data)
+          .catch(() => {
+            /* Protocol config is optional. */
+          });
+        const [globalConfig, protocolConfig] = await Promise.all([
+          globalConfigPromise,
+          protocolConfigPromise,
+        ]);
+
+        if (protocolConfig) {
+          setCommon({
+            subscribe: {
+              ...useGlobalStore.getState().common.subscribe,
+              ...globalConfig?.subscribe,
+              ...protocolConfig,
+            },
+          });
         }
       };
 
-      initializeApp();
+      const loadUser = async () => {
+        if (getCookie("Authorization")) {
+          await getUserInfo();
+        } else {
+          clearUserLoading();
+        }
+      };
+
+      loadConfig().catch((error) => {
+        console.error("Failed to initialize app config:", error);
+      });
+      loadUser().catch((error) => {
+        console.error("Failed to initialize user:", error);
+        clearUserLoading();
+      });
     }, []);
 
     const { site } = common;

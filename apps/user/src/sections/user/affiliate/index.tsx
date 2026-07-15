@@ -13,7 +13,6 @@ import { ProList } from "@workspace/ui/composed/pro-list/pro-list";
 import {
   queryUserAffiliate,
   queryUserAffiliateList,
-  queryUserCommissionLog,
 } from "@workspace/ui/services/user/user";
 import { formatDate } from "@workspace/ui/utils/formatting";
 import { Copy } from "lucide-react";
@@ -22,45 +21,6 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Display } from "@/components/display";
 import { useGlobalStore } from "@/stores/global";
-
-const COMMISSION_LOG_PAGE_SIZE = 100;
-const REFERRAL_COMMISSION_TYPES = new Set([331, 332]);
-
-async function queryCommissionSummary() {
-  const firstResponse = await queryUserCommissionLog({
-    page: 1,
-    size: COMMISSION_LOG_PAGE_SIZE,
-  });
-  const firstPage = firstResponse.data.data;
-  const totalPages = Math.ceil(
-    (firstPage?.total || 0) / COMMISSION_LOG_PAGE_SIZE
-  );
-  const remainingResponses = await Promise.all(
-    Array.from({ length: Math.max(totalPages - 1, 0) }, (_, index) =>
-      queryUserCommissionLog({
-        page: index + 2,
-        size: COMMISSION_LOG_PAGE_SIZE,
-      })
-    )
-  );
-  const logs = [
-    ...(firstPage?.list || []),
-    ...remainingResponses.flatMap((response) => response.data.data?.list || []),
-  ];
-
-  return logs.reduce(
-    (summary, item) => {
-      if (REFERRAL_COMMISSION_TYPES.has(item.type) && item.amount > 0) {
-        summary.referralIncome += item.amount;
-      }
-      if (item.amount < 0) {
-        summary.deductions += Math.abs(item.amount);
-      }
-      return summary;
-    },
-    { referralIncome: 0, deductions: 0 }
-  );
-}
 
 export default function Affiliate() {
   const { t } = useTranslation("affiliate");
@@ -72,14 +32,9 @@ export default function Affiliate() {
       return response.data.data;
     },
   });
-  const { data: commissionSummary } = useQuery({
-    queryKey: ["queryUserAffiliateCommissionSummary"],
-    queryFn: queryCommissionSummary,
-  });
   const displayedTotalCommission = Math.max(
-    commissionSummary?.referralIncome || 0,
-    (user?.commission || 0) + (commissionSummary?.deductions || 0),
     data?.total_commission || 0,
+    user?.commission || 0,
     0
   );
 

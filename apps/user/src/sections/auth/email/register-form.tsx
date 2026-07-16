@@ -17,10 +17,12 @@ import {
 } from "@workspace/ui/components/select";
 import { Icon } from "@workspace/ui/composed/icon";
 import { Markdown } from "@workspace/ui/composed/markdown";
+import { hasEmailSubaddress } from "@workspace/ui/utils/email";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { z } from "zod";
 import { useGlobalStore } from "@/stores/global";
 import {
@@ -80,6 +82,12 @@ export default function RegisterForm({
       email: z
         .string()
         .email(t("register.email", "Please enter a valid email address"))
+        .refine((email) => !hasEmailSubaddress(email), {
+          message: t(
+            "register.aliasEmail",
+            "Email aliases using + cannot be registered. Existing accounts can still log in."
+          ),
+        })
         .refine(handleCheckUser, {
           message: t(
             "register.whitelist",
@@ -88,7 +96,12 @@ export default function RegisterForm({
         }),
       password: z.string(),
       repeat_password: z.string(),
-      code: auth.email.enable_verify ? z.string() : z.string().nullish(),
+      code: auth.email.enable_verify
+        ? z
+            .string()
+            .trim()
+            .min(1, t("register.codeRequired", "Enter the verification code"))
+        : z.string().nullish(),
       invite: invite.forced_invite ? z.string().min(1) : z.string().nullish(),
       cf_token:
         verify.enable_register_verify && verify.turnstile_site_key
@@ -148,13 +161,25 @@ export default function RegisterForm({
   };
 
   const turnstile = useRef<TurnstileRef>(null);
-  const handleSubmit = form.handleSubmit((data) => {
-    try {
-      onSubmit(data);
-    } catch (_error) {
-      turnstile.current?.reset();
+  const handleSubmit = form.handleSubmit(
+    (data) => {
+      try {
+        onSubmit(data);
+      } catch (_error) {
+        turnstile.current?.reset();
+      }
+    },
+    () => {
+      if (hasEmailSubaddress(form.getValues("email") || "")) {
+        toast.error(
+          t(
+            "register.aliasEmail",
+            "Email aliases using + cannot be registered. Existing accounts can still log in."
+          )
+        );
+      }
     }
-  });
+  );
 
   return (
     <>
@@ -291,11 +316,12 @@ export default function RegisterForm({
                         />
                         <SendCode
                           disabled={
-                            enableDomainWhitelist &&
-                            !isEmailDomainAllowed(
-                              form.watch("email") || "",
-                              domainWhitelist
-                            )
+                            hasEmailSubaddress(form.watch("email") || "") ||
+                            (enableDomainWhitelist &&
+                              !isEmailDomainAllowed(
+                                form.watch("email") || "",
+                                domainWhitelist
+                              ))
                           }
                           params={{
                             email: form.watch("email"),

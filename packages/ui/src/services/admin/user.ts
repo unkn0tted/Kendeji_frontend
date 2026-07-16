@@ -337,6 +337,13 @@ export async function deleteUserSubscribe(
   body: API.DeleteUserSubscribeRequest,
   options?: { [key: string]: any }
 ) {
+  // The backend's DeleteUserSubscribeRequest uses Go's `json:",string"`
+  // encoding for this int64, even though the OpenAPI schema declares a number.
+  const data = {
+    ...body,
+    user_subscribe_id: String(body.user_subscribe_id),
+  };
+
   return request<API.Response & { data?: any }>(
     `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/user/subscribe`,
     {
@@ -344,7 +351,7 @@ export async function deleteUserSubscribe(
       headers: {
         "Content-Type": "application/json",
       },
-      data: body,
+      data,
       ...(options || {}),
     }
   );

@@ -70,8 +70,32 @@
 git clone https://github.com/perfect-panel/frontend.git
 cd frontend
 
-# 安装依赖
-bun install
+# 按 mise.toml 安装 Node.js LTS 和 Bun 1.3 工具链
+mise install
+
+# 严格按照 bun.lock 安装依赖
+mise run setup
+
+# 构建全部工作区
+mise run build
+```
+
+本仓库使用 [mise](https://mise.jdx.dev/) 管理 Node.js 和 Bun，避免污染系统环境。
+版本选择器会跟随仍在维护的 Node.js LTS 通道和 Bun 1.3 维护线。需要升级时执行：
+
+```bash
+mise upgrade
+mise run setup
+```
+
+工具链和项目依赖分开升级，便于控制变更范围：
+
+```bash
+mise self-update   # 升级 mise 自身
+mise upgrade       # 升级 Node.js LTS 和 Bun 1.3.x
+mise run outdated  # 只检查可升级的项目依赖
+mise run update    # 确认后更新依赖和 bun.lock
+mise run build     # 验证升级结果
 ```
 
 ## 协议配置小后端

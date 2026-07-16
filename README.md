@@ -70,8 +70,33 @@ or clone it for local development:
 git clone https://github.com/perfect-panel/frontend.git
 cd frontend
 
-# Install dependencies
-bun install
+# Install the Node.js LTS and Bun 1.3 toolchains declared in mise.toml
+mise install
+
+# Install the exact dependency graph from bun.lock
+mise run setup
+
+# Build every workspace package
+mise run build
+```
+
+This repository uses [mise](https://mise.jdx.dev/) to keep Node.js and Bun
+isolated from system packages. The version selectors follow the maintained
+Node.js LTS channel and Bun 1.3 release line. To refresh installed toolchains:
+
+```bash
+mise upgrade
+mise run setup
+```
+
+Toolchain and application dependency upgrades are intentionally separate:
+
+```bash
+mise self-update   # update mise itself
+mise upgrade       # update Node.js LTS and Bun 1.3.x
+mise run outdated  # inspect available package updates
+mise run update    # update packages and bun.lock when ready
+mise run build     # verify the result
 ```
 
 ## Protocol Config Sidecar

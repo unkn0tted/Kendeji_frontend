@@ -1,5 +1,19 @@
 {
   "cancel": "Cancel",
+  "bulkClose": {
+    "all": "Close all tickets",
+    "allConfirm": "Close all tickets?",
+    "allWarning": "This closes every open ticket, including tickets that have not been replied to. This action cannot be undone.",
+    "beforeThisMonth": "Close replied tickets before this month",
+    "beforeThisMonthConfirm": "Close replied tickets before this month?",
+    "beforeThisMonthWarning": "This closes replied tickets created before the current month. This action cannot be undone.",
+    "noTickets": "No matching tickets to close",
+    "partialFailure": "Closed {{closed}} tickets; {{failed}} failed",
+    "replied": "Close all replied tickets",
+    "repliedConfirm": "Close all replied tickets?",
+    "repliedWarning": "This closes every ticket currently waiting for the user to reply. This action cannot be undone.",
+    "success": "Closed {{count}} tickets"
+  },
   "check": "Check",
   "close": "Close",
   "closeSuccess": "Closed successfully",

@@ -1,5 +1,19 @@
 {
   "cancel": "取消",
+  "bulkClose": {
+    "all": "关闭所有工单",
+    "allConfirm": "确定关闭所有工单吗？",
+    "allWarning": "这会关闭全部未关闭工单，包括尚未回复的工单。该操作无法撤销。",
+    "beforeThisMonth": "关闭非本月已回复工单",
+    "beforeThisMonthConfirm": "确定关闭非本月已回复工单吗？",
+    "beforeThisMonthWarning": "这会关闭本月之前创建、当前正在等待用户回复的工单。该操作无法撤销。",
+    "noTickets": "没有符合条件的工单需要关闭",
+    "partialFailure": "已关闭 {{closed}} 个工单，{{failed}} 个关闭失败",
+    "replied": "关闭所有已回复工单",
+    "repliedConfirm": "确定关闭所有已回复工单吗？",
+    "repliedWarning": "这会关闭所有当前正在等待用户回复的工单。该操作无法撤销。",
+    "success": "已关闭 {{count}} 个工单"
+  },
   "check": "查看",
   "close": "关闭",
   "closeSuccess": "关闭成功",

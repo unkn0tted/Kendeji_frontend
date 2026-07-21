@@ -22,6 +22,7 @@ import {
   queryServerTotalData,
   queryTicketWaitReply,
 } from "@workspace/ui/services/admin/console";
+import { getLogSetting } from "@workspace/ui/services/admin/log";
 import { formatBytes } from "@workspace/ui/utils/formatting";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -54,7 +55,28 @@ export default function Statistics() {
       const { data } = await queryServerTotalData();
       return data.data;
     },
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: true,
   });
+
+  const today = new Date();
+  const todayDate = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+  const currentMonth = todayDate.slice(0, 7);
+  const { data: logSetting } = useQuery({
+    queryKey: ["getLogSetting"],
+    queryFn: async () => {
+      const { data } = await getLogSetting();
+      return data.data;
+    },
+    staleTime: 60_000,
+  });
+  const isMonthlyDataIncomplete = Boolean(
+    logSetting?.auto_clear && logSetting.clear_days < today.getDate()
+  );
 
   const [timeFrame, setTimeFrame] = useState<string | "today" | "yesterday">(
     "today"
@@ -215,17 +237,31 @@ export default function Statistics() {
             ),
             subtitle: `↑${formatBytes(ServerTotal?.today_upload || 0)} ↓${formatBytes(ServerTotal?.today_download || 0)}`,
             icon: "uil:exchange-alt",
+            href: "/dashboard/log/server-traffic",
+            search: { date: todayDate },
             color: "text-purple-600 dark:text-purple-400",
             iconBg: "bg-purple-100 dark:bg-purple-900/30",
           },
           {
-            title: t("monthTraffic", "Month Traffic"),
+            title: isMonthlyDataIncomplete
+              ? t("retainedTraffic", "Available Traffic")
+              : t("monthTraffic", "Month Traffic"),
             value: formatBytes(
               (ServerTotal?.monthly_upload || 0) +
                 (ServerTotal?.monthly_download || 0)
             ),
-            subtitle: `↑${formatBytes(ServerTotal?.monthly_upload || 0)} ↓${formatBytes(ServerTotal?.monthly_download || 0)}`,
+            subtitle: isMonthlyDataIncomplete
+              ? t(
+                  "retainedDays",
+                  "Only the latest {{days}} days are retained",
+                  {
+                    days: logSetting?.clear_days,
+                  }
+                )
+              : `↑${formatBytes(ServerTotal?.monthly_upload || 0)} ↓${formatBytes(ServerTotal?.monthly_download || 0)}`,
             icon: "uil:cloud-data-connection",
+            href: "/dashboard/log/server-traffic",
+            search: { month: currentMonth },
             color: "text-orange-600 dark:text-orange-400",
             iconBg: "bg-orange-100 dark:bg-orange-900/30",
           },
@@ -253,6 +289,7 @@ export default function Statistics() {
           <Link
             className={item.href ? "" : "pointer-events-none"}
             key={index}
+            search={item.search}
             to={item.href || "#"}
           >
             <Card className={`group ${item.href ? "cursor-pointer" : ""}`}>

@@ -37,6 +37,8 @@
     "Minute": "Minute",
     "Month": "Month",
     "monthlyReset": "Monthly Reset",
+    "minimumQuantity": "Minimum Purchase Quantity",
+    "minimumQuantityDescription": "Minimum duration equals quantity × unit time. For example, choose Day and enter 15 for half a month, or choose Month and enter 2 for two months. A full-price option is created automatically for the minimum quantity.",
     "name": "Name",
     "node": "Node",
     "nodeGroup": "Node Group",

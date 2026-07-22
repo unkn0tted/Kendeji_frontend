@@ -78,8 +78,31 @@ const defaultValues = {
   reset_cycle: 0,
   renewal_reset: false,
   show_original_price: false,
+  minimum_quantity: 1,
   deduction_mode: "auto",
 };
+
+function getMinimumQuantity(values?: Record<string, any>) {
+  if (values?.show_original_price !== false) return 1;
+
+  const quantities = (values?.discount || [])
+    .map((item: { quantity?: number }) => Number(item.quantity))
+    .filter((quantity: number) => Number.isInteger(quantity) && quantity > 0);
+
+  return quantities.length > 0 ? Math.min(...quantities) : 1;
+}
+
+function getFormValues(initialValues?: Record<string, any>) {
+  const values = assign(
+    defaultValues,
+    shake(initialValues, (value) => value === null) as Record<string, any>
+  );
+
+  return {
+    ...values,
+    minimum_quantity: getMinimumQuantity(values),
+  };
+}
 
 export default function SubscribeForm<T extends Record<string, any>>({
   onSubmit,
@@ -122,14 +145,12 @@ export default function SubscribeForm<T extends Record<string, any>>({
     reset_cycle: z.number().optional(),
     renewal_reset: z.boolean().optional(),
     show_original_price: z.boolean().optional(),
+    minimum_quantity: z.number().int().min(1),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: assign(
-      defaultValues,
-      shake(initialValues, (value) => value === null) as Record<string, any>
-    ),
+    defaultValues: getFormValues(initialValues),
   });
 
   const debouncedCalculateDiscount = useCallback(
@@ -234,12 +255,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
   );
 
   useEffect(() => {
-    form?.reset(
-      assign(
-        defaultValues,
-        shake(initialValues, (value) => value === null) as Record<string, any>
-      )
-    );
+    form?.reset(getFormValues(initialValues));
     const discount = form.getValues("discount") || [];
     if (discount.length > 0) {
       debouncedCalculateDiscount(discount, "discount");
@@ -256,7 +272,30 @@ export default function SubscribeForm<T extends Record<string, any>>({
   );
 
   async function handleSubmit(data: { [x: string]: any }) {
-    const bool = await onSubmit(data as T);
+    const { minimum_quantity: rawMinimumQuantity, ...payload } = data;
+    const minimumQuantity = Math.max(1, Math.floor(rawMinimumQuantity || 1));
+
+    if (minimumQuantity > 1) {
+      const discounts = (payload.discount || []).filter(
+        (item: API.SubscribeDiscount) => item.quantity >= minimumQuantity
+      );
+      if (
+        !discounts.some(
+          (item: API.SubscribeDiscount) => item.quantity === minimumQuantity
+        )
+      ) {
+        discounts.push({ quantity: minimumQuantity, discount: 100 });
+      }
+      payload.discount = discounts.sort(
+        (a: API.SubscribeDiscount, b: API.SubscribeDiscount) =>
+          a.quantity - b.quantity
+      );
+      payload.show_original_price = false;
+    } else {
+      payload.show_original_price = true;
+    }
+
+    const bool = await onSubmit(payload as T);
     if (bool) setOpen(false);
   }
 
@@ -265,6 +304,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
   const tagGroups = getAllAvailableTags();
 
   const unit_time = form.watch("unit_time");
+  const minimum_quantity = form.watch("minimum_quantity");
 
   return (
     <Sheet onOpenChange={setOpen} open={open}>
@@ -683,6 +723,34 @@ export default function SubscribeForm<T extends Record<string, any>>({
                     </div>
                     <FormField
                       control={form.control}
+                      name="minimum_quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("form.minimumQuantity")}</FormLabel>
+                          <FormControl>
+                            <EnhancedInput
+                              {...field}
+                              min={1}
+                              onValueChange={(value) => {
+                                form.setValue(field.name, value, {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                });
+                              }}
+                              step={1}
+                              suffix={unit_time && t(`form.${unit_time}`)}
+                              type="number"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t("form.minimumQuantityDescription")}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
                       name="discount"
                       render={({ field }) => (
                         <FormItem>
@@ -696,7 +764,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
                                   name: "quantity",
                                   type: "number",
                                   step: 1,
-                                  min: 1,
+                                  min: Math.max(1, minimum_quantity || 1),
                                   suffix: unit_time && t(`form.${unit_time}`),
                                 },
                                 {
@@ -831,40 +899,6 @@ export default function SubscribeForm<T extends Record<string, any>>({
                               <Switch
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="show_original_price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <FormLabel>
-                                {t(
-                                  "form.showOriginalPrice",
-                                  "Show Original Price"
-                                )}
-                              </FormLabel>
-                              <FormDescription>
-                                {t(
-                                  "form.showOriginalPriceDescription",
-                                  "Display original price in the storefront"
-                                )}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={!!field.value}
-                                onCheckedChange={(value) =>
-                                  form.setValue(field.name, value)
-                                }
                               />
                             </FormControl>
                           </div>

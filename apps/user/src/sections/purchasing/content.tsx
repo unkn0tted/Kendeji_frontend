@@ -28,6 +28,7 @@ import {
   getEmailDomainWhitelist,
   isEmailDomainAllowed,
 } from "@/utils/email-domain";
+import { getMinimumPurchaseQuantity } from "@/utils/purchase-duration";
 import { isSubscribePurchasable } from "@/utils/subscribe";
 
 export default function Content({
@@ -108,7 +109,7 @@ export default function Content({
     if (subscription) {
       setParams((prev) => ({
         ...prev,
-        quantity: 1,
+        quantity: getMinimumPurchaseQuantity(subscription),
         subscribe_id: subscription?.id,
       }));
     }
@@ -393,8 +394,10 @@ export default function Content({
             <div className="mt-6 grid gap-6">
               <DurationSelector
                 discounts={subscription?.discount}
+                minimumQuantity={getMinimumPurchaseQuantity(subscription)}
                 onChange={(value: number) => handleChange("quantity", value)}
                 quantity={params.quantity!}
+                showOriginalPrice={subscription?.show_original_price}
                 unitTime={
                   unitTimeMap[subscription.unit_time!] || subscription.unit_time
                 }

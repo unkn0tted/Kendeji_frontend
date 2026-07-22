@@ -16,6 +16,7 @@ interface DurationSelectorProps {
   discounts?: Array<{ quantity: number; discount: number }>;
   onChange: (value: number) => void;
   showOriginalPrice?: boolean;
+  minimumQuantity?: number;
 }
 
 const DurationSelector: React.FC<DurationSelectorProps> = ({
@@ -24,6 +25,7 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
   discounts = [],
   onChange,
   showOriginalPrice = true,
+  minimumQuantity = 1,
 }) => {
   const { t } = useTranslation("subscribe");
   const handleChange = useCallback(
@@ -53,7 +55,10 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
   )?.discount;
   const discountPercentage = currentDiscount ? 100 - currentDiscount : 0;
 
-  const hasQuantityOne = discounts?.some((item) => item.quantity === 1);
+  const availableDiscounts = discounts.filter(
+    (item) => item.quantity >= minimumQuantity
+  );
+  const hasQuantityOne = availableDiscounts.some((item) => item.quantity === 1);
 
   return (
     <>
@@ -65,10 +70,13 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
         onValueChange={handleChange}
         value={String(quantity)}
       >
-        {showOriginalPrice && unitTime !== "Minute" && !hasQuantityOne && (
-          <DurationOption label={`1 / ${t(unitTime)}`} value="1" />
-        )}
-        {discounts?.map((item) => (
+        {minimumQuantity === 1 &&
+          showOriginalPrice &&
+          unitTime !== "Minute" &&
+          !hasQuantityOne && (
+            <DurationOption label={`1 / ${t(unitTime)}`} value="1" />
+          )}
+        {availableDiscounts.map((item) => (
           <DurationOption
             key={item.quantity}
             label={`${item.quantity} / ${t(unitTime)}`}

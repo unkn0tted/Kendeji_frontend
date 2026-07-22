@@ -37,6 +37,8 @@
     "Minute": "分钟",
     "Month": "月",
     "monthlyReset": "每月重置",
+    "minimumQuantity": "最低购买数量",
+    "minimumQuantityDescription": "最低购买时长 = 数量 × 时间单位。例如时间单位选择“天”并填写 15，即最低购买半个月；选择“月”并填写 2，即最低购买两个月。系统会自动创建一个无折扣的最低数量档位。",
     "name": "名称",
     "node": "节点",
     "nodeGroup": "节点组",

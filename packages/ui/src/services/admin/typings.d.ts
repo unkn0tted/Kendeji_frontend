@@ -2114,6 +2114,8 @@ declare namespace API {
     single_model: boolean;
     subscribe_path: string;
     subscribe_domain: string;
+    public_subscribe_url?: string;
+    public_subscribe_urls?: string[];
     pan_domain: boolean;
     user_agent_limit: boolean;
     user_agent_list: string;

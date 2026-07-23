@@ -7,6 +7,7 @@ import { TanStackQueryDevtools } from "@workspace/ui/integrations/tanstack-query
 import { getCookie } from "@workspace/ui/lib/cookies";
 import { getGlobalConfig } from "@workspace/ui/services/common/common";
 import { getProtocolConfig } from "@workspace/ui/services/protocol-config";
+import { getSubscriptionRewriterPublicConfig } from "@workspace/ui/services/subscription-rewriter";
 import { isBrowser } from "@workspace/ui/utils/index";
 import { useEffect } from "react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
@@ -34,17 +35,34 @@ export const Route = createRootRouteWithContext()({
           .catch(() => {
             /* Protocol config is optional. */
           });
-        const [globalConfig, protocolConfig] = await Promise.all([
-          globalConfigPromise,
-          protocolConfigPromise,
-        ]);
+        const rewriterConfigPromise = getSubscriptionRewriterPublicConfig()
+          .then((response) => response.data.data)
+          .catch(() => {
+            /* Subscription rewriter is optional. */
+          });
+        const [globalConfig, protocolConfig, rewriterConfig] =
+          await Promise.all([
+            globalConfigPromise,
+            protocolConfigPromise,
+            rewriterConfigPromise,
+          ]);
 
-        if (protocolConfig) {
+        if (
+          protocolConfig ||
+          rewriterConfig?.public_base_url ||
+          rewriterConfig?.public_base_urls?.length
+        ) {
           setCommon({
             subscribe: {
               ...useGlobalStore.getState().common.subscribe,
               ...globalConfig?.subscribe,
               ...protocolConfig,
+              public_subscribe_url: rewriterConfig?.public_base_url || "",
+              public_subscribe_urls:
+                rewriterConfig?.public_base_urls ||
+                (rewriterConfig?.public_base_url
+                  ? [rewriterConfig.public_base_url]
+                  : []),
             },
           });
         }

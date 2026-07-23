@@ -46,19 +46,56 @@ function createSubscribeUrl({
   protocolOptions?: API.SubscribeConfig["protocol_options"];
   panDomain?: boolean;
   subscribePath?: string;
-}): string {
-  const hostname = panDomain ? `${short}.${domain}` : domain;
-  const url = new URL(
-    `https://${hostname}${normalizeSubscribePath(subscribePath)}`
-  );
+}): string | null {
+  try {
+    const hostname = panDomain ? `${short}.${domain}` : domain;
+    const url = new URL(
+      `https://${hostname}${normalizeSubscribePath(subscribePath)}`
+    );
 
-  url.searchParams.set("token", token);
-  url.searchParams.set(
-    "protocol",
-    normalizeSubscriptionProtocol(protocol || defaultProtocol, protocolOptions)
-  );
+    url.searchParams.set("token", token);
+    url.searchParams.set(
+      "protocol",
+      normalizeSubscriptionProtocol(
+        protocol || defaultProtocol,
+        protocolOptions
+      )
+    );
 
-  return url.toString();
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function createPublicSubscribeUrl(
+  baseUrl: string,
+  token: string,
+  protocol: string
+): string | null {
+  try {
+    const normalized = /^https?:\/\//i.test(baseUrl)
+      ? baseUrl
+      : `https://${baseUrl}`;
+    const url = new URL(normalized);
+    url.searchParams.set("token", token);
+    url.searchParams.set("protocol", protocol);
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function selectPublicSubscribeUrls(
+  defaultUrl: string | undefined,
+  configuredUrls: API.SubscribeConfig["public_subscribe_urls"]
+) {
+  const urls = configuredUrls?.length
+    ? configuredUrls
+    : defaultUrl?.trim()
+      ? [defaultUrl.trim()]
+      : [];
+  return [...new Set(urls.map((url) => url.trim()).filter(Boolean))];
 }
 
 function replaceQueryPlaceholder(
@@ -155,6 +192,8 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       single_model: false,
       subscribe_path: "",
       subscribe_domain: "",
+      public_subscribe_url: "",
+      public_subscribe_urls: [],
       pan_domain: false,
       user_agent_limit: false,
       user_agent_list: "",
@@ -199,9 +238,33 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
     set({ isLoadingUser: false });
   },
   getUserSubscribe: (short: string, token: string, protocol?: string) => {
-    const { default_protocol, pan_domain, subscribe_domain, subscribe_path } =
-      get().common.subscribe || {};
+    const {
+      default_protocol,
+      pan_domain,
+      public_subscribe_url,
+      public_subscribe_urls,
+      subscribe_domain,
+      subscribe_path,
+    } = get().common.subscribe || {};
     const protocolOptions = get().common.subscribe?.protocol_options;
+    const normalizedProtocol = normalizeSubscriptionProtocol(
+      protocol || default_protocol,
+      protocolOptions
+    );
+    const publicUrls = selectPublicSubscribeUrls(
+      public_subscribe_url,
+      public_subscribe_urls
+    );
+    if (publicUrls.length > 0) {
+      const result = publicUrls
+        .map((baseUrl) =>
+          createPublicSubscribeUrl(baseUrl, token, normalizedProtocol)
+        )
+        .filter((url): url is string => Boolean(url));
+      if (result.length > 0) {
+        return result;
+      }
+    }
     const fallbackDomain = extractDomain(window.location.origin, pan_domain);
     const domains = subscribe_domain
       ? subscribe_domain
@@ -212,21 +275,20 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
         ? [fallbackDomain]
         : [];
 
-    return domains.map((domain) =>
-      createSubscribeUrl({
-        domain,
-        short,
-        token,
-        protocol,
-        defaultProtocol: normalizeSubscriptionProtocol(
-          default_protocol,
-          protocolOptions
-        ),
-        protocolOptions,
-        panDomain: pan_domain,
-        subscribePath: subscribe_path,
-      })
-    );
+    return domains
+      .map((domain) =>
+        createSubscribeUrl({
+          domain,
+          short,
+          token,
+          protocol,
+          defaultProtocol: normalizedProtocol,
+          protocolOptions,
+          panDomain: pan_domain,
+          subscribePath: subscribe_path,
+        })
+      )
+      .filter((url): url is string => Boolean(url));
   },
   getAppSubLink: (url: string, schema?: string) => {
     const name = get().common?.site?.site_name || "";

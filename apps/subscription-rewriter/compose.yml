@@ -1,0 +1,47 @@
+name: ppanel-subscription-rewriter
+
+services:
+  subscription-rewriter:
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.2.0}
+    container_name: ppanel-subscription-rewriter
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:${REWRITER_PORT:-3003}:3003
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3003
+      CONFIG_FILE: /data/subscription-rewriter.json
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set in .env}
+      SUBSCRIPTION_TABLE: ${SUBSCRIPTION_TABLE:-user_subscribe}
+      SUBSCRIPTION_ID_COLUMN: ${SUBSCRIPTION_ID_COLUMN:-id}
+      SUBSCRIPTION_TOKEN_COLUMN: ${SUBSCRIPTION_TOKEN_COLUMN:-token}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-5}
+      DATABASE_IDLE_TIMEOUT: ${DATABASE_IDLE_TIMEOUT:-30}
+      PPANEL_API_BASE: ${PPANEL_API_BASE:?PPANEL_API_BASE must be set in .env}
+      PPANEL_ADMIN_CURRENT_PATH: ${PPANEL_ADMIN_CURRENT_PATH:-/v1/admin/user/current}
+      UPSTREAM_TIMEOUT_MS: ${UPSTREAM_TIMEOUT_MS:-15000}
+      MAX_RESPONSE_BYTES: ${MAX_RESPONSE_BYTES:-8388608}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - onepanel
+    volumes:
+      - subscription-rewriter-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 15s
+
+networks:
+  onepanel:
+    name: ${DATABASE_DOCKER_NETWORK:-1panel-network}
+    external: true
+
+volumes:
+  subscription-rewriter-data:
+    name: ppanel-subscription-rewriter-data

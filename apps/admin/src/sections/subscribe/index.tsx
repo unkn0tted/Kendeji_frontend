@@ -4,6 +4,7 @@ import { Card, CardContent } from "@workspace/ui/components/card";
 import { useTranslation } from "react-i18next";
 import ConfigForm from "./config-form";
 import { ProtocolForm } from "./protocol-form";
+import { RewriterPanel } from "./rewriter-panel";
 
 export default function Subscribe() {
   const { t } = useTranslation("subscribe");
@@ -20,6 +21,7 @@ export default function Subscribe() {
       </Card>
 
       <ProtocolForm />
+      <RewriterPanel />
     </div>
   );
 }

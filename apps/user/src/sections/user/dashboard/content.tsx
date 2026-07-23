@@ -107,6 +107,7 @@ export default function Content() {
     data: userSubscribe = [],
     refetch,
     isLoading,
+    isError,
   } = useQuery({
     queryKey: ["queryUserSubscribe"],
     queryFn: async () => {
@@ -188,6 +189,40 @@ export default function Content() {
       ? t("protocolSelectorRecommendedDescription", "Recommended protocol")
       : "");
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-48 items-center justify-center text-muted-foreground">
+        <Icon className="mr-2 size-5 animate-spin" icon="mdi:loading" />
+        {t("loadingSubscriptions", "Loading subscriptions…")}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
+          <Icon className="size-8 text-destructive" icon="mdi:alert-circle" />
+          <div>
+            <p className="font-medium">
+              {t("subscriptionLoadFailed", "Could not load subscriptions")}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {t(
+                "subscriptionLoadFailedDescription",
+                "This is a subscription data request error, not an empty account."
+              )}
+            </p>
+          </div>
+          <Button onClick={() => refetch()} size="sm" variant="outline">
+            <Icon icon="uil:sync" />
+            {t("retry", "Retry")}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <>
       {userSubscribe.length ? (
@@ -252,7 +287,9 @@ export default function Content() {
 
                       return (
                         <button
-                          aria-label={`${option.label}: ${getProtocolDescription(option)}`}
+                          aria-label={`${
+                            option.label
+                          }: ${getProtocolDescription(option)}`}
                           aria-pressed={isActive}
                           className={cn(
                             "inline-flex h-10 min-w-32 items-center justify-center gap-2 rounded-md border px-4 font-semibold text-sm transition-all",

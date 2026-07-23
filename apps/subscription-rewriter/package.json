@@ -1,0 +1,21 @@
+{
+  "name": "ppanel-subscription-rewriter-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "check": "biome check src",
+    "test": "bun test",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build:binary": "bun build src/index.ts --compile --outfile dist/ppanel-subscription-rewriter"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.3",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

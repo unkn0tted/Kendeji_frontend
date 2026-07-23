@@ -1,0 +1,8 @@
+# Production deployments should use compose.yml and .env. This file only
+# demonstrates rebuilding the image from a local source checkout.
+services:
+  subscription-rewriter-build:
+    build:
+      context: ../..
+      dockerfile: apps/subscription-rewriter/Dockerfile
+    image: ppanel-subscription-rewriter:local

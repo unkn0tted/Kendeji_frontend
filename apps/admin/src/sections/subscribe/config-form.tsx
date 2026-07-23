@@ -41,6 +41,10 @@ import {
   updateProtocolConfig,
 } from "@workspace/ui/services/protocol-config";
 import {
+  getSubscriptionRewriterConfig,
+  updateSubscriptionRewriterConfig,
+} from "@workspace/ui/services/subscription-rewriter";
+import {
   DEFAULT_SUBSCRIPTION_PROTOCOL_OPTIONS,
   getEnabledSubscriptionProtocolOptions,
   normalizeProtocolSelectorStyle,
@@ -60,6 +64,20 @@ const subscribeConfigSchema = z.object({
   pan_domain: z.boolean().optional(),
   subscribe_path: z.string().optional(),
   subscribe_domain: z.string().optional(),
+  public_subscribe_url: z
+    .string()
+    .trim()
+    .refine(
+      (value) =>
+        !value ||
+        value
+          .split("\n")
+          .map((url) => url.trim())
+          .filter(Boolean)
+          .every((url) => /^https?:\/\/[^/\s]+/i.test(url)),
+      "Enter complete HTTP or HTTPS URLs, one per line"
+    )
+    .optional(),
   default_protocol: z.string().optional(),
   recommended_protocol: z.string().optional(),
   selector_style: z.enum(PROTOCOL_SELECTOR_STYLES).optional(),
@@ -92,6 +110,29 @@ function createProtocolOption(index: number): SubscriptionProtocolOption {
   };
 }
 
+function createOriginBaseUrl(domainList?: string, path?: string) {
+  const domain = String(domainList || "")
+    .split("\n")
+    .map((value) => value.trim())
+    .find(Boolean);
+  if (!domain) {
+    return "";
+  }
+
+  const url = new URL(
+    /^https?:\/\//i.test(domain) ? domain : `https://${domain}`
+  );
+  const normalizedPath = String(path || "").trim();
+  if (normalizedPath) {
+    url.pathname = normalizedPath.startsWith("/")
+      ? normalizedPath
+      : `/${normalizedPath}`;
+  }
+  url.search = "";
+  url.hash = "";
+  return url.toString().replace(/\/+$/, "");
+}
+
 export default function ConfigForm() {
   const { t } = useTranslation("subscribe");
   const [open, setOpen] = useState(false);
@@ -104,11 +145,19 @@ export default function ConfigForm() {
       const subscribeConfig = data.data;
 
       try {
-        const protocolConfigResponse = await getProtocolConfig();
+        const [protocolConfigResponse, rewriterConfigResponse] =
+          await Promise.all([
+            getProtocolConfig(),
+            getSubscriptionRewriterConfig().catch(() => null),
+          ]);
 
         return {
           ...subscribeConfig,
           ...protocolConfigResponse.data.data,
+          public_subscribe_url:
+            rewriterConfigResponse?.data.data?.public_base_urls?.join("\n") ||
+            rewriterConfigResponse?.data.data?.public_base_url ||
+            "",
         };
       } catch {
         return subscribeConfig;
@@ -124,6 +173,7 @@ export default function ConfigForm() {
       pan_domain: false,
       subscribe_path: "",
       subscribe_domain: "",
+      public_subscribe_url: "",
       default_protocol: "tuic",
       recommended_protocol: "tuic",
       selector_style: "cards",
@@ -172,10 +222,19 @@ export default function ConfigForm() {
         recommended_protocol,
         selector_style,
         protocol_options,
+        public_subscribe_url,
         ...subscribeConfig
       } = values;
       const normalizedProtocolOptions =
         normalizeSubscriptionProtocolOptions(protocol_options);
+      const publicBaseUrls = [
+        ...new Set(
+          String(public_subscribe_url || "")
+            .split("\n")
+            .map((url) => url.trim())
+            .filter(Boolean)
+        ),
+      ];
 
       await updateSubscribeConfig(subscribeConfig as API.SubscribeConfig);
       await updateProtocolConfig({
@@ -190,6 +249,22 @@ export default function ConfigForm() {
         selector_style,
         protocol_options: normalizedProtocolOptions,
       });
+      try {
+        await updateSubscriptionRewriterConfig({
+          public_base_url: publicBaseUrls[0] || "",
+          public_base_urls: publicBaseUrls,
+          origin_base_url: createOriginBaseUrl(
+            subscribeConfig.subscribe_domain,
+            subscribeConfig.subscribe_path
+          ),
+        });
+      } catch (error) {
+        if (publicBaseUrls.length > 0) {
+          throw error;
+        }
+        // Keep existing subscription settings usable before the optional
+        // rewriter service is deployed.
+      }
       toast.success(t("config.updateSuccess", "Settings updated successfully"));
       refetch();
       setOpen(false);
@@ -651,7 +726,10 @@ export default function ConfigForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {t("config.subscriptionDomain", "Subscription Domain")}
+                      {t(
+                        "config.subscriptionDomain",
+                        "Direct Subscription Domain"
+                      )}
                     </FormLabel>
                     <FormControl>
                       <Textarea
@@ -666,7 +744,38 @@ export default function ConfigForm() {
                     <FormDescription>
                       {t(
                         "config.subscriptionDomainDescription",
-                        "Custom domain for subscription links"
+                        "Original domain that continues to connect directly to the existing backend"
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="public_subscribe_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t(
+                        "config.publicSubscriptionUrl",
+                        "User-facing Subscription URL"
+                      )}
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="h-28 font-mono text-sm"
+                        placeholder={
+                          "https://train.suuwu.de/api/linkon\nhttps://backup.example.com/api/linkon"
+                        }
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        "config.publicSubscriptionUrlDescription",
+                        "Complete subscription URLs shown to every user, one per line. Leave empty to use the original direct URL."
                       )}
                     </FormDescription>
                     <FormMessage />

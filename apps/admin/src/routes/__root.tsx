@@ -7,6 +7,7 @@ import { TanStackQueryDevtools } from "@workspace/ui/integrations/tanstack-query
 import { getCookie } from "@workspace/ui/lib/cookies";
 import { getGlobalConfig } from "@workspace/ui/services/common/common";
 import { getProtocolConfig } from "@workspace/ui/services/protocol-config";
+import { getSubscriptionRewriterPublicConfig } from "@workspace/ui/services/subscription-rewriter";
 import { isBrowser } from "@workspace/ui/utils/index";
 import { useEffect } from "react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
@@ -24,14 +25,28 @@ export const Route = createRootRouteWithContext()({
             setCommon(globalConfig);
           }
           try {
-            const protocolConfigResponse = await getProtocolConfig();
+            const [protocolConfigResponse, rewriterConfigResponse] =
+              await Promise.all([
+                getProtocolConfig(),
+                getSubscriptionRewriterPublicConfig().catch(() => null),
+              ]);
             const protocolConfig = protocolConfigResponse.data.data;
-            if (protocolConfig) {
+            const publicSubscribeUrl =
+              rewriterConfigResponse?.data.data?.public_base_url;
+            const publicSubscribeUrls =
+              rewriterConfigResponse?.data.data?.public_base_urls;
+            if (
+              protocolConfig ||
+              publicSubscribeUrl ||
+              publicSubscribeUrls?.length
+            ) {
               setCommon({
                 subscribe: {
                   ...common.subscribe,
                   ...globalConfig?.subscribe,
                   ...protocolConfig,
+                  public_subscribe_url: publicSubscribeUrl || "",
+                  public_subscribe_urls: publicSubscribeUrls || [],
                 },
               });
             }

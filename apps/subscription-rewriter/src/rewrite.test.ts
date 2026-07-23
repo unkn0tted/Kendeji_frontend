@@ -24,6 +24,14 @@ describe("rewriteSubscription", () => {
     );
     expect(result.replacements).toBe(1);
     expect(result.format).toBe("uri-list");
+    expect(result.host_mappings).toEqual([
+      {
+        source_host: "old.example.com",
+        result_host: "new.example.com",
+        count: 1,
+        rewritten: true,
+      },
+    ]);
   });
 
   test("keeps subscriptions outside the configured ID range unchanged", () => {
@@ -124,5 +132,30 @@ describe("rewriteSubscription", () => {
     expect(result.body).toBe(body);
     expect(result.format).toBe("unknown");
     expect(result.changed).toBe(false);
+  });
+
+  test("reports aligned rewritten and unchanged host mappings", () => {
+    const body = [
+      "anytls://password@old.example.com:443#one",
+      "anytls://password@old.example.com:443#two",
+      "anytls://password@unchanged.example.com:443#three",
+    ].join("\n");
+
+    const result = rewriteSubscription(body, [rule], 97);
+
+    expect(result.host_mappings).toEqual([
+      {
+        source_host: "old.example.com",
+        result_host: "new.example.com",
+        count: 2,
+        rewritten: true,
+      },
+      {
+        source_host: "unchanged.example.com",
+        result_host: "unchanged.example.com",
+        count: 1,
+        rewritten: false,
+      },
+    ]);
   });
 });

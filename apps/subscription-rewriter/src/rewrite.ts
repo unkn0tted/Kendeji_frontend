@@ -1,10 +1,24 @@
 import { parseDocument } from "yaml";
-import type { HostCount, RewriteResult, RewriteRule } from "./types";
+import type {
+  HostCount,
+  HostMapping,
+  RewriteResult,
+  RewriteRule,
+} from "./types";
 
 type RewriteContext = {
   subscriberId: number;
   rules: RewriteRule[];
   hosts: Map<string, number>;
+  hostMappings: Map<
+    string,
+    {
+      sourceHost: string;
+      resultHost: string;
+      count: number;
+      rewritten: boolean;
+    }
+  >;
   replacements: number;
 };
 
@@ -32,6 +46,24 @@ function addHost(context: RewriteContext, host: string) {
   context.hosts.set(normalized, (context.hosts.get(normalized) || 0) + 1);
 }
 
+function addHostMapping(
+  context: RewriteContext,
+  sourceHost: string,
+  resultHost: string,
+  rewritten: boolean
+) {
+  const normalizedSource = normalizeHost(sourceHost);
+  const normalizedResult = normalizeHost(resultHost);
+  const key = `${normalizedSource}\u0000${normalizedResult}`;
+  const current = context.hostMappings.get(key);
+  context.hostMappings.set(key, {
+    sourceHost: normalizedSource,
+    resultHost: normalizedResult,
+    count: (current?.count || 0) + 1,
+    rewritten,
+  });
+}
+
 function getReplacement(context: RewriteContext, host: string): string | null {
   const normalized = normalizeHost(host);
   const matchingRules = context.rules
@@ -56,9 +88,11 @@ function rewriteHost(context: RewriteContext, host: string): string {
   addHost(context, host);
   const replacement = getReplacement(context, host);
   if (!replacement || normalizeHost(replacement) === normalizeHost(host)) {
+    addHostMapping(context, host, host, false);
     return host;
   }
 
+  addHostMapping(context, host, replacement, true);
   context.replacements += 1;
   return replacement.includes(":") ? `[${replacement}]` : replacement;
 }
@@ -71,6 +105,7 @@ function createContext(
     subscriberId,
     rules,
     hosts: new Map(),
+    hostMappings: new Map(),
     replacements: 0,
   };
 }
@@ -225,7 +260,9 @@ function rewriteJson(
       recognized: true,
       body:
         context.replacements > 0
-          ? `${JSON.stringify(value, null, 2)}${body.endsWith("\n") ? "\n" : ""}`
+          ? `${JSON.stringify(value, null, 2)}${
+              body.endsWith("\n") ? "\n" : ""
+            }`
           : body,
       changed: context.replacements > 0,
       format: "json",
@@ -313,8 +350,10 @@ function rewriteConf(
     );
     if (section.includes("proxy") && proxyLine) {
       recognizedLines += 1;
-      parts[index] =
-        `${proxyLine[1]}${rewriteHost(context, proxyLine[2] || "")}${proxyLine[3]}`;
+      parts[index] = `${proxyLine[1]}${rewriteHost(
+        context,
+        proxyLine[2] || ""
+      )}${proxyLine[3]}`;
       continue;
     }
 
@@ -323,8 +362,10 @@ function rewriteConf(
     );
     if (protocolLine) {
       recognizedLines += 1;
-      parts[index] =
-        `${protocolLine[1]}${rewriteHost(context, protocolLine[2] || "")}${protocolLine[3]}${protocolLine[4]}`;
+      parts[index] = `${protocolLine[1]}${rewriteHost(
+        context,
+        protocolLine[2] || ""
+      )}${protocolLine[3]}${protocolLine[4]}`;
       continue;
     }
 
@@ -333,8 +374,10 @@ function rewriteConf(
     );
     if (serverLine && /(proxy|outbound|node|server)/.test(section)) {
       recognizedLines += 1;
-      parts[index] =
-        `${serverLine[1]}${rewriteHost(context, serverLine[2] || "")}${serverLine[3] || ""}${serverLine[4] || ""}`;
+      parts[index] = `${serverLine[1]}${rewriteHost(
+        context,
+        serverLine[2] || ""
+      )}${serverLine[3] || ""}${serverLine[4] || ""}`;
     }
   }
 
@@ -407,6 +450,22 @@ function toHostCounts(hosts: Map<string, number>): HostCount[] {
     );
 }
 
+function toHostMappings(context: RewriteContext): HostMapping[] {
+  return [...context.hostMappings.values()]
+    .map(({ sourceHost, resultHost, count, rewritten }) => ({
+      source_host: sourceHost,
+      result_host: resultHost,
+      count,
+      rewritten,
+    }))
+    .sort(
+      (left, right) =>
+        right.count - left.count ||
+        left.source_host.localeCompare(right.source_host) ||
+        left.result_host.localeCompare(right.result_host)
+    );
+}
+
 export function rewriteSubscription(
   body: string,
   rules: RewriteRule[],
@@ -421,6 +480,7 @@ export function rewriteSubscription(
       changed: direct.changed,
       replacements: direct.context.replacements,
       hosts: toHostCounts(direct.context.hosts),
+      host_mappings: toHostMappings(direct.context),
     };
   }
 
@@ -437,6 +497,7 @@ export function rewriteSubscription(
         changed: inner.changed,
         replacements: inner.context.replacements,
         hosts: toHostCounts(inner.context.hosts),
+        host_mappings: toHostMappings(inner.context),
       };
     }
   }
@@ -448,5 +509,6 @@ export function rewriteSubscription(
     changed: false,
     replacements: 0,
     hosts: [],
+    host_mappings: [],
   };
 }

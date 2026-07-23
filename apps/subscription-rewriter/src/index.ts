@@ -340,6 +340,7 @@ async function inspectSubscription(
     replacements: result.replacements,
     source_hosts: source.hosts,
     result_hosts: resultInspection.hosts,
+    host_mappings: result.host_mappings,
   };
 }
 

@@ -21,6 +21,13 @@ export type HostCount = {
   count: number;
 };
 
+export type HostMapping = {
+  source_host: string;
+  result_host: string;
+  count: number;
+  rewritten: boolean;
+};
+
 export type RewriteResult = {
   body: string;
   format: string;
@@ -28,6 +35,7 @@ export type RewriteResult = {
   changed: boolean;
   replacements: number;
   hosts: HostCount[];
+  host_mappings: HostMapping[];
 };
 
 export type InspectionResult = {
@@ -37,4 +45,5 @@ export type InspectionResult = {
   replacements: number;
   source_hosts: HostCount[];
   result_hosts: HostCount[];
+  host_mappings: HostMapping[];
 };

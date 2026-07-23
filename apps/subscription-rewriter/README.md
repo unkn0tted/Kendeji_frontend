@@ -7,7 +7,7 @@
 生产镜像：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.2.0
+unkn0tted/ppanel-subscription-rewriter:1.2.1
 ```
 
 本文以以下实际部署关系为例：
@@ -235,7 +235,7 @@ name: ppanel-subscription-rewriter
 
 services:
   subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.2.0}
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.2.1}
     container_name: ppanel-subscription-rewriter
     restart: unless-stopped
 
@@ -292,7 +292,7 @@ volumes:
 `.env` 示例：
 
 ```dotenv
-REWRITER_IMAGE_TAG=1.2.0
+REWRITER_IMAGE_TAG=1.2.1
 REWRITER_PORT=3003
 
 DATABASE_DOCKER_NETWORK=1panel-network
@@ -812,7 +812,7 @@ docker inspect ppanel-subscription-rewriter \
 应为：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.2.0
+unkn0tted/ppanel-subscription-rewriter:1.2.1
 ```
 
 ## 十五、升级、回滚和数据

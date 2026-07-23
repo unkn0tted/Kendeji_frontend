@@ -24,6 +24,13 @@ export type SubscriptionHostCount = {
   count: number;
 };
 
+export type SubscriptionHostMapping = {
+  source_host: string;
+  result_host: string;
+  count: number;
+  rewritten: boolean;
+};
+
 export type SubscriptionInspection = {
   subscriber_id: number;
   format: string;
@@ -31,6 +38,7 @@ export type SubscriptionInspection = {
   replacements: number;
   source_hosts: SubscriptionHostCount[];
   result_hosts: SubscriptionHostCount[];
+  host_mappings?: SubscriptionHostMapping[];
 };
 
 type RequestOptions = AxiosRequestConfig & {

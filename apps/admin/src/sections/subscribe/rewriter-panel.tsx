@@ -395,6 +395,17 @@ function InspectionSummary({
           {inspection.replacements}
         </Badge>
       </div>
+      <HostMappings inspection={inspection} />
+    </div>
+  );
+}
+
+function HostMappings({ inspection }: { inspection: SubscriptionInspection }) {
+  const { t } = useTranslation("subscribe");
+  const mappings = inspection.host_mappings || [];
+
+  if (mappings.length === 0) {
+    return (
       <div className="grid gap-4 md:grid-cols-2">
         <HostList
           hosts={inspection.source_hosts}
@@ -405,6 +416,57 @@ function InspectionSummary({
           title={t("rewriter.resultHosts", "Result entry hostnames")}
         />
       </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              {t("rewriter.originalHosts", "Original entry hostname")}
+            </TableHead>
+            <TableHead className="w-8 text-center">→</TableHead>
+            <TableHead>
+              {t("rewriter.resultHosts", "Result entry hostname")}
+            </TableHead>
+            <TableHead className="w-20 text-right">
+              {t("rewriter.occurrences", "Count")}
+            </TableHead>
+            <TableHead className="w-24 text-right">
+              {t("rewriter.mappingStatus", "Status")}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {mappings.map((mapping) => (
+            <TableRow
+              key={`${mapping.source_host}\u0000${mapping.result_host}`}
+            >
+              <TableCell className="whitespace-normal break-all font-mono text-xs">
+                {mapping.source_host}
+              </TableCell>
+              <TableCell className="text-center text-muted-foreground">
+                →
+              </TableCell>
+              <TableCell className="whitespace-normal break-all font-mono text-xs">
+                {mapping.result_host}
+              </TableCell>
+              <TableCell className="text-right font-mono text-xs">
+                {mapping.count}
+              </TableCell>
+              <TableCell className="text-right">
+                <Badge variant={mapping.rewritten ? "default" : "secondary"}>
+                  {mapping.rewritten
+                    ? t("rewriter.rewritten", "Rewritten")
+                    : t("rewriter.unchanged", "Unchanged")}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

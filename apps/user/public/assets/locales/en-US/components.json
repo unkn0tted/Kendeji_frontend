@@ -50,6 +50,8 @@
     "80001": "Task was not successfully queued, please try again later.",
     "90001": "Please disable DEBUG mode and try again.",
     "90015": "This account has reached the limit of sending times today, please try again tomorrow.",
+    "network": "The network connection is unstable. Please check it and try again.",
+    "timeout": "The request timed out. Please try again later.",
     "unknown": "An error occurred in the system, please try again later."
   },
   "footer": {

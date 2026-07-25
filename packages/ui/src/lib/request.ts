@@ -1,19 +1,26 @@
 /// <reference path="../typings.d.ts" />
 import { getCookie } from "@workspace/ui/lib/cookies";
 import { isBrowser } from "@workspace/ui/utils/index";
-import axios, { type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { toast } from "sonner";
 
-function handleError(response: {
+type ErrorResponse = {
   data?: { code?: number; message?: string };
-  config?: { skipErrorHandler?: boolean };
-  message?: string;
-}) {
+  config?: AxiosRequestConfig & { skipErrorHandler?: boolean };
+  errorCode?: string;
+  status?: number;
+};
+
+function handleError(response: ErrorResponse) {
+  if (!isBrowser()) return;
+
   const code = response.data?.code;
   if (code && [40_002, 40_003, 40_004, 40_005].includes(code))
     return window.logout();
-  if (response?.config?.skipErrorHandler) return;
-  if (!isBrowser()) return;
+  if (response.config?.skipErrorHandler) return;
 
   const t = window.i18n.t;
 
@@ -161,15 +168,30 @@ function handleError(response: {
     ),
   };
 
-  const message =
-    response.data?.message ||
-    (code ? ERROR_MESSAGES[code] : undefined) ||
-    t(
-      "components:error.unknown",
-      "An error occurred in the system, please try again later."
-    );
+  const isTimeout =
+    response.errorCode === "ECONNABORTED" || response.errorCode === "ETIMEDOUT";
+  const isNetworkError = response.errorCode === "ERR_NETWORK";
+  const message = isTimeout
+    ? t(
+        "components:error.timeout",
+        "The request timed out. Please try again later."
+      )
+    : isNetworkError
+      ? t(
+          "components:error.network",
+          "The network connection is unstable. Please check it and try again."
+        )
+      : response.data?.message ||
+        (code ? ERROR_MESSAGES[code] : undefined) ||
+        t(
+          "components:error.unknown",
+          "An error occurred in the system, please try again later."
+        );
+  const toastId = code
+    ? `api-error:${code}`
+    : `api-error:${response.status || response.errorCode || "unknown"}`;
 
-  toast.error(message);
+  toast.error(message, { id: toastId });
 }
 
 const request = axios.create({
@@ -196,28 +218,30 @@ request.interceptors.response.use(
     if (code !== 200 && code !== 0) {
       handleError({
         data: response.data,
-        config: {
-          skipErrorHandler: (response.config as { skipErrorHandler?: boolean })
-            .skipErrorHandler,
+        config: response.config as AxiosRequestConfig & {
+          skipErrorHandler?: boolean;
         },
-        message: response.statusText,
+        status: response.status,
       });
       throw response;
     }
     return response;
   },
   (error: {
-    response?: { data?: unknown; config?: unknown; statusText?: string };
-    message?: string;
+    code?: string;
+    config?: unknown;
+    response?: { data?: unknown; config?: unknown; status?: number };
   }) => {
+    if (error.code === "ERR_CANCELED") return Promise.reject(error);
+
+    const config = (error.config || error.response?.config) as
+      | (AxiosRequestConfig & { skipErrorHandler?: boolean })
+      | undefined;
     handleError({
       data: error.response?.data as { code?: number },
-      config: {
-        skipErrorHandler: (
-          error.response?.config as { skipErrorHandler?: boolean }
-        )?.skipErrorHandler,
-      },
-      message: error.message,
+      config,
+      errorCode: error.code,
+      status: error.response?.status,
     });
     return Promise.reject(error);
   }

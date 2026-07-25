@@ -30,12 +30,14 @@ export const Route = createRootRouteWithContext()({
           .catch((error) => {
             console.error("Failed to load global config:", error);
           });
-        const protocolConfigPromise = getProtocolConfig()
+        const protocolConfigPromise = getProtocolConfig({ timeout: 5000 })
           .then((response) => response.data.data)
           .catch(() => {
             /* Protocol config is optional. */
           });
-        const rewriterConfigPromise = getSubscriptionRewriterPublicConfig()
+        const rewriterConfigPromise = getSubscriptionRewriterPublicConfig({
+          timeout: 5000,
+        })
           .then((response) => response.data.data)
           .catch(() => {
             /* Subscription rewriter is optional. */
@@ -105,7 +107,7 @@ export const Route = createRootRouteWithContext()({
         </Helmet>
         <NavigationProgress />
         <Outlet />
-        <Toaster closeButton richColors />
+        <Toaster closeButton richColors visibleToasts={3} />
         <div
           dangerouslySetInnerHTML={{ __html: common?.site.custom_html || "" }}
           id="custom_html"

@@ -18,7 +18,9 @@ import { DirectionProvider } from "@workspace/ui/integrations/direction";
 import { LanguageProvider } from "@workspace/ui/integrations/language";
 import { ThemeProvider } from "@workspace/ui/integrations/theme";
 import { initializeI18n } from "@workspace/ui/lib/i18n";
+import request from "@workspace/ui/lib/request";
 import { fallbackLng, supportedLngs } from "./config/index.ts";
+import { userQueryClientConfig } from "./config/query-client.ts";
 // Report web vitals
 import reportWebVitals from "./reportWebVitals.ts";
 // Common utilities
@@ -44,9 +46,12 @@ initializeI18n({
 });
 
 window.logout = Logout;
+request.defaults.timeout = 15_000;
 
 // Create a new router instance
-const TanStackQueryProviderContext = TanStackQueryContext();
+const TanStackQueryProviderContext = TanStackQueryContext(
+  userQueryClientConfig
+);
 const hashHistory = createHashHistory();
 const router = createRouter({
   routeTree,

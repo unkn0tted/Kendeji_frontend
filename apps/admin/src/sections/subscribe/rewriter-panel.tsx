@@ -20,6 +20,10 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@workspace/ui/components/radio-group";
 import { Switch } from "@workspace/ui/components/switch";
 import {
   Table,
@@ -29,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
+import { Textarea } from "@workspace/ui/components/textarea";
 import { ConfirmButton } from "@workspace/ui/composed/confirm-button";
 import { Icon } from "@workspace/ui/composed/icon";
 import {
@@ -44,18 +49,24 @@ import {
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { parseSubscriberIds } from "./subscriber-ids";
 
 type RuleInput = Omit<SubscriptionRewriteRule, "id">;
 
 const emptyRule: RuleInput = {
   name: "",
+  match_mode: "range",
   start_id: 0,
   end_id: 1000,
+  subscriber_ids: [],
   source_host: "",
   target_host: "",
   enabled: true,
   priority: 100,
 };
+
+const explicitIdsUnsupportedMessage =
+  "The subscription rewriter backend does not support explicit IDs";
 
 export function RewriterPanel() {
   const { t } = useTranslation("subscribe");
@@ -128,10 +139,14 @@ export function RewriterPanel() {
 
   async function saveRule(values: RuleInput) {
     try {
-      if (editingRule) {
-        await updateSubscriptionRewriteRule(editingRule.id, values);
-      } else {
-        await createSubscriptionRewriteRule(values);
+      const response = editingRule
+        ? await updateSubscriptionRewriteRule(editingRule.id, values)
+        : await createSubscriptionRewriteRule(values);
+      if (
+        values.match_mode === "ids" &&
+        response.data.data?.match_mode !== "ids"
+      ) {
+        throw new Error(explicitIdsUnsupportedMessage);
       }
       toast.success(t("rewriter.ruleSaved", "Rewrite rule saved"));
       setRuleDialogOpen(false);
@@ -139,8 +154,16 @@ export function RewriterPanel() {
       if (inspection) {
         await inspect();
       }
-    } catch {
-      toast.error(t("rewriter.ruleSaveFailed", "Failed to save rewrite rule"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error &&
+          error.message === explicitIdsUnsupportedMessage
+          ? t(
+              "rewriter.backendUpgradeRequired",
+              "Update the subscription rewriter backend before saving explicit IDs."
+            )
+          : t("rewriter.ruleSaveFailed", "Failed to save rewrite rule")
+      );
     }
   }
 
@@ -167,7 +190,7 @@ export function RewriterPanel() {
             <CardDescription>
               {t(
                 "rewriter.description",
-                "Rewrite selected node entry hostnames by user subscription ID range. Direct subscription links remain unchanged."
+                "Rewrite selected node entry hostnames by subscription ID range or explicit IDs. Direct subscription links remain unchanged."
               )}
             </CardDescription>
           </div>
@@ -254,7 +277,9 @@ export function RewriterPanel() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("rewriter.ruleName", "Name")}</TableHead>
-                  <TableHead>{t("rewriter.idRange", "ID range")}</TableHead>
+                  <TableHead>
+                    {t("rewriter.matchSubscribers", "Matching subscribers")}
+                  </TableHead>
                   <TableHead>
                     {t("rewriter.sourceHost", "Source hostname")}
                   </TableHead>
@@ -273,7 +298,7 @@ export function RewriterPanel() {
                   <TableRow key={rule.id}>
                     <TableCell>{rule.name || "—"}</TableCell>
                     <TableCell>
-                      {rule.start_id}–{rule.end_id}
+                      <RuleMatchValue rule={rule} />
                     </TableCell>
                     <TableCell className="max-w-56 truncate font-mono text-xs">
                       {rule.source_host}
@@ -346,6 +371,40 @@ export function RewriterPanel() {
         sourceHosts={sourceHosts}
       />
     </>
+  );
+}
+
+function RuleMatchValue({ rule }: { rule: SubscriptionRewriteRule }) {
+  const { t } = useTranslation("subscribe");
+  if (rule.match_mode !== "ids") {
+    return (
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <Badge variant="outline">{t("rewriter.rangeMode", "Range")}</Badge>
+        <span className="font-mono text-xs">
+          {rule.start_id}–{rule.end_id}
+        </span>
+      </div>
+    );
+  }
+
+  const subscriberIds = rule.subscriber_ids || [];
+  const visibleIds = subscriberIds.slice(0, 8);
+  const hiddenCount = subscriberIds.length - visibleIds.length;
+  const fullValue = subscriberIds.join(", ");
+
+  return (
+    <div
+      className="flex max-w-80 items-center gap-2"
+      title={fullValue || undefined}
+    >
+      <Badge className="shrink-0" variant="outline">
+        {t("rewriter.idsMode", "Explicit IDs")}
+      </Badge>
+      <span className="truncate font-mono text-xs">
+        {visibleIds.join(", ")}
+        {hiddenCount > 0 ? ` … (+${hiddenCount})` : ""}
+      </span>
+    </div>
   );
 }
 
@@ -514,24 +573,56 @@ function RuleDialog({
 }) {
   const { t } = useTranslation("subscribe");
   const [values, setValues] = useState<RuleInput>(emptyRule);
+  const [subscriberIdsText, setSubscriberIdsText] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setValues(initialRule ? { ...initialRule } : emptyRule);
+      const matchMode = initialRule?.match_mode === "ids" ? "ids" : "range";
+      const subscriberIds = initialRule?.subscriber_ids || [];
+      setValues(
+        initialRule
+          ? {
+              ...emptyRule,
+              ...initialRule,
+              match_mode: matchMode,
+              subscriber_ids: subscriberIds,
+            }
+          : { ...emptyRule, subscriber_ids: [] }
+      );
+      setSubscriberIdsText(subscriberIds.join(", "));
     }
   }, [initialRule, open]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!(values.source_host.trim() && values.target_host.trim())) {
+      toast.error(
+        t("rewriter.invalidRule", "Enter valid source and target hostnames.")
+      );
+      return;
+    }
+
+    if (values.match_mode === "range" && values.end_id < values.start_id) {
+      toast.error(
+        t(
+          "rewriter.invalidRange",
+          "The ending ID must not be smaller than the starting ID."
+        )
+      );
+      return;
+    }
+
+    const subscriberIds =
+      values.match_mode === "ids" ? parseSubscriberIds(subscriberIdsText) : [];
     if (
-      !(values.source_host.trim() && values.target_host.trim()) ||
-      values.end_id < values.start_id
+      values.match_mode === "ids" &&
+      (!subscriberIds || subscriberIds.length === 0)
     ) {
       toast.error(
         t(
-          "rewriter.invalidRule",
-          "Enter valid hostnames and an ending ID not smaller than the starting ID."
+          "rewriter.invalidSubscriberIds",
+          "Enter at least one valid non-negative integer subscription ID."
         )
       );
       return;
@@ -542,6 +633,9 @@ function RuleDialog({
       await onSubmit({
         ...values,
         name: values.name.trim(),
+        start_id: values.match_mode === "range" ? values.start_id : 0,
+        end_id: values.match_mode === "range" ? values.end_id : 0,
+        subscriber_ids: subscriberIds || [],
         source_host: values.source_host.trim(),
         target_host: values.target_host.trim(),
       });
@@ -552,7 +646,7 @@ function RuleDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <form className="space-y-4" onSubmit={submit}>
           <DialogHeader>
             <DialogTitle>
@@ -563,7 +657,7 @@ function RuleDialog({
             <DialogDescription>
               {t(
                 "rewriter.ruleDialogDescription",
-                "The range includes both the starting and ending subscription IDs."
+                "Match a continuous ID range or enter individual subscription IDs."
               )}
             </DialogDescription>
           </DialogHeader>
@@ -584,42 +678,115 @@ function RuleDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="rewrite-start-id">
-                {t("rewriter.startId", "Starting ID")}
+          <div className="space-y-2">
+            <Label>{t("rewriter.matchMode", "Matching method")}</Label>
+            <RadioGroup
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+              onValueChange={(matchMode) =>
+                setValues((current) => ({
+                  ...current,
+                  match_mode: matchMode as RuleInput["match_mode"],
+                }))
+              }
+              value={values.match_mode}
+            >
+              <Label
+                className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+                htmlFor="rewrite-match-range"
+              >
+                <RadioGroupItem id="rewrite-match-range" value="range" />
+                <span>
+                  <span className="block font-medium">
+                    {t("rewriter.rangeMode", "Continuous range")}
+                  </span>
+                  <span className="block text-muted-foreground text-xs">
+                    {t(
+                      "rewriter.rangeModeDescription",
+                      "Match every subscription ID between two boundaries."
+                    )}
+                  </span>
+                </span>
               </Label>
-              <Input
-                id="rewrite-start-id"
-                min={0}
-                onChange={(event) =>
-                  setValues((current) => ({
-                    ...current,
-                    start_id: Number(event.target.value),
-                  }))
-                }
-                type="number"
-                value={values.start_id}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rewrite-end-id">
-                {t("rewriter.endId", "Ending ID")}
+              <Label
+                className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+                htmlFor="rewrite-match-ids"
+              >
+                <RadioGroupItem id="rewrite-match-ids" value="ids" />
+                <span>
+                  <span className="block font-medium">
+                    {t("rewriter.idsMode", "Explicit IDs")}
+                  </span>
+                  <span className="block text-muted-foreground text-xs">
+                    {t(
+                      "rewriter.idsModeDescription",
+                      "Match only the individual subscription IDs you enter."
+                    )}
+                  </span>
+                </span>
               </Label>
-              <Input
-                id="rewrite-end-id"
-                min={0}
-                onChange={(event) =>
-                  setValues((current) => ({
-                    ...current,
-                    end_id: Number(event.target.value),
-                  }))
-                }
-                type="number"
-                value={values.end_id}
-              />
-            </div>
+            </RadioGroup>
           </div>
+
+          {values.match_mode === "range" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="rewrite-start-id">
+                  {t("rewriter.startId", "Starting ID")}
+                </Label>
+                <Input
+                  id="rewrite-start-id"
+                  min={0}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      start_id: Number(event.target.value),
+                    }))
+                  }
+                  type="number"
+                  value={values.start_id}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rewrite-end-id">
+                  {t("rewriter.endId", "Ending ID")}
+                </Label>
+                <Input
+                  id="rewrite-end-id"
+                  min={0}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      end_id: Number(event.target.value),
+                    }))
+                  }
+                  type="number"
+                  value={values.end_id}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="rewrite-subscriber-ids">
+                {t("rewriter.subscriberIds", "Subscription IDs")}
+              </Label>
+              <Textarea
+                className="min-h-24 font-mono"
+                id="rewrite-subscriber-ids"
+                onChange={(event) => setSubscriberIdsText(event.target.value)}
+                placeholder={t(
+                  "rewriter.subscriberIdsPlaceholder",
+                  "1, 2, 37, 89"
+                )}
+                value={subscriberIdsText}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t(
+                  "rewriter.subscriberIdsDescription",
+                  "Separate IDs with commas, spaces, or new lines. Duplicates are removed automatically."
+                )}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="rewrite-source-host">

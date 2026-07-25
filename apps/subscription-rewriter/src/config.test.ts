@@ -65,4 +65,104 @@ describe("subscription rewriter config", () => {
     expect(config.public_base_urls).toEqual([]);
     expect(config.public_base_url).toBe("");
   });
+
+  test("keeps existing rules in range mode when match_mode is absent", () => {
+    const config = normalizeConfig({
+      rules: [
+        {
+          id: "legacy-range",
+          name: "legacy",
+          start_id: 1,
+          end_id: 1000,
+          source_host: "old.example.com",
+          target_host: "new.example.com",
+          enabled: true,
+          priority: 100,
+        },
+      ],
+    });
+
+    expect(config.rules[0]).toMatchObject({
+      id: "legacy-range",
+      match_mode: "range",
+      start_id: 1,
+      end_id: 1000,
+      subscriber_ids: [],
+    });
+  });
+
+  test("normalizes, sorts, and deduplicates explicit subscription IDs", () => {
+    const config = normalizeConfig({
+      rules: [
+        {
+          id: "explicit-ids",
+          name: "selected users",
+          match_mode: "ids",
+          start_id: 10,
+          end_id: 20,
+          subscriber_ids: [89, "2", 37, 1, 2, 89],
+          source_host: "old.example.com",
+          target_host: "new.example.com",
+          enabled: true,
+          priority: 100,
+        },
+      ],
+    });
+
+    expect(config.rules[0]).toMatchObject({
+      match_mode: "ids",
+      start_id: 0,
+      end_id: 0,
+      subscriber_ids: [1, 2, 37, 89],
+    });
+  });
+
+  test("rejects an empty explicit subscription ID list", () => {
+    expect(() =>
+      normalizeConfig({
+        rules: [
+          {
+            id: "empty-explicit-ids",
+            match_mode: "ids",
+            subscriber_ids: [],
+            source_host: "old.example.com",
+            target_host: "new.example.com",
+          },
+        ],
+      })
+    ).toThrow("At least one subscription ID");
+  });
+
+  test("rejects invalid explicit subscription IDs", () => {
+    expect(() =>
+      normalizeConfig({
+        rules: [
+          {
+            id: "invalid-explicit-ids",
+            match_mode: "ids",
+            subscriber_ids: [1, -2, 3.5],
+            source_host: "old.example.com",
+            target_host: "new.example.com",
+          },
+        ],
+      })
+    ).toThrow("Invalid subscription ID");
+  });
+
+  test("rejects unknown match modes instead of widening the rule", () => {
+    expect(() =>
+      normalizeConfig({
+        rules: [
+          {
+            id: "unknown-match-mode",
+            match_mode: "everything",
+            start_id: 1,
+            end_id: 1000,
+            source_host: "old.example.com",
+            target_host: "new.example.com",
+          },
+        ],
+      })
+    ).toThrow("match mode");
+  });
 });

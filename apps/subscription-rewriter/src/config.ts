@@ -1,6 +1,10 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { RewriteRule, RewriterConfig } from "./types";
+import type {
+  RewriteRule,
+  RewriteRuleMatchMode,
+  RewriterConfig,
+} from "./types";
 
 const defaultConfig: RewriterConfig = {
   public_base_url: "",
@@ -14,7 +18,16 @@ type LegacyPublicLink = {
   enabled?: unknown;
 };
 
-type ConfigInput = Partial<RewriterConfig> & {
+type RewriteRuleInput = Omit<
+  Partial<RewriteRule>,
+  "match_mode" | "subscriber_ids"
+> & {
+  match_mode?: unknown;
+  subscriber_ids?: unknown[];
+};
+
+type ConfigInput = Omit<Partial<RewriterConfig>, "rules"> & {
+  rules?: RewriteRuleInput[];
   public_links?: LegacyPublicLink[];
 };
 
@@ -54,23 +67,66 @@ function normalizeInteger(value: unknown, fallback = 0): number {
   return number;
 }
 
+const maxSubscriberIdsPerRule = 10_000;
+
+function normalizeMatchMode(value: unknown): RewriteRuleMatchMode {
+  if (value === undefined || value === null || value === "") {
+    return "range";
+  }
+  if (value === "range" || value === "ids") {
+    return value;
+  }
+  throw new Error("The rule match mode must be either range or ids");
+}
+
+function normalizeSubscriberIds(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const subscriberIds = new Set<number>();
+  for (const item of value) {
+    const subscriberId = Number(item);
+    if (!(Number.isSafeInteger(subscriberId) && subscriberId >= 0)) {
+      throw new Error(`Invalid subscription ID: ${String(item)}`);
+    }
+    subscriberIds.add(subscriberId);
+    if (subscriberIds.size > maxSubscriberIdsPerRule) {
+      throw new Error(
+        `A rule may contain at most ${maxSubscriberIdsPerRule} subscription IDs`
+      );
+    }
+  }
+
+  return [...subscriberIds].sort((left, right) => left - right);
+}
+
 export function normalizeRule(
-  value: Partial<RewriteRule>,
+  value: RewriteRuleInput,
   existingId?: string
 ): RewriteRule {
-  const startId = normalizeInteger(value.start_id);
-  const endId = normalizeInteger(value.end_id);
-  if (endId < startId) {
+  const matchMode = normalizeMatchMode(value.match_mode);
+  const subscriberIds = normalizeSubscriberIds(value.subscriber_ids);
+  const startId = matchMode === "range" ? normalizeInteger(value.start_id) : 0;
+  const endId = matchMode === "range" ? normalizeInteger(value.end_id) : 0;
+  if (matchMode === "range" && endId < startId) {
     throw new Error(
       "The ending subscription ID must not be smaller than the starting ID"
+    );
+  }
+  if (matchMode === "ids" && subscriberIds.length === 0) {
+    throw new Error(
+      "At least one subscription ID is required for an explicit-ID rule"
     );
   }
 
   return {
     id: existingId || value.id || crypto.randomUUID(),
     name: String(value.name || "").trim(),
+    match_mode: matchMode,
     start_id: startId,
     end_id: endId,
+    subscriber_ids: matchMode === "ids" ? subscriberIds : [],
     source_host: normalizeHost(value.source_host),
     target_host: normalizeHost(value.target_host),
     enabled: value.enabled !== false,

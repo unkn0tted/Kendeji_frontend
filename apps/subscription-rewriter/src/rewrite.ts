@@ -1,4 +1,5 @@
 import { parseDocument } from "yaml";
+import { compareMatchingRules, ruleMatchesSubscriber } from "./rules";
 import type {
   HostCount,
   HostMapping,
@@ -69,17 +70,10 @@ function getReplacement(context: RewriteContext, host: string): string | null {
   const matchingRules = context.rules
     .filter(
       (rule) =>
-        rule.enabled &&
-        context.subscriberId >= rule.start_id &&
-        context.subscriberId <= rule.end_id &&
+        ruleMatchesSubscriber(rule, context.subscriberId) &&
         normalizeHost(rule.source_host) === normalized
     )
-    .sort(
-      (left, right) =>
-        right.priority - left.priority ||
-        left.start_id - right.start_id ||
-        left.id.localeCompare(right.id)
-    );
+    .sort(compareMatchingRules);
 
   return matchingRules[0]?.target_host || null;
 }

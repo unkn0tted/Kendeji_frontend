@@ -1,13 +1,13 @@
 # PPanel Subscription Rewriter
 
 独立于 PPanel 原后端和 `protocol-config` 的第三后端。它根据
-`user_subscribe.id` 的编号区间，精确替换订阅内容中的节点入口 hostname，
-不修改 PPanel 数据库结构，也不会修改 SNI、密码、端口或节点名称。
+`user_subscribe.id` 的连续编号区间或指定编号列表，精确替换订阅内容中的节点
+入口 hostname，不修改 PPanel 数据库结构，也不会修改 SNI、密码、端口或节点名称。
 
 生产镜像：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.2.1
+unkn0tted/ppanel-subscription-rewriter:1.3.0
 ```
 
 本文以以下实际部署关系为例：
@@ -81,7 +81,7 @@ https://train.xrognet.com/api/linkon
   -> 第三后端 127.0.0.1:3003
   -> 根据 token 只读查询 user_subscribe.id
   -> 回源 internal-sub.xrognet.com/api/linkon
-  -> 按 ID 区间改写节点入口 hostname
+  -> 按 ID 区间或指定编号列表改写节点入口 hostname
   -> 返回用户
 ```
 
@@ -105,6 +105,15 @@ https://train.xrognet.com/api/linkon
 - 未匹配规则的域名保持不变
 - 未识别格式原样返回
 - 普通订阅请求数据库查询失败时原样返回，并在日志中记录错误
+
+规则支持两种用户匹配方式：
+
+- 连续区间：例如 `1–1000`，同时包含起始编号和结束编号。
+- 指定编号：例如 `1, 2, 37, 89`，只命中明确列出的订阅编号。
+
+同一个用户同时命中多条相同入口域名规则时，优先级数字更高的规则优先；优先级
+相同时，指定编号规则优先于连续区间规则。已有配置没有 `match_mode` 字段时会
+自动按连续区间处理，不需要手工迁移。
 
 ## 四、部署前检查
 
@@ -235,7 +244,7 @@ name: ppanel-subscription-rewriter
 
 services:
   subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.2.1}
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.3.0}
     container_name: ppanel-subscription-rewriter
     restart: unless-stopped
 
@@ -292,7 +301,7 @@ volumes:
 `.env` 示例：
 
 ```dotenv
-REWRITER_IMAGE_TAG=1.2.1
+REWRITER_IMAGE_TAG=1.3.0
 REWRITER_PORT=3003
 
 DATABASE_DOCKER_NETWORK=1panel-network
@@ -586,11 +595,12 @@ https://train.xrognet.com/api/linkon
 1. 查询真实的 `user_subscribe.id`。
 2. 在“读取当前入口域名”中输入该 ID。
 3. 确认读取出的原入口域名。
-4. 添加小范围规则，例如 `97–97`。
+4. 选择“连续区间”并添加小范围规则，例如 `97–97`；或者选择“指定编号”并输入
+   `1, 2, 37, 89`。
 5. 原入口域名必须精确填写完整 hostname。
 6. 新入口域名只填写 hostname，不填写协议、端口或路径。
 7. 保存后再次读取，确认“替换数量”大于 0。
-8. 验证完成后再扩大编号区间。
+8. 验证完成后再扩大编号区间或增加指定编号。
 
 查询真实订阅 ID：
 
@@ -762,7 +772,7 @@ curl -I 'https://用户展示域名/api/linkon'
 有该响应头但没有替换：
 
 - 数据库查询失败时普通订阅会安全返回原内容。
-- 规则 ID 区间没有覆盖真实 `user_subscribe.id`。
+- 规则编号区间或指定编号列表没有覆盖真实 `user_subscribe.id`。
 - 原入口 hostname 没有精确匹配。
 - 规则被禁用。
 
@@ -812,7 +822,7 @@ docker inspect ppanel-subscription-rewriter \
 应为：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.2.1
+unkn0tted/ppanel-subscription-rewriter:1.3.0
 ```
 
 ## 十五、升级、回滚和数据

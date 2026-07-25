@@ -4,8 +4,10 @@ import type { AxiosRequestConfig } from "axios";
 export type SubscriptionRewriteRule = {
   id: string;
   name: string;
+  match_mode: "range" | "ids";
   start_id: number;
   end_id: number;
+  subscriber_ids: number[];
   source_host: string;
   target_host: string;
   enabled: boolean;

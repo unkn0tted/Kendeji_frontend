@@ -5,8 +5,10 @@ import type { RewriteRule } from "./types";
 const rule: RewriteRule = {
   id: "rule-1",
   name: "group A",
+  match_mode: "range",
   start_id: 1,
   end_id: 1000,
+  subscriber_ids: [],
   source_host: "old.example.com",
   target_host: "new.example.com",
   enabled: true,
@@ -41,6 +43,88 @@ describe("rewriteSubscription", () => {
     expect(result.body).toBe(body);
     expect(result.changed).toBe(false);
     expect(result.hosts).toEqual([{ host: "old.example.com", count: 1 }]);
+  });
+
+  test("keeps inclusive range boundaries unchanged from the legacy behavior", () => {
+    const body = "vless://uuid@old.example.com:443?security=tls";
+
+    expect(rewriteSubscription(body, [rule], 1).changed).toBe(true);
+    expect(rewriteSubscription(body, [rule], 1000).changed).toBe(true);
+    expect(rewriteSubscription(body, [rule], 0).changed).toBe(false);
+    expect(rewriteSubscription(body, [rule], 1001).changed).toBe(false);
+  });
+
+  test("rewrites only explicitly listed subscription IDs", () => {
+    const explicitRule: RewriteRule = {
+      ...rule,
+      id: "explicit-rule",
+      match_mode: "ids",
+      start_id: 0,
+      end_id: 0,
+      subscriber_ids: [1, 2, 37, 89],
+    };
+    const body = "vless://uuid@old.example.com:443?security=tls";
+
+    for (const subscriberId of [1, 2, 37, 89]) {
+      expect(
+        rewriteSubscription(body, [explicitRule], subscriberId).changed
+      ).toBe(true);
+    }
+    expect(rewriteSubscription(body, [explicitRule], 3).changed).toBe(false);
+    expect(rewriteSubscription(body, [explicitRule], 88).changed).toBe(false);
+  });
+
+  test("prefers an explicit-ID rule over a range at the same priority", () => {
+    const explicitRule: RewriteRule = {
+      ...rule,
+      id: "explicit-rule",
+      match_mode: "ids",
+      start_id: 0,
+      end_id: 0,
+      subscriber_ids: [37],
+      target_host: "specific.example.com",
+    };
+    const body = "vless://uuid@old.example.com:443?security=tls";
+
+    expect(rewriteSubscription(body, [rule, explicitRule], 37).body).toContain(
+      "@specific.example.com:443"
+    );
+    expect(rewriteSubscription(body, [rule, explicitRule], 38).body).toContain(
+      "@new.example.com:443"
+    );
+  });
+
+  test("keeps priority above match specificity", () => {
+    const explicitRule: RewriteRule = {
+      ...rule,
+      id: "explicit-rule",
+      match_mode: "ids",
+      start_id: 0,
+      end_id: 0,
+      subscriber_ids: [37],
+      target_host: "specific.example.com",
+      priority: 99,
+    };
+    const body = "vless://uuid@old.example.com:443?security=tls";
+
+    expect(rewriteSubscription(body, [rule, explicitRule], 37).body).toContain(
+      "@new.example.com:443"
+    );
+  });
+
+  test("does not apply disabled explicit-ID rules", () => {
+    const explicitRule: RewriteRule = {
+      ...rule,
+      id: "disabled-explicit-rule",
+      match_mode: "ids",
+      start_id: 0,
+      end_id: 0,
+      subscriber_ids: [37],
+      enabled: false,
+    };
+    const body = "vless://uuid@old.example.com:443?security=tls";
+
+    expect(rewriteSubscription(body, [explicitRule], 37).body).toBe(body);
   });
 
   test("preserves a Base64 wrapper", () => {

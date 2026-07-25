@@ -11,6 +11,7 @@ import {
   findSubscriberToken,
 } from "./database";
 import { rewriteSubscription } from "./rewrite";
+import { ruleMatchesSubscriber } from "./rules";
 import type { InspectionResult, RewriteRule, RewriterConfig } from "./types";
 
 type ApiResponse<T = unknown> = {
@@ -265,12 +266,7 @@ async function handleSubscription(
     subscriberId !== null &&
     upstream.ok &&
     originalBody.length > 0 &&
-    config.rules.some(
-      (rule) =>
-        rule.enabled &&
-        subscriberId! >= rule.start_id &&
-        subscriberId! <= rule.end_id
-    )
+    config.rules.some((rule) => ruleMatchesSubscriber(rule, subscriberId))
   ) {
     const rewritten = rewriteSubscription(
       originalBody.toString("utf8"),

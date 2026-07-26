@@ -19,6 +19,43 @@ This document records all notable changes to ShadCN Admin.
 ---
 
 
+## [1.13.0](https://github.com/perfect-panel/frontend/compare/v1.12.1...v1.13.0) (2026-07-20)
+
+### ✨ Features / 新功能
+
+* **admin:** add subscription profile header settings ([caaa08c](https://github.com/perfect-panel/frontend/commit/caaa08caac5884e1f0cb62c24b8c15c296b7ea42))
+
+## [1.12.1](https://github.com/perfect-panel/frontend/compare/v1.12.0...v1.12.1) (2026-07-20)
+
+### 🐛 Bug Fixes / 问题修复
+
+* **admin:** preserve hidden protocol secrets ([10fd689](https://github.com/perfect-panel/frontend/commit/10fd689a0a310db2b23d9369c5621ab28e8605d8))
+
+## [1.12.0](https://github.com/perfect-panel/frontend/compare/v1.11.0...v1.12.0) (2026-07-20)
+
+### ✨ Features / 新功能
+
+* **server:** 扩展节点协议配置表单 ([d428dfd](https://github.com/perfect-panel/frontend/commit/d428dfd062cdc77f208d76611cb7cf89e0942631))
+
+### 🐛 Bug Fixes / 问题修复
+
+* add commission withdrawal entry ([8f47f56](https://github.com/perfect-panel/frontend/commit/8f47f56cadf0c3cecc53ad2f8903fe26b2a7ae57))
+* **admin:** add ticket status filter options ([26bd632](https://github.com/perfect-panel/frontend/commit/26bd63204336b97483aaa0c5b4e3030e9c7cc45b))
+* **admin:** align server protocol config ([aa3eebf](https://github.com/perfect-panel/frontend/commit/aa3eebf03b140fdb296ddbbeb79a9f6e270edf88))
+* **admin:** apply order user filter from URL ([de18e06](https://github.com/perfect-panel/frontend/commit/de18e062193dae4d62e9d7f230553cacb63e1768))
+* **admin:** copy server node config ([c812c90](https://github.com/perfect-panel/frontend/commit/c812c90a7658e28756ca287d7493064448834de5))
+* keep email broadcast interval in seconds ([3338d35](https://github.com/perfect-panel/frontend/commit/3338d353f400cd693e6d5699a96fa604b832f2ee))
+* **ui:** remove unsupported 200 page size ([936c120](https://github.com/perfect-panel/frontend/commit/936c12000d5ea05be7b42d94b5608a795e6df3e6))
+
+### 🔧 Chores / 其他变更
+
+* **release:** Release 1.11.0-dev.2 / 发布版本 1.11.0-dev.2 [skip ci] ([a609fb4](https://github.com/perfect-panel/frontend/commit/a609fb4a2f00b87c01baa96f4bae3ef4c6b7ff5b))
+* **release:** Release 1.11.0-dev.3 / 发布版本 1.11.0-dev.3 [skip ci] ([813eb83](https://github.com/perfect-panel/frontend/commit/813eb839c26116ce0d71b4f804d48df7cc2d2bbf))
+* **release:** Release 1.11.0-dev.4 / 发布版本 1.11.0-dev.4 [skip ci] ([58250f6](https://github.com/perfect-panel/frontend/commit/58250f657e4f774690bda0ab18234da4a0030982))
+* **release:** Release 1.11.0-dev.5 / 发布版本 1.11.0-dev.5 [skip ci] ([d61b92c](https://github.com/perfect-panel/frontend/commit/d61b92c54c88571b5f631008d8b6d3bd845d8f6c))
+* **release:** Release 1.11.0-dev.6 / 发布版本 1.11.0-dev.6 [skip ci] ([0e00fa8](https://github.com/perfect-panel/frontend/commit/0e00fa8ae8b43aa5aff73712542280b14c6a1bbc))
+* sync version with main ([995b45e](https://github.com/perfect-panel/frontend/commit/995b45e7936978fc2112ada0faac38f1628d2487))
+
 ## [1.11.0](https://github.com/perfect-panel/frontend/compare/v1.10.4...v1.11.0) (2026-07-14)
 
 ### ✨ Features / 新功能

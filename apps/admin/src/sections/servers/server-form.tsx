@@ -44,7 +44,7 @@ import { EnhancedInput } from "@workspace/ui/composed/enhanced-input";
 import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
 import { useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { type Resolver, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useNode } from "@/stores/node";
@@ -80,6 +80,50 @@ function getVisibleRequiredFields(
       field.required && (!field.condition || field.condition(protocolData, {}))
   );
 }
+
+function normalizeMultiplexValue(
+  protocolType: ProtocolType,
+  value: unknown,
+  fallback: unknown
+) {
+  const raw = String(value || fallback || "").trim();
+  if (protocolType !== "mieru") {
+    return raw || "none";
+  }
+
+  switch (raw.toUpperCase()) {
+    case "NONE":
+    case "OFF":
+    case "MULTIPLEXING_OFF":
+      return "MULTIPLEXING_OFF";
+    case "":
+    case "LOW":
+    case "MULTIPLEXING_LOW":
+      return "MULTIPLEXING_LOW";
+    case "MIDDLE":
+    case "MEDIUM":
+    case "MULTIPLEXING_MIDDLE":
+      return "MULTIPLEXING_MIDDLE";
+    case "HIGH":
+    case "MULTIPLEXING_HIGH":
+      return "MULTIPLEXING_HIGH";
+    default:
+      return raw;
+  }
+}
+
+const PRESERVED_HIDDEN_PROTOCOL_FIELDS = new Set([
+  "server_key",
+  "reality_private_key",
+  "reality_public_key",
+  "reality_short_id",
+  "encryption_ticket",
+  "encryption_server_padding",
+  "encryption_private_key",
+  "encryption_client_padding",
+  "encryption_password",
+  "obfs_password",
+]);
 
 function DynamicField({
   field,
@@ -234,19 +278,37 @@ function DynamicField({
               <FormLabel>{getFieldLabel(field)}</FormLabel>
               <FormControl>
                 <Select
-                  onValueChange={(v) =>
-                    field.name === "ech_enable"
-                      ? fieldProps.onChange(v === "true")
-                      : fieldProps.onChange(v)
-                  }
-                  value={
-                    field.name === "ech_enable"
-                      ? String(
-                          (fieldProps.value ?? field.defaultValue ?? false) ===
-                            true
-                        )
-                      : (fieldProps.value ?? field.defaultValue)
-                  }
+                  onValueChange={(value) => {
+                    fieldProps.onChange(value);
+                    if (field.name === "security") {
+                      if (
+                        value === "tls" &&
+                        protocolData.cert_mode === "none"
+                      ) {
+                        form.setValue(
+                          `protocols.${protocolIndex}.cert_mode`,
+                          "self"
+                        );
+                      }
+                      if (value === "reality") {
+                        form.setValue(
+                          `protocols.${protocolIndex}.transport`,
+                          "tcp"
+                        );
+                        form.setValue(
+                          `protocols.${protocolIndex}.cert_mode`,
+                          "none"
+                        );
+                      }
+                    }
+                    if (field.name === "plugin" && value === "none") {
+                      form.setValue(
+                        `protocols.${protocolIndex}.plugin_opts`,
+                        null
+                      );
+                    }
+                  }}
+                  value={String(fieldProps.value ?? field.defaultValue ?? "")}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -303,6 +365,65 @@ function DynamicField({
                   onChange={(e) => fieldProps.onChange(e.target.value)}
                   placeholder={field.placeholder}
                   value={fieldProps.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
+
+    case "string-list":
+      return (
+        <FormField
+          {...commonProps}
+          render={({ field: fieldProps }) => (
+            <FormItem className="col-span-2">
+              <FormLabel>{getFieldLabel(field)}</FormLabel>
+              <FormControl>
+                <textarea
+                  className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  onChange={(event) =>
+                    fieldProps.onChange(
+                      event.target.value
+                        .split("\n")
+                        .map((value) => value.trim())
+                        .filter(Boolean)
+                    )
+                  }
+                  placeholder={field.placeholder}
+                  value={
+                    Array.isArray(fieldProps.value)
+                      ? fieldProps.value.join("\n")
+                      : ""
+                  }
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
+
+    case "json":
+      return (
+        <FormField
+          {...commonProps}
+          render={({ field: fieldProps }) => (
+            <FormItem className="col-span-2">
+              <FormLabel>{getFieldLabel(field)}</FormLabel>
+              <FormControl>
+                <textarea
+                  className="flex min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  onChange={(event) => fieldProps.onChange(event.target.value)}
+                  placeholder={field.placeholder}
+                  value={
+                    typeof fieldProps.value === "string"
+                      ? fieldProps.value
+                      : fieldProps.value
+                        ? JSON.stringify(fieldProps.value, null, 2)
+                        : ""
+                  }
                 />
               </FormControl>
               <FormMessage />
@@ -397,8 +518,10 @@ export default function ServerForm(props: {
   const { isProtocolUsedInNodes } = useNode();
   const PROTOCOL_FIELDS = useProtocolFields();
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
+  const form = useForm<Record<string, any>>({
+    resolver: zodResolver(formSchema) as unknown as Resolver<
+      Record<string, any>
+    >,
     defaultValues: {
       name: "",
       address: "",
@@ -422,12 +545,46 @@ export default function ServerForm(props: {
         ...initialValues,
         protocols: PROTOCOLS.map((type) => {
           const existingProtocol = initialValues.protocols?.find(
-            (p) => p.type === type
+            (protocol) =>
+              protocol.type === type ||
+              (type === "hysteria2" && protocol.type === "hysteria")
           );
           const defaultConfig = getProtocolDefaultConfig(type);
-          return existingProtocol
-            ? { ...defaultConfig, ...existingProtocol }
-            : defaultConfig;
+          if (!existingProtocol) return defaultConfig;
+
+          const merged = {
+            ...defaultConfig,
+            ...existingProtocol,
+            type,
+            transport:
+              existingProtocol.transport === "websocket"
+                ? "ws"
+                : existingProtocol.transport,
+            plugin: existingProtocol.plugin || "none",
+            multiplex: normalizeMultiplexValue(
+              type,
+              existingProtocol.multiplex,
+              defaultConfig.multiplex
+            ),
+          };
+          if (["hysteria2", "tuic", "naive", "trojan"].includes(type)) {
+            merged.security = "tls";
+            if (!merged.cert_mode || merged.cert_mode === "none") {
+              merged.cert_mode = "self";
+            }
+          }
+          if (
+            type === "anytls" &&
+            !["tls", "reality"].includes(String(merged.security))
+          ) {
+            merged.security = "tls";
+            merged.cert_mode = "self";
+          }
+          if (merged.security === "reality") {
+            merged.transport = "tcp";
+            merged.cert_mode = "none";
+          }
+          return merged;
         }),
       });
     }
@@ -531,24 +688,20 @@ export default function ServerForm(props: {
       .map((protocol: any) => {
         const protocolType = protocol.type as ProtocolType;
         const fields = PROTOCOL_FIELDS[protocolType] || [];
+        const fieldNames = [...new Set(fields.map((field) => field.name))];
         const hiddenFieldNames = new Set(
-          fields
-            .filter(
+          fieldNames.filter((name) => {
+            const sameName = fields.filter((field) => field.name === name);
+            return sameName.every(
               (field) => field.condition && !field.condition(protocol, {})
-            )
-            .map((field) => field.name)
+            );
+          })
         );
-        const shouldStripEch = protocol.ech_enable !== true;
-
-        return Object.fromEntries(
+        const normalized = Object.fromEntries(
           Object.entries(protocol).filter(([key]) => {
-            if (hiddenFieldNames.has(key)) {
-              return false;
-            }
-
             if (
-              shouldStripEch &&
-              (key === "ech_enable" || key === "ech_server_name")
+              hiddenFieldNames.has(key) &&
+              !PRESERVED_HIDDEN_PROTOCOL_FIELDS.has(key)
             ) {
               return false;
             }
@@ -556,6 +709,14 @@ export default function ServerForm(props: {
             return true;
           })
         );
+        if (normalized.plugin === "none") {
+          normalized.plugin = undefined;
+          normalized.plugin_opts = undefined;
+        }
+        if (normalized.multiplex === "none") {
+          normalized.multiplex = undefined;
+        }
+        return normalized;
       });
 
     const result = {

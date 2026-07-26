@@ -12,8 +12,10 @@ import {
   createServer,
   deleteServer,
   filterServerList,
+  getServerNodeConfig,
   resetSortWithServer,
   updateServer,
+  updateServerNodeConfig,
 } from "@workspace/ui/services/admin/server";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -170,11 +172,34 @@ export default function Servers() {
                   address: others.address as string,
                   protocols: (others.protocols as API.Protocol[]) || [],
                 };
-                await createServer(body);
-                toast.success(t("copied", "Copied"));
-                ref.current?.refresh();
-                fetchServers();
-                setLoading(false);
+                try {
+                  const [createResp, configResp] = await Promise.all([
+                    createServer(body),
+                    getServerNodeConfig({ server_id: row.id }),
+                  ]);
+                  const newServerId = createResp.data?.data?.id;
+                  const override = configResp.data?.data?.override;
+
+                  if (newServerId && override) {
+                    await updateServerNodeConfig({
+                      server_id: newServerId,
+                      inherit_ip_strategy: override.inherit_ip_strategy,
+                      ip_strategy: override.ip_strategy,
+                      inherit_dns: override.inherit_dns,
+                      dns: override.dns || [],
+                      inherit_block: override.inherit_block,
+                      block: override.block || [],
+                      inherit_outbound: override.inherit_outbound,
+                      outbound: override.outbound || [],
+                    });
+                  }
+
+                  toast.success(t("copied", "Copied"));
+                  ref.current?.refresh();
+                  fetchServers();
+                } finally {
+                  setLoading(false);
+                }
               }}
               variant="outline"
             >

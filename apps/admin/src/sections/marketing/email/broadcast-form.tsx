@@ -249,7 +249,7 @@ export default function EmailBroadcastForm() {
         register_end_time,
         additional: data.additional || undefined,
         scheduled,
-        interval: data.interval ? data.interval * 1000 : undefined, // Convert seconds to milliseconds
+        interval: data.interval || undefined,
         limit: data.limit,
       };
 

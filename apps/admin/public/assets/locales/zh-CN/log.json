@@ -16,6 +16,7 @@
     "subject": "主题",
     "subscribe": "订阅",
     "subscribeId": "订阅 ID",
+    "subscribeNumber": "订阅编号",
     "success": "成功",
     "time": "时间",
     "to": "收件人",
@@ -24,10 +25,15 @@
     "upload": "上传",
     "user": "用户",
     "userAgent": "用户代理",
-    "userId": "用户 ID"
+    "userId": "用户 ID",
+    "currentUsage": "当前用量"
   },
   "detail": "详情",
   "failed": "失败",
+  "filter": {
+    "endDate": "结束",
+    "startDate": "开始"
+  },
   "sent": "已发送",
   "success": "成功",
   "title": {
@@ -62,5 +68,8 @@
     "341": "增加",
     "342": "减少"
   },
-  "unknown": "未知"
+  "unknown": "未知",
+  "usage": {
+    "unlimited": "不限量"
+  }
 }

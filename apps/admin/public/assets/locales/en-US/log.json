@@ -16,6 +16,7 @@
     "subject": "Subject",
     "subscribe": "Subscribe",
     "subscribeId": "Subscribe ID",
+    "subscribeNumber": "Subscription No.",
     "success": "Success",
     "time": "Time",
     "to": "To",
@@ -24,10 +25,15 @@
     "upload": "Upload",
     "user": "User",
     "userAgent": "User Agent",
-    "userId": "User ID"
+    "userId": "User ID",
+    "currentUsage": "Current Usage"
   },
   "detail": "Detail",
   "failed": "Failed",
+  "filter": {
+    "endDate": "To",
+    "startDate": "From"
+  },
   "sent": "Sent",
   "success": "Success",
   "title": {
@@ -62,5 +68,8 @@
     "341": "Increase",
     "342": "Reduce"
   },
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "usage": {
+    "unlimited": "Unlimited"
+  }
 }

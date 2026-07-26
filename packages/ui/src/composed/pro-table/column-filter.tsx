@@ -6,6 +6,7 @@ import { Combobox } from "@workspace/ui/composed/combobox";
 
 export interface IParams {
   key: string;
+  label?: string;
   placeholder?: string;
   options?: { label: string; value: string }[];
   type?: "text" | "select" | "date";
@@ -66,9 +67,14 @@ export function ColumnFilter<TData>({
               : typeof raw === "string"
                 ? raw
                 : "";
-          return (
+          const input = (
             <Input
-              className="block min-w-32"
+              aria-label={param.label || param.placeholder}
+              className={
+                param.label
+                  ? "h-8 min-w-32 border-0 p-0 shadow-none focus-visible:ring-0"
+                  : "block min-w-32"
+              }
               key={param.key}
               onChange={(event) => {
                 const v = event.target.value;
@@ -78,6 +84,19 @@ export function ColumnFilter<TData>({
               type="date"
               value={inputValue}
             />
+          );
+          if (!param.label) return input;
+
+          return (
+            <div
+              className="flex h-9 items-center gap-2 rounded-md border px-3"
+              key={param.key}
+            >
+              <span className="whitespace-nowrap text-muted-foreground text-xs">
+                {param.label}
+              </span>
+              {input}
+            </div>
           );
         }
         return (

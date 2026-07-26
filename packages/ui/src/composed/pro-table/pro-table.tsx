@@ -57,7 +57,8 @@ export interface ProTableProps<TData, TValue> {
       page: number;
       size: number;
     },
-    filter: TValue
+    filter: TValue,
+    context: ProTableRequestContext
   ) => Promise<{ list: TData[]; total: number }>;
   params?: IParams[];
   header?: {
@@ -86,6 +87,12 @@ export interface ProTableProps<TData, TValue> {
     items: TData[]
   ) => Promise<TData[]>;
   initialFilters?: Record<string, unknown>;
+  requestDebounceMs?: number;
+}
+
+export interface ProTableRequestContext {
+  sorting: SortingState;
+  force: boolean;
 }
 
 export interface ProTableActions {
@@ -107,6 +114,7 @@ export function ProTable<
   empty,
   onSort,
   initialFilters,
+  requestDebounceMs = 0,
 }: ProTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
@@ -126,7 +134,8 @@ export function ProTable<
     pageIndex: 0,
     pageSize: 10,
   });
-  const loading = useRef(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const requestSequence = useRef(0);
 
   const tableColumns = useMemo(
     () =>
@@ -176,8 +185,18 @@ export function ProTable<
     data,
     columns: tableColumns,
     onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+      );
+    },
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+      );
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -197,9 +216,10 @@ export function ProTable<
     manualSorting: true,
   });
 
-  const fetchData = async () => {
-    if (loading.current) return;
-    loading.current = true;
+  const fetchData = async (force = false) => {
+    const sequence = requestSequence.current + 1;
+    requestSequence.current = sequence;
+    setIsLoading(true);
     try {
       const response = await request(
         {
@@ -208,14 +228,21 @@ export function ProTable<
         },
         Object.fromEntries(
           columnFilters.map((item) => [item.id, item.value])
-        ) as TValue
+        ) as TValue,
+        { sorting, force }
       );
-      setData(response.list);
-      setRowCount(response.total);
+      if (sequence === requestSequence.current) {
+        setData(response.list);
+        setRowCount(response.total);
+      }
     } catch (error) {
-      console.log("Fetch data error:", error);
+      if (sequence === requestSequence.current) {
+        console.log("Fetch data error:", error);
+      }
     } finally {
-      loading.current = false;
+      if (sequence === requestSequence.current) {
+        setIsLoading(false);
+      }
     }
   };
   const reset = async () => {
@@ -228,17 +255,27 @@ export function ProTable<
   };
 
   useImperativeHandle(action, () => ({
-    refresh: fetchData,
+    refresh: () => {
+      fetchData(true);
+    },
     reset,
   }));
 
   useEffect(() => {
-    fetchData();
+    if (requestDebounceMs <= 0) {
+      fetchData();
+      return;
+    }
+
+    const timer = setTimeout(fetchData, requestDebounceMs);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     pagination.pageIndex,
     pagination.pageSize,
     JSON.stringify(columnFilters),
+    JSON.stringify(sorting),
+    requestDebounceMs,
   ]);
 
   const selectedRows = table
@@ -264,7 +301,13 @@ export function ProTable<
             )}
           </div>
           <div className="flex flex-1 items-center justify-end gap-2">
-            <Button onClick={fetchData} size="icon" variant="outline">
+            <Button
+              onClick={() => {
+                fetchData(true);
+              }}
+              size="icon"
+              variant="outline"
+            >
               <RefreshCcw />
             </Button>
             <ColumnToggle table={table} />
@@ -380,7 +423,7 @@ export function ProTable<
           </Table>
         </ProTableWrapper>
 
-        {loading.current && (
+        {isLoading && (
           <div className="absolute top-0 z-20 flex h-full w-full items-center justify-center bg-muted/80">
             <Loader className="h-4 w-4 animate-spin" />
           </div>

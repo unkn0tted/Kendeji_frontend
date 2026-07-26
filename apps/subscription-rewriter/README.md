@@ -7,7 +7,7 @@
 生产镜像：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.3.0
+unkn0tted/ppanel-subscription-rewriter:1.4.0
 ```
 
 本文以以下实际部署关系为例：
@@ -244,7 +244,7 @@ name: ppanel-subscription-rewriter
 
 services:
   subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.3.0}
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.0}
     container_name: ppanel-subscription-rewriter
     restart: unless-stopped
 
@@ -268,6 +268,7 @@ services:
 
       UPSTREAM_TIMEOUT_MS: ${UPSTREAM_TIMEOUT_MS:-15000}
       MAX_RESPONSE_BYTES: ${MAX_RESPONSE_BYTES:-8388608}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-true}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
 
     extra_hosts:
@@ -301,7 +302,7 @@ volumes:
 `.env` 示例：
 
 ```dotenv
-REWRITER_IMAGE_TAG=1.3.0
+REWRITER_IMAGE_TAG=1.4.0
 REWRITER_PORT=3003
 
 DATABASE_DOCKER_NETWORK=1panel-network
@@ -318,6 +319,7 @@ PPANEL_ADMIN_CURRENT_PATH=/v1/admin/user/current
 
 UPSTREAM_TIMEOUT_MS=15000
 MAX_RESPONSE_BYTES=8388608
+TRUST_PROXY_HEADERS=true
 CORS_ORIGIN=*
 ```
 
@@ -403,6 +405,13 @@ server {
     server_name internal-sub.xrognet.com;
 
     # SSL 证书配置按实际面板生成内容保留
+    #
+    # 只信任第三后端实际连接到本 Nginx 时使用的来源地址。
+    # 如果 access log 中看到的来源不是 127.0.0.1，必须替换为实际地址
+    # 或仅包含第三后端的可信 Docker 子网。
+    set_real_ip_from 127.0.0.1;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
 
     location ^~ / {
         proxy_pass http://127.0.0.1:60003;
@@ -410,7 +419,7 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Port $server_port;
     }
@@ -447,7 +456,8 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # 入口 Nginx 直接面向公网时覆盖客户端提供的 XFF，防止伪造。
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Port $server_port;
 
@@ -472,6 +482,57 @@ curl -I 'https://train.xrognet.com/api/linkon'
 ```text
 x-subscription-rewriter: 1
 ```
+
+### 保留订阅用户的真实 IP
+
+`1.4.0` 可以把入口 Nginx 提供的真实客户端 IP 继续传给原 PPanel 后端。需要同时
+满足以下条件：
+
+1. Compose 中设置 `TRUST_PROXY_HEADERS=true`。
+2. 第三后端的 `3003` 端口只能由本机 Nginx 和可信 Docker 容器访问。
+3. 用户展示域名用 `X-Real-IP $remote_addr` 和
+   `X-Forwarded-For $remote_addr` 覆盖客户端自己提交的头。
+4. `internal-sub` 使用 `set_real_ip_from` 只信任第三后端实际来源。
+
+第三后端优先读取 `X-Real-IP`，校验它确实是 IPv4 或 IPv6 后，将单一规范地址
+写入回源请求的 `X-Real-IP` 和 `X-Forwarded-For`。它不会原样复制整条
+`X-Forwarded-For`，避免把客户端伪造的地址带进原系统日志。
+
+确认第三后端连接 `internal-sub` 时使用的来源地址：
+
+```nginx
+# 放在 Nginx 的 http {} 中，临时用于诊断。
+log_format rewriter_ip
+    '$remote_addr x-real="$http_x_real_ip" xff="$http_x_forwarded_for" '
+    '"$request"';
+```
+
+然后在 `internal-sub` 的 `server {}` 中临时使用：
+
+```nginx
+access_log /var/log/nginx/internal-sub-ip.log rewriter_ip;
+```
+
+请求一次用户展示订阅，再查看日志：
+
+```bash
+tail -n 20 /var/log/nginx/internal-sub-ip.log
+```
+
+日志第一个地址是第三后端连接过来的来源，将它填写到
+`set_real_ip_from`。常见值可能是 `127.0.0.1`、服务器内网地址、服务器公网地址
+或 Docker 网关/子网。不要设置为 `0.0.0.0/0`。
+
+修改后检查并平滑加载：
+
+```bash
+nginx -t
+nginx -s reload
+```
+
+如果用户展示域名前还有 Cloudflare 或其他 CDN，必须先按该 CDN 的官方 IP
+网段配置 Nginx Real IP 模块，让 `$remote_addr` 恢复成用户地址；不能直接信任
+公网请求自己携带的 `CF-Connecting-IP` 或 `X-Forwarded-For`。
 
 ## 十、最容易漏掉：管理端和用户端都要配置同源反代
 
@@ -822,7 +883,7 @@ docker inspect ppanel-subscription-rewriter \
 应为：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.3.0
+unkn0tted/ppanel-subscription-rewriter:1.4.0
 ```
 
 ## 十五、升级、回滚和数据
@@ -899,6 +960,7 @@ docker compose down -v
 | `PPANEL_ADMIN_CURRENT_PATH` | `/v1/admin/user/current`           | 管理员验证接口                         |
 | `UPSTREAM_TIMEOUT_MS`       | `15000`                            | 原订阅回源超时                         |
 | `MAX_RESPONSE_BYTES`        | `8388608`                          | 最大订阅响应字节数                     |
+| `TRUST_PROXY_HEADERS`       | `false`                            | 信任入口代理头并向原订阅系统透传真实 IP |
 | `CORS_ORIGIN`               | `*`                                | 跨域来源；同源反代通常无需修改         |
 
 表名和字段名只接受简单 SQL 标识符，token 查询使用参数绑定。

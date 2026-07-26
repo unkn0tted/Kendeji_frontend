@@ -10,6 +10,11 @@ import {
   findSubscriberId,
   findSubscriberToken,
 } from "./database";
+import {
+  resolveForwardedClientIp,
+  setForwardedClientIp,
+  trustProxyHeadersEnabled,
+} from "./proxy-ip";
 import { rewriteSubscription } from "./rewrite";
 import { ruleMatchesSubscriber } from "./rules";
 import type { InspectionResult, RewriteRule, RewriterConfig } from "./types";
@@ -35,6 +40,9 @@ const corsOrigin = process.env.CORS_ORIGIN || "*";
 const upstreamTimeout = Number(process.env.UPSTREAM_TIMEOUT_MS || "15000");
 const maxResponseBytes = Number(
   process.env.MAX_RESPONSE_BYTES || String(8 * 1024 * 1024)
+);
+const trustProxyHeaders = trustProxyHeadersEnabled(
+  process.env.TRUST_PROXY_HEADERS
 );
 const store = new ConfigStore(configFile);
 
@@ -155,7 +163,10 @@ function upstreamUrl(config: RewriterConfig, incoming: URL) {
   return url;
 }
 
-function buildUpstreamHeaders(headers: IncomingHttpHeaders) {
+function buildUpstreamHeaders(
+  headers: IncomingHttpHeaders,
+  clientIp: string | null = null
+) {
   const result = new Headers();
   for (const name of forwardedRequestHeaders) {
     const value = headers[name];
@@ -165,16 +176,18 @@ function buildUpstreamHeaders(headers: IncomingHttpHeaders) {
       result.set(name, value);
     }
   }
+  setForwardedClientIp(result, clientIp);
   return result;
 }
 
 async function fetchOrigin(
   config: RewriterConfig,
   incoming: URL,
-  headers: IncomingHttpHeaders
+  headers: IncomingHttpHeaders,
+  clientIp: string | null = null
 ) {
   return fetch(upstreamUrl(config, incoming), {
-    headers: buildUpstreamHeaders(headers),
+    headers: buildUpstreamHeaders(headers, clientIp),
     redirect: "manual",
     signal: AbortSignal.timeout(upstreamTimeout),
   });
@@ -219,6 +232,11 @@ async function handleSubscription(
 ) {
   const config = await store.read();
   const token = incoming.searchParams.get("token") || "";
+  const clientIp = resolveForwardedClientIp(
+    request.headers,
+    request.socket.remoteAddress,
+    trustProxyHeaders
+  );
   const subscriberLookup = token
     ? findSubscriberId(token).catch((error) => {
         console.error(
@@ -232,7 +250,7 @@ async function handleSubscription(
     : Promise.resolve(null);
 
   const [upstreamResult, subscriberId] = await Promise.all([
-    fetchOrigin(config, incoming, request.headers)
+    fetchOrigin(config, incoming, request.headers, clientIp)
       .then((upstream) => ({ upstream, error: null }))
       .catch((error: unknown) => ({ upstream: null, error })),
     subscriberLookup,
@@ -506,6 +524,11 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, host, () => {
   console.info(`Subscription rewriter listening on ${host}:${port}`);
+  console.info(
+    `Trusted proxy header forwarding is ${
+      trustProxyHeaders ? "enabled" : "disabled"
+    }`
+  );
 });
 
 async function shutdown() {

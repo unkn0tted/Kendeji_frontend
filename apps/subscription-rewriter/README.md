@@ -7,7 +7,7 @@
 生产镜像：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.4.0
+unkn0tted/ppanel-subscription-rewriter:1.4.1
 ```
 
 本文以以下实际部署关系为例：
@@ -244,7 +244,7 @@ name: ppanel-subscription-rewriter
 
 services:
   subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.0}
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.1}
     container_name: ppanel-subscription-rewriter
     restart: unless-stopped
 
@@ -302,7 +302,7 @@ volumes:
 `.env` 示例：
 
 ```dotenv
-REWRITER_IMAGE_TAG=1.4.0
+REWRITER_IMAGE_TAG=1.4.1
 REWRITER_PORT=3003
 
 DATABASE_DOCKER_NETWORK=1panel-network
@@ -485,7 +485,7 @@ x-subscription-rewriter: 1
 
 ### 保留订阅用户的真实 IP
 
-`1.4.0` 可以把入口 Nginx 提供的真实客户端 IP 继续传给原 PPanel 后端。需要同时
+`1.4.1` 可以把入口 Nginx 提供的真实客户端 IP 继续传给原 PPanel 后端。需要同时
 满足以下条件：
 
 1. Compose 中设置 `TRUST_PROXY_HEADERS=true`。
@@ -541,18 +541,71 @@ nginx -s reload
 1. 管理员打开的管理面板域名。
 2. 普通用户打开的用户面板域名。
 
+公开配置 GET 响应允许缓存 30 秒，并允许代理在回源失败时使用旧缓存。先在
+Nginx 的 `http {}` 中定义缓存区和可复用上游连接：
+
 ```nginx
-location ^~ /subscription-rewriter/ {
-    proxy_pass http://127.0.0.1:3003;
+proxy_cache_path /var/cache/nginx/subscription-rewriter-config
+    levels=1:2
+    keys_zone=rewriter_config_cache:10m
+    max_size=50m
+    inactive=10m
+    use_temp_path=off;
+
+upstream subscription_rewriter_backend {
+    server 127.0.0.1:3003;
+    keepalive 16;
+}
+```
+
+再把下面两个 `location` 放进管理端和用户端站点的 `server {}`。精确匹配必须
+写在通用管理路径之前：
+
+```nginx
+location = /subscription-rewriter/public-config {
+    proxy_pass http://subscription_rewriter_backend;
     proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_connect_timeout 3s;
+    proxy_send_timeout 15s;
+    proxy_read_timeout 15s;
+
+    proxy_cache rewriter_config_cache;
+    proxy_cache_methods GET HEAD;
+    proxy_cache_valid 200 30s;
+    proxy_cache_lock on;
+    proxy_cache_background_update on;
+    proxy_cache_use_stale error timeout invalid_header updating
+        http_500 http_502 http_503 http_504;
+    add_header X-Cache-Status $upstream_cache_status always;
+}
+
+location ^~ /subscription-rewriter/ {
+    proxy_pass http://subscription_rewriter_backend;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
 
     proxy_set_header Host $host;
     proxy_set_header Authorization $http_authorization;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_connect_timeout 3s;
+    proxy_send_timeout 15s;
+    proxy_read_timeout 15s;
 }
 ```
+
+管理员 GET/PUT、健康检查和订阅内容继续返回 `no-store`，不会进入这个公开配置
+缓存。不要让通用的 `limit_req` 或 `limit_conn` 对公开配置路径使用过低阈值；
+已有全局限流时，应给它单独的宽松规则或排除规则。修改后先执行 `nginx -t`，
+再平滑加载配置。
 
 为什么两个域名都必须配置：
 
@@ -883,7 +936,7 @@ docker inspect ppanel-subscription-rewriter \
 应为：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.4.0
+unkn0tted/ppanel-subscription-rewriter:1.4.1
 ```
 
 ## 十五、升级、回滚和数据

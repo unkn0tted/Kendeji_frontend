@@ -188,10 +188,12 @@ export class ConfigStore {
       const raw = await readFile(this.file, "utf8");
       return normalizeConfig(JSON.parse(raw));
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        console.error("Failed to read subscription rewriter config:", error);
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return defaultConfig;
       }
-      return defaultConfig;
+
+      console.error("Failed to read subscription rewriter config:", error);
+      throw error;
     }
   }
 

@@ -11,6 +11,10 @@ import { getSubscriptionRewriterPublicConfig } from "@workspace/ui/services/subs
 import { isBrowser } from "@workspace/ui/utils/index";
 import { useEffect } from "react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
+import {
+  readOptionalConfigCache,
+  updateOptionalConfigCache,
+} from "@/config/optional-config-cache";
 import { useGlobalStore } from "@/stores/global";
 
 export const Route = createRootRouteWithContext()({
@@ -19,6 +23,7 @@ export const Route = createRootRouteWithContext()({
       useGlobalStore();
     useEffect(() => {
       const loadConfig = async () => {
+        const cachedConfig = readOptionalConfigCache();
         const globalConfigPromise = getGlobalConfig()
           .then((response) => {
             const globalConfig = response.data.data;
@@ -30,43 +35,66 @@ export const Route = createRootRouteWithContext()({
           .catch((error) => {
             console.error("Failed to load global config:", error);
           });
-        const protocolConfigPromise = getProtocolConfig({ timeout: 5000 })
-          .then((response) => response.data.data)
+        const protocolConfigPromise = getProtocolConfig({ timeout: 15_000 })
+          .then((response) => response.data.data ?? null)
           .catch(() => {
             /* Protocol config is optional. */
+            return null;
           });
         const rewriterConfigPromise = getSubscriptionRewriterPublicConfig({
-          timeout: 5000,
+          timeout: 15_000,
         })
-          .then((response) => response.data.data)
+          .then((response) => response.data.data ?? null)
           .catch(() => {
             /* Subscription rewriter is optional. */
+            return null;
           });
-        const [globalConfig, protocolConfig, rewriterConfig] =
-          await Promise.all([
-            globalConfigPromise,
-            protocolConfigPromise,
-            rewriterConfigPromise,
-          ]);
 
-        if (
-          protocolConfig ||
-          rewriterConfig?.public_base_url ||
-          rewriterConfig?.public_base_urls?.length
-        ) {
+        const globalConfig = await globalConfigPromise;
+        const applyOptionalConfig = (
+          protocolConfig = cachedConfig.protocolConfig,
+          rewriterConfig = cachedConfig.rewriterConfig
+        ) => {
+          if (protocolConfig === undefined && rewriterConfig === undefined) {
+            return;
+          }
+
+          const currentSubscribe = useGlobalStore.getState().common.subscribe;
+          const publicBaseUrl = rewriterConfig?.public_base_url || "";
+          const publicBaseUrls =
+            rewriterConfig?.public_base_urls ||
+            (publicBaseUrl ? [publicBaseUrl] : []);
+
           setCommon({
             subscribe: {
-              ...useGlobalStore.getState().common.subscribe,
+              ...currentSubscribe,
               ...globalConfig?.subscribe,
               ...protocolConfig,
-              public_subscribe_url: rewriterConfig?.public_base_url || "",
-              public_subscribe_urls:
-                rewriterConfig?.public_base_urls ||
-                (rewriterConfig?.public_base_url
-                  ? [rewriterConfig.public_base_url]
-                  : []),
+              ...(rewriterConfig === undefined
+                ? {}
+                : {
+                    public_subscribe_url: publicBaseUrl,
+                    public_subscribe_urls: publicBaseUrls,
+                  }),
             },
           });
+        };
+
+        applyOptionalConfig();
+
+        const [protocolConfig, rewriterConfig] = await Promise.all([
+          protocolConfigPromise,
+          rewriterConfigPromise,
+        ]);
+        updateOptionalConfigCache({
+          ...(protocolConfig === null ? {} : { protocolConfig }),
+          ...(rewriterConfig === null ? {} : { rewriterConfig }),
+        });
+        if (protocolConfig !== null || rewriterConfig !== null) {
+          applyOptionalConfig(
+            protocolConfig ?? cachedConfig.protocolConfig,
+            rewriterConfig ?? cachedConfig.rewriterConfig
+          );
         }
       };
 

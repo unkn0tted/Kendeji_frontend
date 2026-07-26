@@ -9,8 +9,9 @@ describe("shouldRetryUserQuery", () => {
     expect(shouldRetryUserQuery(1, error)).toBe(false);
   });
 
-  test("retries timeouts and server errors", () => {
-    expect(shouldRetryUserQuery(0, { code: "ETIMEDOUT" })).toBe(true);
+  test("does not retry timeouts but retries server errors", () => {
+    expect(shouldRetryUserQuery(0, { code: "ETIMEDOUT" })).toBe(false);
+    expect(shouldRetryUserQuery(0, { code: "ECONNABORTED" })).toBe(false);
     expect(
       shouldRetryUserQuery(0, {
         response: { status: 503 },

@@ -168,21 +168,23 @@ docker login
 使用仓库提供的脚本发布：
 
 ```bash
-DOCKERHUB_REPO=你的用户名/ppanel-protocol-config \
-VERSION=1.0.0 \
+DOCKERHUB_REPO=unkn0tted/ppanel-protocol-config \
+VERSION=1.0.4 \
+PLATFORMS=linux/amd64 \
 ./scripts/publish-protocol-config-image.sh
 ```
 
 脚本会推送：
 
-- `你的用户名/ppanel-protocol-config:1.0.0`
-- `你的用户名/ppanel-protocol-config:latest`
+- `unkn0tted/ppanel-protocol-config:1.0.4`
+- `unkn0tted/ppanel-protocol-config:latest`
 
 不推送 `latest`：
 
 ```bash
-DOCKERHUB_REPO=你的用户名/ppanel-protocol-config \
-VERSION=1.0.0 \
+DOCKERHUB_REPO=unkn0tted/ppanel-protocol-config \
+VERSION=1.0.4 \
+PLATFORMS=linux/amd64 \
 PUSH_LATEST=false \
 ./scripts/publish-protocol-config-image.sh
 ```
@@ -192,8 +194,8 @@ PUSH_LATEST=false \
 ```bash
 docker buildx create --use
 
-DOCKERHUB_REPO=你的用户名/ppanel-protocol-config \
-VERSION=1.0.0 \
+DOCKERHUB_REPO=unkn0tted/ppanel-protocol-config \
+VERSION=1.0.4 \
 PLATFORMS=linux/amd64 \
 ./scripts/publish-protocol-config-image.sh
 ```
@@ -203,7 +205,7 @@ PLATFORMS=linux/amd64 \
 ## 线上部署 Docker Hub 镜像
 
 ```bash
-docker pull 你的用户名/ppanel-protocol-config:latest
+docker pull unkn0tted/ppanel-protocol-config:1.0.4
 
 docker rm -f ppanel-protocol-config
 
@@ -213,7 +215,7 @@ docker run -d \
   -p 3002:3002 \
   -e PPANEL_API_BASE=http://ppanel-server:8080 \
   -v ppanel-protocol-config-data:/data \
-  你的用户名/ppanel-protocol-config:latest
+  unkn0tted/ppanel-protocol-config:1.0.4
 ```
 
 如果使用 compose，把 `image` 换成你的 Docker Hub 镜像即可：
@@ -221,7 +223,7 @@ docker run -d \
 ```yaml
 services:
   protocol-config:
-    image: 你的用户名/ppanel-protocol-config:latest
+    image: unkn0tted/ppanel-protocol-config:1.0.4
     restart: unless-stopped
     ports:
       - "3002:3002"
@@ -236,18 +238,58 @@ volumes:
 
 ## Nginx 反代
 
-建议挂到前端同域名，避免跨域：
+建议挂到前端同域名，避免跨域。服务的公开 GET 响应允许缓存 30 秒；PUT、健康
+检查和错误响应仍是 `no-store`。
+
+先在 Nginx 的 `http {}` 中定义缓存区和可复用上游连接：
 
 ```nginx
-location ^~ /protocol-config {
-    proxy_pass http://127.0.0.1:3002;
+proxy_cache_path /var/cache/nginx/protocol-config
+    levels=1:2
+    keys_zone=protocol_config_cache:10m
+    max_size=50m
+    inactive=10m
+    use_temp_path=off;
+
+upstream protocol_config_backend {
+    server 127.0.0.1:3002;
+    keepalive 16;
+}
+```
+
+再在管理端和用户端站点的 `server {}` 中添加：
+
+```nginx
+location ~ ^/(?:api/)?protocol-config$ {
+    proxy_pass http://protocol_config_backend;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header Authorization $http_authorization;
+
+    proxy_connect_timeout 3s;
+    proxy_send_timeout 15s;
+    proxy_read_timeout 15s;
+
+    proxy_cache protocol_config_cache;
+    proxy_cache_methods GET HEAD;
+    proxy_cache_valid 200 30s;
+    proxy_cache_bypass $http_authorization;
+    proxy_no_cache $http_authorization;
+    proxy_cache_lock on;
+    proxy_cache_background_update on;
+    proxy_cache_use_stale error timeout invalid_header updating
+        http_500 http_502 http_503 http_504;
+    add_header X-Cache-Status $upstream_cache_status always;
 }
 ```
+
+不要让通用的 `limit_req` 或 `limit_conn` 对这两个配置路径使用过低阈值。已有全局
+限流时，应给它们单独的宽松规则或排除规则。修改后先执行 `nginx -t`，再平滑
+加载配置。
 
 前端默认访问当前域名的 `/protocol-config`。如果你把小后端部署到单独域名，构建前端时设置：
 

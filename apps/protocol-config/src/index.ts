@@ -59,6 +59,8 @@ const ppanelApiBase = (process.env.PPANEL_API_BASE || "").replace(/\/+$/, "");
 const ppanelAdminCurrentPath =
   process.env.PPANEL_ADMIN_CURRENT_PATH || "/v1/admin/user/current";
 const corsOrigin = process.env.CORS_ORIGIN || "*";
+const publicCacheControl =
+  "public, max-age=30, stale-while-revalidate=60, stale-if-error=300";
 
 function isSelectorStyle(value: unknown): value is SelectorStyle {
   return (
@@ -160,11 +162,12 @@ async function readConfig(): Promise<ProtocolConfig> {
     const raw = await readFile(configFile, "utf-8");
     return normalizeConfig(JSON.parse(raw));
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.error("Failed to read protocol config:", error);
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return defaultConfig;
     }
 
-    return defaultConfig;
+    console.error("Failed to read protocol config:", error);
+    throw error;
   }
 }
 
@@ -176,14 +179,15 @@ async function writeConfig(config: ProtocolConfig) {
 function sendJson<T>(
   response: ServerResponse,
   body: ApiResponse<T>,
-  status = 200
+  status = 200,
+  cacheControl = "no-store"
 ) {
   response.writeHead(status, {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
     "Access-Control-Allow-Origin": corsOrigin,
-    "Cache-Control": "no-store",
+    "Cache-Control": cacheControl,
     "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(body));
@@ -255,11 +259,16 @@ async function handleProtocolConfig(
   }
 
   if (request.method === "GET") {
-    return sendJson(response, {
-      code: 200,
-      message: "ok",
-      data: await readConfig(),
-    });
+    return sendJson(
+      response,
+      {
+        code: 200,
+        message: "ok",
+        data: await readConfig(),
+      },
+      200,
+      publicCacheControl
+    );
   }
 
   if (request.method === "PUT") {
@@ -290,20 +299,29 @@ async function handleProtocolConfig(
 }
 
 const server = createServer(async (request, response) => {
-  const url = getRequestUrl(request);
+  try {
+    const url = getRequestUrl(request);
 
-  if (url.pathname === "/health") {
-    return sendJson(response, { code: 200, message: "ok" });
+    if (url.pathname === "/health") {
+      return sendJson(response, { code: 200, message: "ok" });
+    }
+
+    if (
+      url.pathname === "/api/protocol-config" ||
+      url.pathname === "/protocol-config"
+    ) {
+      return await handleProtocolConfig(request, response);
+    }
+
+    return sendJson(response, { code: 404, message: "Not found" }, 404);
+  } catch (error) {
+    console.error("Protocol config request failed:", error);
+    return sendJson(
+      response,
+      { code: 500, message: "Internal server error" },
+      500
+    );
   }
-
-  if (
-    url.pathname === "/api/protocol-config" ||
-    url.pathname === "/protocol-config"
-  ) {
-    return handleProtocolConfig(request, response);
-  }
-
-  return sendJson(response, { code: 404, message: "Not found" }, 404);
 });
 
 server.listen(port, () => {

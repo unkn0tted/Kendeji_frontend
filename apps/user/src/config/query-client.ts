@@ -15,11 +15,7 @@ type QueryError = {
 };
 
 const TRANSIENT_API_CODES = new Set([500, 10_001]);
-const TRANSIENT_NETWORK_CODES = new Set([
-  "ECONNABORTED",
-  "ERR_NETWORK",
-  "ETIMEDOUT",
-]);
+const TRANSIENT_NETWORK_CODES = new Set(["ERR_NETWORK"]);
 
 function getNumber(value: unknown) {
   return typeof value === "number" ? value : undefined;

@@ -1,5 +1,8 @@
-import { describe, expect, test } from "bun:test";
-import { normalizeConfig } from "./config";
+import { describe, expect, spyOn, test } from "bun:test";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { ConfigStore, normalizeConfig } from "./config";
 
 describe("subscription rewriter config", () => {
   test("keeps the legacy single public URL as the default", () => {
@@ -164,5 +167,32 @@ describe("subscription rewriter config", () => {
         ],
       })
     ).toThrow("match mode");
+  });
+
+  test("returns defaults only when the config file does not exist", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "rewriter-config-test-"));
+    const configFile = join(directory, "config.json");
+
+    try {
+      const store = new ConfigStore(configFile);
+      await expect(store.read()).resolves.toMatchObject({
+        public_base_url: "",
+        public_base_urls: [],
+        origin_base_url: "",
+        rules: [],
+      });
+
+      await writeFile(configFile, "{invalid json");
+      const errorLog = spyOn(console, "error").mockImplementation(() => {
+        // The expected read failure is asserted below.
+      });
+      try {
+        await expect(store.read()).rejects.toThrow();
+      } finally {
+        errorLog.mockRestore();
+      }
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
   });
 });

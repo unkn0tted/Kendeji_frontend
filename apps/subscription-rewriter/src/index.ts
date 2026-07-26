@@ -45,6 +45,8 @@ const trustProxyHeaders = trustProxyHeadersEnabled(
   process.env.TRUST_PROXY_HEADERS
 );
 const store = new ConfigStore(configFile);
+const publicConfigCacheControl =
+  "public, max-age=30, stale-while-revalidate=60, stale-if-error=300";
 
 const forwardedRequestHeaders = [
   "accept",
@@ -72,23 +74,24 @@ function requestUrl(request: IncomingMessage) {
   return new URL(request.url || "/", "http://localhost");
 }
 
-function corsHeaders() {
+function corsHeaders(cacheControl = "no-store") {
   return {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Origin": corsOrigin,
-    "Cache-Control": "no-store",
+    "Cache-Control": cacheControl,
   };
 }
 
 function sendJson<T>(
   response: ServerResponse,
   body: ApiResponse<T>,
-  status = 200
+  status = 200,
+  cacheControl = "no-store"
 ) {
   response.writeHead(status, {
-    ...corsHeaders(),
+    ...corsHeaders(cacheControl),
     "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(body));
@@ -492,14 +495,19 @@ const server = createServer(async (request, response) => {
       request.method === "GET"
     ) {
       const config = await store.read();
-      return sendJson(response, {
-        code: 200,
-        message: "ok",
-        data: {
-          public_base_url: config.public_base_url,
-          public_base_urls: config.public_base_urls,
+      return sendJson(
+        response,
+        {
+          code: 200,
+          message: "ok",
+          data: {
+            public_base_url: config.public_base_url,
+            public_base_urls: config.public_base_urls,
+          },
         },
-      });
+        200,
+        publicConfigCacheControl
+      );
     }
     if (url.pathname === publicPath && request.method === "GET") {
       return await handleSubscription(request, response, url);

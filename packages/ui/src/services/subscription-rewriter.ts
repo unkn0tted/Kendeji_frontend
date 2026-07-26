@@ -21,6 +21,11 @@ export type SubscriptionRewriterConfig = {
   rules: SubscriptionRewriteRule[];
 };
 
+export type SubscriptionRewriterPublicConfig = {
+  public_base_url?: string;
+  public_base_urls?: string[];
+};
+
 export type SubscriptionHostCount = {
   host: string;
   count: number;
@@ -69,10 +74,7 @@ export async function getSubscriptionRewriterPublicConfig(
 ) {
   return request<
     API.Response & {
-      data?: {
-        public_base_url?: string;
-        public_base_urls?: string[];
-      };
+      data?: SubscriptionRewriterPublicConfig;
     }
   >(url("/public-config"), {
     method: "GET",

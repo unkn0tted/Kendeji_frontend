@@ -15,55 +15,48 @@ import {
   readOptionalConfigCache,
   updateOptionalConfigCache,
 } from "@/config/optional-config-cache";
+import {
+  getConfiguredPublicSubscriptionUrls,
+  hasConfiguredPublicSubscriptionUrls,
+} from "@/config/subscription-link-policy";
 import { useGlobalStore } from "@/stores/global";
+
+const REWRITER_RETRY_INITIAL_DELAY_MS = 5000;
+const REWRITER_RETRY_MAX_DELAY_MS = 60_000;
 
 export const Route = createRootRouteWithContext()({
   component: () => {
-    const { common, setCommon, getUserInfo, clearUserLoading } =
-      useGlobalStore();
+    const {
+      common,
+      setCommon,
+      getUserInfo,
+      clearUserLoading,
+      setSubscriptionLinkConfigStatus,
+    } = useGlobalStore();
     useEffect(() => {
+      const controller = new AbortController();
+      const { signal } = controller;
+      setSubscriptionLinkConfigStatus("loading");
+
       const loadConfig = async () => {
         const cachedConfig = readOptionalConfigCache();
-        const globalConfigPromise = getGlobalConfig()
-          .then((response) => {
-            const globalConfig = response.data.data;
-            if (globalConfig) {
-              setCommon(globalConfig);
-            }
-            return globalConfig;
-          })
-          .catch((error) => {
-            console.error("Failed to load global config:", error);
-          });
-        const protocolConfigPromise = getProtocolConfig({ timeout: 15_000 })
-          .then((response) => response.data.data ?? null)
-          .catch(() => {
-            /* Protocol config is optional. */
-            return null;
-          });
-        const rewriterConfigPromise = getSubscriptionRewriterPublicConfig({
-          timeout: 15_000,
-        })
-          .then((response) => response.data.data ?? null)
-          .catch(() => {
-            /* Subscription rewriter is optional. */
-            return null;
-          });
+        let globalConfig: API.GetGlobalConfigResponse | undefined;
+        let protocolConfig = cachedConfig.protocolConfig;
+        let rewriterConfig = hasConfiguredPublicSubscriptionUrls(
+          cachedConfig.rewriterConfig
+        )
+          ? cachedConfig.rewriterConfig
+          : undefined;
 
-        const globalConfig = await globalConfigPromise;
-        const applyOptionalConfig = (
-          protocolConfig = cachedConfig.protocolConfig,
-          rewriterConfig = cachedConfig.rewriterConfig
-        ) => {
+        const applyOptionalConfig = () => {
+          if (signal.aborted) return;
           if (protocolConfig === undefined && rewriterConfig === undefined) {
             return;
           }
 
           const currentSubscribe = useGlobalStore.getState().common.subscribe;
-          const publicBaseUrl = rewriterConfig?.public_base_url || "";
           const publicBaseUrls =
-            rewriterConfig?.public_base_urls ||
-            (publicBaseUrl ? [publicBaseUrl] : []);
+            getConfiguredPublicSubscriptionUrls(rewriterConfig);
 
           setCommon({
             subscribe: {
@@ -73,28 +66,104 @@ export const Route = createRootRouteWithContext()({
               ...(rewriterConfig === undefined
                 ? {}
                 : {
-                    public_subscribe_url: publicBaseUrl,
+                    public_subscribe_url: publicBaseUrls[0] || "",
                     public_subscribe_urls: publicBaseUrls,
                   }),
             },
           });
         };
 
-        applyOptionalConfig();
+        const markSubscriptionLinksReady = () => {
+          if (
+            rewriterConfig !== undefined &&
+            (hasConfiguredPublicSubscriptionUrls(rewriterConfig) ||
+              globalConfig !== undefined)
+          ) {
+            setSubscriptionLinkConfigStatus("ready");
+            return true;
+          }
+          return false;
+        };
 
-        const [protocolConfig, rewriterConfig] = await Promise.all([
-          protocolConfigPromise,
-          rewriterConfigPromise,
-        ]);
-        updateOptionalConfigCache({
-          ...(protocolConfig === null ? {} : { protocolConfig }),
-          ...(rewriterConfig === null ? {} : { rewriterConfig }),
+        const globalConfigPromise = getGlobalConfig()
+          .then((response) => {
+            if (signal.aborted) return;
+            globalConfig = response.data.data;
+            if (globalConfig) {
+              setCommon(globalConfig);
+              applyOptionalConfig();
+              markSubscriptionLinksReady();
+            }
+            return globalConfig;
+          })
+          .catch((error) => {
+            console.error("Failed to load global config:", error);
+          });
+        const protocolConfigPromise = getProtocolConfig({
+          signal,
+          timeout: 15_000,
+        })
+          .then((response) => response.data.data ?? null)
+          .catch(() => null);
+        const requestRewriterConfig = () =>
+          getSubscriptionRewriterPublicConfig({
+            signal,
+            timeout: 15_000,
+          })
+            .then((response) => response.data.data ?? null)
+            .catch(() => null);
+        const firstRewriterConfigPromise = requestRewriterConfig();
+
+        const waitForRetry = (delay: number) =>
+          new Promise<void>((resolve) => {
+            if (signal.aborted) {
+              resolve();
+              return;
+            }
+
+            const finish = () => {
+              clearTimeout(timeout);
+              signal.removeEventListener("abort", finish);
+              resolve();
+            };
+            const timeout = setTimeout(finish, delay);
+            signal.addEventListener("abort", finish, { once: true });
+          });
+
+        await globalConfigPromise;
+        if (signal.aborted) return;
+
+        applyOptionalConfig();
+        markSubscriptionLinksReady();
+
+        protocolConfigPromise.then((remoteProtocolConfig) => {
+          if (signal.aborted || remoteProtocolConfig === null) return;
+          protocolConfig = remoteProtocolConfig;
+          updateOptionalConfigCache({ protocolConfig });
+          applyOptionalConfig();
         });
-        if (protocolConfig !== null || rewriterConfig !== null) {
-          applyOptionalConfig(
-            protocolConfig ?? cachedConfig.protocolConfig,
-            rewriterConfig ?? cachedConfig.rewriterConfig
-          );
+
+        let remoteRewriterConfig = await firstRewriterConfigPromise;
+        let retryDelay = REWRITER_RETRY_INITIAL_DELAY_MS;
+        while (!signal.aborted) {
+          if (remoteRewriterConfig !== null) {
+            rewriterConfig = remoteRewriterConfig;
+            updateOptionalConfigCache({ rewriterConfig });
+            applyOptionalConfig();
+            if (!markSubscriptionLinksReady()) {
+              setSubscriptionLinkConfigStatus("retrying");
+            }
+            return;
+          }
+
+          if (!hasConfiguredPublicSubscriptionUrls(rewriterConfig)) {
+            setSubscriptionLinkConfigStatus("retrying");
+          }
+
+          await waitForRetry(retryDelay);
+          if (signal.aborted) return;
+          retryDelay = Math.min(retryDelay * 2, REWRITER_RETRY_MAX_DELAY_MS);
+          remoteRewriterConfig = await requestRewriterConfig();
         }
       };
 
@@ -108,11 +177,18 @@ export const Route = createRootRouteWithContext()({
 
       loadConfig().catch((error) => {
         console.error("Failed to initialize app config:", error);
+        if (!signal.aborted) {
+          setSubscriptionLinkConfigStatus("retrying");
+        }
       });
       loadUser().catch((error) => {
         console.error("Failed to initialize user:", error);
         clearUserLoading();
       });
+
+      return () => {
+        controller.abort();
+      };
     }, []);
 
     const { site } = common;

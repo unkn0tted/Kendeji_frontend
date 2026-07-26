@@ -68,7 +68,12 @@ const platforms: (keyof API.DownloadLink)[] = [
 
 export default function Content() {
   const { t, i18n } = useTranslation("dashboard");
-  const { common, getUserSubscribe, getAppSubLink } = useGlobalStore();
+  const {
+    common,
+    getUserSubscribe,
+    getAppSubLink,
+    subscriptionLinkConfigStatus,
+  } = useGlobalStore();
 
   const protocolOptions = React.useMemo(
     () =>
@@ -611,13 +616,35 @@ export default function Content() {
                     </li>
                   </ul>
                   <Separator className="mt-6" />
+                  {subscriptionLinkConfigStatus !== "ready" && (
+                    <div
+                      className="flex min-h-20 items-center justify-center gap-2 text-muted-foreground text-sm"
+                      role="status"
+                    >
+                      <Icon
+                        className="size-5 animate-spin"
+                        icon="mdi:loading"
+                      />
+                      {subscriptionLinkConfigStatus === "retrying"
+                        ? t(
+                            "subscriptionLinkRetrying",
+                            "Subscription address is temporarily unavailable. Retrying…"
+                          )
+                        : t(
+                            "subscriptionLinkLoading",
+                            "Loading subscription address…"
+                          )}
+                    </div>
+                  )}
                   <Accordion
-                    className="w-full"
+                    className={cn("w-full", {
+                      hidden: subscriptionLinkConfigStatus !== "ready",
+                    })}
                     collapsible
                     defaultValue="0"
                     type="single"
                   >
-                    {getUserSubscribe(item.short, item.token, protocol)?.map(
+                    {getUserSubscribe(item.short, item.token, protocol).map(
                       (url, index) => (
                         <AccordionItem key={url} value={String(index)}>
                           <AccordionTrigger className="hover:no-underline">

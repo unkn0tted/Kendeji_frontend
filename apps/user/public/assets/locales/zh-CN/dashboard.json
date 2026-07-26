@@ -32,6 +32,8 @@
   "retry": "重试",
   "scanToSubscribe": "扫码订阅",
   "subscriptionUrl": "订阅链接",
+  "subscriptionLinkLoading": "正在加载订阅地址…",
+  "subscriptionLinkRetrying": "订阅地址暂时不可用，正在重试…",
   "subscriptionLoadFailed": "订阅加载失败",
   "subscriptionLoadFailedDescription": "这是订阅数据请求失败，并不表示账号没有订阅。",
   "totalTraffic": "总流量",

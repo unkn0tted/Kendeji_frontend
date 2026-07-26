@@ -32,7 +32,8 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
     },
   });
 
-  const { common, getUserSubscribe } = useGlobalStore();
+  const { common, getUserSubscribe, subscriptionLinkConfigStatus } =
+    useGlobalStore();
   const { data: userSubscriptions } = useQuery({
     queryKey: ["queryUserSubscribe"],
     queryFn: async () => {
@@ -52,7 +53,10 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
       return "";
     }
     const hasSub = Boolean(subscribeUrl);
-    const purchaseHint = t("noSubscription", "Please purchase a subscription");
+    const purchaseHint =
+      firstSubscribe && subscriptionLinkConfigStatus !== "ready"
+        ? t("subscriptionLinkLoading", "Subscription address is loading")
+        : t("noSubscription", "Please purchase a subscription");
     const toBase64 = (value: string) => {
       try {
         return btoa(value);

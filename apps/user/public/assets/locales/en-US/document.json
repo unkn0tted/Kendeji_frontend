@@ -1,6 +1,7 @@
 {
   "all": "All",
   "noSubscription": "Please purchase a subscription",
+  "subscriptionLinkLoading": "Subscription address is loading",
   "document": "Document",
   "read": "Read",
   "tutorial": "Tutorial"

@@ -1,6 +1,7 @@
 {
   "all": "全部",
   "noSubscription": "请购买订阅",
+  "subscriptionLinkLoading": "订阅地址正在加载",
   "document": "文档",
   "read": "阅读",
   "tutorial": "教程"

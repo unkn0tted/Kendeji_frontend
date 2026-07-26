@@ -31,6 +31,8 @@
   "retry": "Retry",
   "scanToSubscribe": "Scan to Subscribe",
   "subscriptionUrl": "Subscription URL",
+  "subscriptionLinkLoading": "Loading subscription address…",
+  "subscriptionLinkRetrying": "Subscription address is temporarily unavailable. Retrying…",
   "subscriptionLoadFailed": "Could not load subscriptions",
   "subscriptionLoadFailedDescription": "This is a subscription data request error, not an empty account.",
   "totalTraffic": "Total Traffic",

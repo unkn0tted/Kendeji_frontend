@@ -6,13 +6,22 @@ import {
   normalizeSubscriptionProtocolOptions,
 } from "@workspace/ui/utils/subscription-protocol";
 import { create } from "zustand";
+import {
+  canGenerateSubscriptionLinks,
+  getConfiguredPublicSubscriptionUrls,
+  type SubscriptionLinkConfigStatus,
+} from "@/config/subscription-link-policy";
 
 export interface GlobalStore {
   common: API.GetGlobalConfigResponse;
   user?: API.User;
   isLoadingUser: boolean;
+  subscriptionLinkConfigStatus: SubscriptionLinkConfigStatus;
   setCommon: (common: Partial<API.GetGlobalConfigResponse>) => void;
   setUser: (user?: API.User) => void;
+  setSubscriptionLinkConfigStatus: (
+    status: SubscriptionLinkConfigStatus
+  ) => void;
   getUserInfo: () => Promise<void>;
   clearUserLoading: () => void;
   getUserSubscribe: (
@@ -84,18 +93,6 @@ function createPublicSubscribeUrl(
   } catch {
     return null;
   }
-}
-
-function selectPublicSubscribeUrls(
-  defaultUrl: string | undefined,
-  configuredUrls: API.SubscribeConfig["public_subscribe_urls"]
-) {
-  const urls = configuredUrls?.length
-    ? configuredUrls
-    : defaultUrl?.trim()
-      ? [defaultUrl.trim()]
-      : [];
-  return [...new Set(urls.map((url) => url.trim()).filter(Boolean))];
 }
 
 function replaceQueryPlaceholder(
@@ -215,6 +212,7 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
   },
   user: undefined,
   isLoadingUser: true,
+  subscriptionLinkConfigStatus: "loading",
   setCommon: (common) =>
     set((state) => ({
       common: {
@@ -223,6 +221,8 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       },
     })),
   setUser: (user) => set({ user }),
+  setSubscriptionLinkConfigStatus: (subscriptionLinkConfigStatus) =>
+    set({ subscriptionLinkConfigStatus }),
   getUserInfo: async () => {
     set({ isLoadingUser: true });
     try {
@@ -238,6 +238,11 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
     set({ isLoadingUser: false });
   },
   getUserSubscribe: (short: string, token: string, protocol?: string) => {
+    const state = get();
+    if (!canGenerateSubscriptionLinks(state.subscriptionLinkConfigStatus)) {
+      return [];
+    }
+
     const {
       default_protocol,
       pan_domain,
@@ -245,25 +250,22 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
       public_subscribe_urls,
       subscribe_domain,
       subscribe_path,
-    } = get().common.subscribe || {};
-    const protocolOptions = get().common.subscribe?.protocol_options;
+    } = state.common.subscribe || {};
+    const protocolOptions = state.common.subscribe?.protocol_options;
     const normalizedProtocol = normalizeSubscriptionProtocol(
       protocol || default_protocol,
       protocolOptions
     );
-    const publicUrls = selectPublicSubscribeUrls(
-      public_subscribe_url,
-      public_subscribe_urls
-    );
+    const publicUrls = getConfiguredPublicSubscriptionUrls({
+      public_base_url: public_subscribe_url,
+      public_base_urls: public_subscribe_urls,
+    });
     if (publicUrls.length > 0) {
-      const result = publicUrls
+      return publicUrls
         .map((baseUrl) =>
           createPublicSubscribeUrl(baseUrl, token, normalizedProtocol)
         )
         .filter((url): url is string => Boolean(url));
-      if (result.length > 0) {
-        return result;
-      }
     }
     const fallbackDomain = extractDomain(window.location.origin, pan_domain);
     const domains = subscribe_domain

@@ -11,7 +11,7 @@ import { Markdown } from "@workspace/ui/composed/markdown";
 import { useOutsideClick } from "@workspace/ui/hooks/use-outside-click";
 import { cn } from "@workspace/ui/lib/utils";
 import { formatDate } from "@workspace/ui/utils/formatting";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { type RefObject, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getTutorial } from "@/sections/user/document/tutorial";

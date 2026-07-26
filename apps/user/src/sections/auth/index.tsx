@@ -1,6 +1,5 @@
 "use client";
 
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { Link } from "@tanstack/react-router";
 import {
   Tabs,
@@ -8,6 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
+import { AuroraOrb } from "@workspace/ui/composed/aurora-orb";
 import { Icon } from "@workspace/ui/composed/icon";
 import { LanguageSwitch } from "@workspace/ui/composed/language-switch";
 import { ThemeSwitch } from "@workspace/ui/composed/theme-switch";
@@ -88,19 +88,17 @@ export default function Main() {
             <p className="mt-5 max-w-xl text-lg text-muted-foreground leading-8">
               {authDescription}
             </p>
-            <div className="mt-8 overflow-hidden rounded-md border border-primary/10 bg-white/55 dark:border-white/8 dark:bg-white/5">
-              <DotLottieReact
-                autoplay
-                className="mx-auto aspect-[4/3] w-full max-w-sm"
-                loop
-                src="./assets/lotties/login.json"
+            <div className="rose-panel mt-8 p-6">
+              <AuroraOrb
+                className="mx-auto max-w-sm"
+                logo={site.site_logo || undefined}
               />
             </div>
           </div>
           <div className="mt-6 grid grid-cols-3 gap-3">
             {features.map((item) => (
               <div
-                className="flex min-h-24 flex-col items-center justify-center gap-3 rounded-md border border-primary/10 bg-white/58 px-3 py-4 text-center dark:border-white/8 dark:bg-white/5"
+                className="rose-panel flex min-h-24 flex-col items-center justify-center gap-3 px-3 py-4 text-center"
                 key={item.title}
               >
                 <div className="flex size-11 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -168,7 +166,7 @@ export default function Main() {
                 <OAuthMethods />
               </div>
               <div className="mt-8 flex flex-col gap-4 border-primary/10 border-t pt-5 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
-                <div className="app-quick-actions flex items-center gap-1 rounded-md border border-primary/10 bg-white/60 p-1 dark:border-white/8 dark:bg-white/5">
+                <div className="app-quick-actions">
                   <LanguageSwitch />
                   <ThemeSwitch />
                 </div>

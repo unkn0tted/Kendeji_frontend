@@ -8,8 +8,8 @@ import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
 import { prePurchaseOrder, purchase } from "@workspace/ui/services/user/portal";
 import { useDebounce } from "ahooks";
-import { motion } from "framer-motion";
 import { LoaderCircle } from "lucide-react";
+import { motion } from "motion/react";
 import {
   useCallback,
   useEffect,
@@ -50,8 +50,7 @@ export default function Content({
     t("coupon", "Coupon"),
     t("paymentMethod", "Payment Method"),
   ];
-  const fieldClassName =
-    "border-primary/12 bg-white/75 shadow-[0_18px_34px_-28px_oklch(0.64_0.16_11_/0.4)] dark:border-white/8 dark:bg-white/6";
+  const fieldClassName = "rose-surface";
   const { common } = useGlobalStore();
   const domainWhitelist = useMemo(
     () => getEmailDomainWhitelist(common.auth.email.domain_suffix_list),
@@ -186,7 +185,7 @@ export default function Content({
           <div className="flex flex-wrap gap-2.5 lg:justify-end">
             {checkoutTags.map((item) => (
               <span
-                className="rounded-md border border-primary/12 bg-white/70 px-3.5 py-2 font-medium text-foreground/90 text-sm shadow-[0_14px_28px_-26px_oklch(0.64_0.16_11_/0.4)] dark:border-white/8 dark:bg-white/6"
+                className="rose-surface rounded-md px-3.5 py-2 font-medium text-foreground/90 text-sm"
                 key={item}
               >
                 {item}

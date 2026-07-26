@@ -28,7 +28,7 @@ export function Header() {
       <div className="rose-nav-shell px-3 py-2 sm:px-4">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <SidebarTrigger className="border border-primary/12 bg-white/60 shadow-none hover:border-primary/25 hover:bg-white/90 dark:border-white/8 dark:bg-white/5 dark:hover:bg-white/10" />
+            <SidebarTrigger className="border border-border bg-transparent shadow-none hover:bg-primary/10 hover:text-primary" />
             <Link
               className="hidden min-w-0 items-center gap-2.5 font-semibold text-sm tracking-tight sm:flex"
               to="/dashboard"
@@ -44,7 +44,7 @@ export function Header() {
                 {site.site_name}
               </span>
             </Link>
-            <div className="hidden h-8 w-px bg-primary/12 md:block dark:bg-white/10" />
+            <div className="hidden h-8 w-px bg-border md:block" />
             <Breadcrumb className="min-w-0">
               <BreadcrumbList className="flex-nowrap overflow-hidden">
                 {items.length ? (
@@ -81,7 +81,7 @@ export function Header() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="app-quick-actions flex shrink-0 items-center gap-1 rounded-md border border-primary/10 bg-white/55 p-1 dark:border-white/8 dark:bg-white/5">
+          <div className="app-quick-actions">
             <LanguageSwitch />
             <TimezoneSwitch />
             <ThemeSwitch />

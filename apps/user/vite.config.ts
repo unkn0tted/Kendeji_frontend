@@ -23,6 +23,37 @@ function versionLockPlugin(): Plugin {
   };
 }
 
+// Names stable vendor chunks for the foundations that load on every route, so
+// they stay cached across deploys while app code churns.
+//
+// Deliberately limited to dependencies that are *already* eager. Naming a chunk
+// for a lazy-only library (charts, markdown, zod, ...) backfires: Rollup drops
+// small shared helpers into whichever chunk first needs them, an eager chunk
+// then imports the helper, and the entire lazy chunk gets promoted onto the
+// critical path. Everything unlisted falls through to Rollup's own splitting,
+// which cannot make that mistake.
+function vendorChunks(id: string) {
+  // Rollup's CommonJS interop helpers are a few shared lines with no home of
+  // their own; give them a dedicated chunk so they never anchor a large one.
+  if (id.includes("commonjsHelpers")) return "vendor-interop";
+
+  if (!id.includes("node_modules")) return;
+
+  if (
+    /[\\/]node_modules[\\/](react|react-dom|scheduler|use-sync-external-store)[\\/]/.test(
+      id
+    )
+  ) {
+    return "vendor-react";
+  }
+  if (id.includes("/node_modules/@tanstack/")) return "vendor-tanstack";
+  if (
+    /[\\/]node_modules[\\/](i18next|react-i18next|i18next-.+?)[\\/]/.test(id)
+  ) {
+    return "vendor-i18n";
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -38,7 +69,9 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_APP_BUILD_ID": JSON.stringify(appBuildId),
     },
     plugins: [
-      devtools({ eventBusConfig: { port: 42_069 } }),
+      mode === "production"
+        ? null
+        : devtools({ eventBusConfig: { port: 42_069 } }),
       tanstackRouter({
         target: "react",
         autoCodeSplitting: true,
@@ -68,6 +101,12 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       assetsDir: "static",
+      chunkSizeWarningLimit: 800,
+      rollupOptions: {
+        output: {
+          manualChunks: vendorChunks,
+        },
+      },
     },
   };
 });

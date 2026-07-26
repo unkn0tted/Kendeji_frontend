@@ -1,5 +1,5 @@
 import { Icon } from "@workspace/ui/composed/icon";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { cardReveal, sectionReveal, sectionViewport } from "./motion";
 
@@ -125,7 +125,7 @@ export function GlobalMap() {
                 },
               ].map((item) => (
                 <div
-                  className="main-map-region flex items-center justify-between gap-4 rounded-md border border-primary/10 bg-background/62 p-3 dark:border-white/8 dark:bg-white/4"
+                  className="main-map-region rose-surface flex items-center justify-between gap-4 p-3"
                   key={item.region}
                 >
                   <div className="flex items-center gap-3">

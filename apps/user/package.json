@@ -13,10 +13,8 @@
     "i18n:status": "i18next-cli status"
   },
   "dependencies": {
-    "@faker-js/faker": "^10.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "@lottiefiles/dotlottie-react": "^0.17.7",
     "@stripe/react-stripe-js": "^5.4.0",
     "@stripe/stripe-js": "^8.5.2",
     "@tailwindcss/vite": "^4.0.6",
@@ -29,8 +27,8 @@
     "@workspace/typescript-config": "workspace:*",
     "@workspace/ui": "workspace:*",
     "ahooks": "^3.9.6",
-    "framer-motion": "^12.23.24",
     "js-yaml": "^4.1.1",
+    "motion": "^12.23.24",
     "qrcode.react": "^4.2.0",
     "react-copy-to-clipboard": "^5.1.0",
     "react-helmet-async": "^2.0.5",

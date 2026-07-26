@@ -111,7 +111,7 @@ export function SidebarLeft({
           side="right"
           sideOffset={10}
         >
-          <div className="flex items-center gap-2 border-primary/10 border-b bg-primary/5 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+          <div className="flex items-center gap-2 border-border border-b bg-primary/5 px-3 py-2">
             {"icon" in nav && (nav as any).icon ? (
               <Icon className="size-4" icon={(nav as any).icon} />
             ) : null}
@@ -158,7 +158,7 @@ export function SidebarLeft({
               size="sm"
             >
               <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-white/65 ring-1 ring-primary/16 dark:bg-white/5 dark:ring-white/10">
+                <div className="rose-surface flex aspect-square size-8 items-center justify-center rounded-md">
                   <img
                     alt="logo"
                     className="size-6 rounded-md"

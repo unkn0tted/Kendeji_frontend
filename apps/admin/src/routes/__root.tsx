@@ -1,17 +1,20 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { NavigationProgress } from "@workspace/ui/composed/navigation-progress";
-import { TanStackQueryDevtools } from "@workspace/ui/integrations/tanstack-query-devtools";
 import { getCookie } from "@workspace/ui/lib/cookies";
 import { getGlobalConfig } from "@workspace/ui/services/common/common";
 import { getProtocolConfig } from "@workspace/ui/services/protocol-config";
 import { getSubscriptionRewriterPublicConfig } from "@workspace/ui/services/subscription-rewriter";
 import { isBrowser } from "@workspace/ui/utils/index";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import { useGlobalStore } from "@/stores/global";
+
+// Constant-folded away in production builds, so the devtools chunk is never
+// emitted and its packages stay out of the bundle entirely.
+const Devtools = import.meta.env.DEV
+  ? lazy(() => import("@/components/devtools"))
+  : null;
 
 export const Route = createRootRouteWithContext()({
   component: () => {
@@ -89,18 +92,11 @@ export const Route = createRootRouteWithContext()({
         <NavigationProgress />
         <Outlet />
         <Toaster closeButton richColors />
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
+        {Devtools && (
+          <Suspense fallback={null}>
+            <Devtools />
+          </Suspense>
+        )}
       </HelmetProvider>
     );
   },

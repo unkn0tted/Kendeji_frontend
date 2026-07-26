@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@workspace/ui/components/button";
 import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
@@ -145,7 +145,7 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
                     </p>
                   )}
                   {parsedDescription.features.length > 0 && (
-                    <div className="mt-6 rounded-md border border-primary/10 bg-white/56 p-4 dark:bg-white/4">
+                    <div className="rose-surface mt-6 rounded-md p-4">
                       <p className="font-medium text-muted-foreground text-xs uppercase tracking-[0.18em]">
                         {t("product_showcase_feature_label", "Included")}
                       </p>
@@ -179,7 +179,7 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
                       </ul>
                     </div>
                   )}
-                  <div className="mt-4 rounded-md border border-primary/10 bg-white/44 p-4 dark:bg-white/3">
+                  <div className="rose-surface mt-4 rounded-md p-4">
                     <SubscribeDetail
                       subscribe={{
                         ...item,
@@ -240,7 +240,7 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
                           "w-full font-semibold shadow-sm sm:w-auto sm:min-w-36",
                           isHighlighted
                             ? "shadow-primary/15"
-                            : "border-primary/14 bg-white/68 text-foreground hover:bg-white/90 dark:bg-white/6 dark:hover:bg-white/10"
+                            : "rose-surface-interactive text-foreground"
                         )}
                         disabled={!canPurchase}
                         variant={isHighlighted ? "default" : "outline"}

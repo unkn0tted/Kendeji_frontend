@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@workspace/ui/components/button";
 import { Icon } from "@workspace/ui/composed/icon";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { useGlobalStore } from "@/stores/global";
@@ -97,7 +97,7 @@ export function Hero() {
             {!user && (
               <Button
                 asChild
-                className="hidden h-12 border-primary/14 bg-white/70 px-6 font-semibold text-foreground hover:bg-white/95 sm:inline-flex dark:bg-white/6 dark:hover:bg-white/10"
+                className="rose-surface-interactive hidden h-12 px-6 font-semibold text-foreground sm:inline-flex"
                 variant="outline"
               >
                 <Link to="/purchasing">
@@ -160,7 +160,7 @@ export function Hero() {
                           y: [0, -5, 0],
                         }
                   }
-                  className="main-status-card flex items-start gap-3 rounded-md border border-primary/10 bg-background/62 p-3 dark:border-white/8 dark:bg-white/4"
+                  className="main-status-card flex items-start gap-3 p-3"
                   key={item.title}
                   transition={{
                     duration: 4.8,

@@ -37,7 +37,7 @@ export default function Header() {
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
               <nav className="flex items-center">{Logo}</nav>
-              <div className="hidden min-w-0 items-center gap-2 rounded-md border border-primary/12 bg-white/55 px-3 py-2 text-muted-foreground text-sm lg:flex dark:border-white/8 dark:bg-white/5">
+              <div className="rose-surface hidden min-w-0 items-center gap-2 rounded-md px-3 py-2 text-muted-foreground text-sm lg:flex">
                 <span className="size-2.5 rounded-[3px] bg-primary shadow-[0_0_0_6px_oklch(0.68_0.17_8_/0.16)]" />
                 <p className="truncate">{supportText}</p>
               </div>
@@ -45,13 +45,13 @@ export default function Header() {
             <div className="flex items-center gap-2">
               {!user && (
                 <Link
-                  className="hidden rounded-md border border-primary/12 bg-white/60 px-4 py-2 font-medium text-foreground/80 text-sm transition-all duration-200 hover:border-primary/25 hover:bg-white/90 md:inline-flex dark:border-white/8 dark:bg-white/5 dark:hover:bg-white/10"
+                  className="rose-surface-interactive hidden rounded-md px-4 py-2 font-medium text-foreground/80 text-sm md:inline-flex"
                   to="/purchasing"
                 >
                   {t("pricing", "Pricing")}
                 </Link>
               )}
-              <div className="app-quick-actions flex items-center gap-1 rounded-md border border-primary/10 bg-white/55 p-1 dark:border-white/8 dark:bg-white/5">
+              <div className="app-quick-actions">
                 <LanguageSwitch />
                 <ThemeSwitch />
               </div>

@@ -200,7 +200,7 @@ export default function Subscribe() {
                   {t("buySubscription", "Buy Subscription")}
                 </span>
                 {filteredData.length > 0 && (
-                  <span className="rose-pill border-transparent bg-primary/6 text-foreground/72 dark:bg-white/6">
+                  <span className="rose-pill border-transparent bg-primary/8 text-foreground/72">
                     {t("showcase.livePlans", "{{count}} live plans", {
                       count: filteredData.length,
                     })}

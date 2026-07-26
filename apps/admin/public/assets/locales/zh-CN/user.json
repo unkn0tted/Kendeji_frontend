@@ -44,6 +44,7 @@
   "invalidEmailFormat": "邮箱格式无效",
   "inviteCode": "邀请码",
   "inviteCodePlaceholder": "输入邀请码",
+  "inviteCodeSearchPlaceholder": "输入邀请码，查找该邀请码邀请的用户",
   "kickOfflineConfirm": "确认踢下线",
   "kickOfflineSuccess": "设备已踢下线",
   "lastSeen": "最后上线",

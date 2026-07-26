@@ -39,8 +39,15 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Display } from "@/components/display";
+import { fetchAllPaginated } from "@/stores/pagination";
 import { useSubscribe } from "@/stores/subscribe";
 import { formatDate } from "@/utils/common";
+import {
+  filterUsersInvitedBy,
+  findInviteOwnerId,
+  normalizeInviteCode,
+  paginateUsers,
+} from "./invite-code-users";
 import { UserDetail } from "./user-detail";
 import UserForm from "./user-form";
 import { AuthMethodsForm } from "./user-profile/auth-methods-form";
@@ -48,24 +55,100 @@ import { BasicInfoForm } from "./user-profile/basic-info-form";
 import { NotifySettingsForm } from "./user-profile/notify-settings-form";
 import UserSubscription from "./user-subscription";
 
+const INVITE_FILTER_CACHE_LIMIT = 3;
+
+type UserListFilters = Omit<API.GetUserListParams, "page" | "size"> & {
+  invite_code?: string;
+};
+
 export default function User() {
   const { t } = useTranslation("user");
   const [loading, setLoading] = useState(false);
   const ref = useRef<ProTableActions>(null);
   const sp = useSearch({ strict: false }) as Record<string, string | undefined>;
+  const userDirectoryCache = useRef<Promise<API.User[]> | null>(null);
+  const invitedUsersCache = useRef(new Map<string, Promise<API.User[]>>());
 
   const { subscribes } = useSubscribe();
 
   const initialFilters = {
     search: sp.search || undefined,
+    invite_code: sp.invite_code || undefined,
     user_id: sp.user_id || undefined,
     subscribe_id: sp.subscribe_id || undefined,
     user_subscribe_id: sp.user_subscribe_id || undefined,
     user_subscribe_token: sp.user_subscribe_token || undefined,
   };
 
+  const getUserDirectory = (force: boolean): Promise<API.User[]> => {
+    if (force) {
+      userDirectoryCache.current = null;
+    }
+    if (userDirectoryCache.current) return userDirectoryCache.current;
+
+    const request = fetchAllPaginated<API.User>(getUserList);
+    request.catch(() => {
+      if (userDirectoryCache.current === request) {
+        userDirectoryCache.current = null;
+      }
+    });
+    userDirectoryCache.current = request;
+    return request;
+  };
+
+  const getInvitedUsers = (
+    filter: UserListFilters,
+    force: boolean
+  ): Promise<API.User[]> => {
+    const inviteCode = normalizeInviteCode(filter.invite_code);
+    if (!inviteCode) return Promise.resolve([]);
+
+    const apiFilters = createUserListApiFilters(filter);
+    const cacheKey = JSON.stringify({
+      invite_code: inviteCode,
+      ...apiFilters,
+    });
+
+    if (force) {
+      invitedUsersCache.current.delete(cacheKey);
+    }
+    const cached = invitedUsersCache.current.get(cacheKey);
+    if (cached) return cached;
+
+    const request = (async () => {
+      const directory = await getUserDirectory(force);
+      const inviteOwnerId = findInviteOwnerId(directory, inviteCode);
+      if (inviteOwnerId === undefined) return [];
+
+      const candidates = hasActiveUserListFilters(apiFilters)
+        ? await fetchAllPaginated<API.User>((pagination) =>
+            getUserList({
+              ...pagination,
+              ...apiFilters,
+            })
+          )
+        : directory;
+      return filterUsersInvitedBy(candidates, inviteOwnerId);
+    })();
+
+    request.catch(() => {
+      if (invitedUsersCache.current.get(cacheKey) === request) {
+        invitedUsersCache.current.delete(cacheKey);
+      }
+    });
+    invitedUsersCache.current.set(cacheKey, request);
+
+    while (invitedUsersCache.current.size > INVITE_FILTER_CACHE_LIMIT) {
+      const oldestKey = invitedUsersCache.current.keys().next().value;
+      if (oldestKey === undefined) break;
+      invitedUsersCache.current.delete(oldestKey);
+    }
+
+    return request;
+  };
+
   return (
-    <ProTable<API.User, API.GetUserListParams>
+    <ProTable<API.User, UserListFilters>
       action={ref}
       actions={{
         render: (row) => [
@@ -286,6 +369,13 @@ export default function User() {
           placeholder: "Search",
         },
         {
+          key: "invite_code",
+          placeholder: t(
+            "inviteCodeSearchPlaceholder",
+            "Find users invited with this code"
+          ),
+        },
+        {
           key: "user_id",
           placeholder: t("userId", "User ID"),
         },
@@ -301,20 +391,46 @@ export default function User() {
           ),
         },
       ]}
-      request={async (pagination, filter) => {
+      request={async (pagination, filter, context) => {
+        if (normalizeInviteCode(filter.invite_code)) {
+          const invitedUsers = await getInvitedUsers(filter, context.force);
+          return {
+            list: paginateUsers(invitedUsers, pagination.page, pagination.size),
+            total: invitedUsers.length,
+          };
+        }
+
         const { data } = await getUserList({
           ...pagination,
-          ...filter,
-          user_subscribe_token: extractSubscribeTokenOrUuid(
-            filter.user_subscribe_token
-          ),
+          ...createUserListApiFilters(filter),
         });
         return {
           list: data.data?.list || [],
           total: data.data?.total || 0,
         };
       }}
+      requestDebounceMs={350}
     />
+  );
+}
+
+function createUserListApiFilters(
+  filter: UserListFilters
+): Omit<API.GetUserListParams, "page" | "size"> {
+  const { invite_code: _inviteCode, ...apiFilters } = filter;
+  return {
+    ...apiFilters,
+    user_subscribe_token: extractSubscribeTokenOrUuid(
+      apiFilters.user_subscribe_token
+    ),
+  };
+}
+
+function hasActiveUserListFilters(
+  filter: Omit<API.GetUserListParams, "page" | "size">
+): boolean {
+  return Object.values(filter).some(
+    (value) => value !== undefined && value !== "" && value !== false
   );
 }
 

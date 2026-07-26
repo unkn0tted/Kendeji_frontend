@@ -44,6 +44,7 @@
   "invalidEmailFormat": "Invalid email format",
   "inviteCode": "Invite Code",
   "inviteCodePlaceholder": "Enter invite code",
+  "inviteCodeSearchPlaceholder": "Find users invited with this code",
   "kickOfflineConfirm": "kickOfflineConfirm",
   "kickOfflineSuccess": "Device kicked offline",
   "lastSeen": "Last Seen",

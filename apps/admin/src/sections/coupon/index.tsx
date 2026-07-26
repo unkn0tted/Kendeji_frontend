@@ -20,12 +20,35 @@ import { Display } from "@/components/display";
 import { useSubscribe } from "@/stores/subscribe";
 import { formatDate } from "@/utils/common";
 import CouponForm from "./coupon-form";
+import {
+  couponTimestampToMilliseconds,
+  normalizeCouponTimestampsForApi,
+} from "./timestamps";
+
+function toCouponUpdateRequest(coupon: API.Coupon): API.UpdateCouponRequest {
+  const normalized = normalizeCouponTimestampsForApi(coupon);
+  return {
+    id: normalized.id,
+    name: normalized.name,
+    code: normalized.code,
+    count: normalized.count,
+    type: normalized.type,
+    discount: normalized.discount,
+    start_time: normalized.start_time,
+    expire_time: normalized.expire_time,
+    user_limit: normalized.user_limit,
+    subscribe: normalized.subscribe,
+    used_count: normalized.used_count,
+    enable: normalized.enable,
+  };
+}
 
 export default function Coupon() {
   const { t } = useTranslation("coupon");
   const [loading, setLoading] = useState(false);
   const { subscribes } = useSubscribe();
   const ref = useRef<ProTableActions>(null);
+
   return (
     <ProTable<API.Coupon, { group_id: number; query: string }>
       action={ref}
@@ -99,10 +122,12 @@ export default function Coupon() {
             <Switch
               defaultChecked={row.getValue("enable")}
               onCheckedChange={async (checked) => {
-                await updateCoupon({
-                  ...row.original,
-                  enable: checked,
-                } as API.UpdateCouponRequest);
+                await updateCoupon(
+                  toCouponUpdateRequest({
+                    ...row.original,
+                    enable: checked,
+                  })
+                );
                 ref.current?.refresh();
               }}
             />
@@ -175,10 +200,11 @@ export default function Coupon() {
             if (start_time) {
               return expire_time ? (
                 <>
-                  {formatDate(start_time)} - {formatDate(expire_time)}
+                  {formatDate(couponTimestampToMilliseconds(start_time))} -{" "}
+                  {formatDate(couponTimestampToMilliseconds(expire_time))}
                 </>
               ) : start_time ? (
-                formatDate(start_time)
+                formatDate(couponTimestampToMilliseconds(start_time))
               ) : (
                 "--"
               );

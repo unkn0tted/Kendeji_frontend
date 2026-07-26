@@ -26,11 +26,15 @@ import { DatePicker } from "@workspace/ui/composed/date-picker";
 import { EnhancedInput } from "@workspace/ui/composed/enhanced-input";
 import { Icon } from "@workspace/ui/composed/icon";
 import { unitConversion } from "@workspace/ui/utils/unit-conversions";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useSubscribe } from "@/stores/subscribe";
+import {
+  normalizeCouponTimestampsForApi,
+  normalizeCouponTimestampsForPicker,
+} from "./timestamps";
 
 const formSchema = z.object({
   name: z.string(),
@@ -62,20 +66,27 @@ export default function CouponForm<T extends Record<string, any>>({
   const { t } = useTranslation("coupon");
 
   const [open, setOpen] = useState(false);
+  const pickerInitialValues = useMemo(
+    () =>
+      initialValues
+        ? normalizeCouponTimestampsForPicker(initialValues)
+        : undefined,
+    [initialValues]
+  );
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: 1,
-      ...initialValues,
+      ...pickerInitialValues,
     } as any,
   });
 
   useEffect(() => {
-    form?.reset(initialValues);
-  }, [form, initialValues]);
+    form.reset(pickerInitialValues);
+  }, [form, pickerInitialValues]);
 
   async function handleSubmit(data: { [x: string]: any }) {
-    const bool = await onSubmit(data as T);
+    const bool = await onSubmit(normalizeCouponTimestampsForApi(data) as T);
     if (bool) setOpen(false);
   }
 

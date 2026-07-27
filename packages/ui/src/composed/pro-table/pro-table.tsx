@@ -92,6 +92,7 @@ export interface ProTableProps<TData, TValue> {
   ) => Promise<TData[]>;
   initialFilters?: Record<string, unknown>;
   requestDebounceMs?: number;
+  requestErrorMessage?: (error: unknown) => string | undefined;
   getRowId?: (originalRow: TData, index: number) => string;
 }
 
@@ -120,6 +121,7 @@ export function ProTable<
   onSort,
   initialFilters,
   requestDebounceMs = 300,
+  requestErrorMessage,
   getRowId,
 }: ProTableProps<TData, TValue>) {
   const { t } = useTranslation("components");
@@ -252,7 +254,10 @@ export function ProTable<
     } catch (error) {
       if (sequence === requestSequence.current) {
         console.error("Fetch data error:", error);
-        toast.error(t("table.loadFailed", "Failed to load data"));
+        toast.error(
+          requestErrorMessage?.(error) ||
+            t("table.loadFailed", "Failed to load data")
+        );
       }
     } finally {
       if (sequence === requestSequence.current) {

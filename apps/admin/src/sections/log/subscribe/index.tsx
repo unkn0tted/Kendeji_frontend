@@ -22,8 +22,12 @@ import { formatDate, todayInTimezone } from "@/utils/common";
 import {
   type EnrichedSubscribeLog,
   enumerateDateRange,
+  filterSubscribeLogsBySubscriptionId,
   mapWithConcurrency,
   paginateSubscribeLogs,
+  parseSubscriptionIdSelector,
+  type SubscriptionIdSelector,
+  SubscriptionIdSelectorError,
   sortSubscribeLogs,
 } from "./subscribe-log-data";
 
@@ -35,7 +39,7 @@ type SubscribeLogFilters = {
   end_date?: string;
   start_date?: string;
   user_id?: number;
-  user_subscribe_id?: number;
+  user_subscribe_id?: string;
 };
 
 function toOptionalId(value: unknown): number | undefined {
@@ -43,10 +47,32 @@ function toOptionalId(value: unknown): number | undefined {
   return Number.isInteger(id) && id > 0 ? id : undefined;
 }
 
+function cacheRangeRequest<T>(
+  cache: Map<string, Promise<T>>,
+  key: string,
+  request: Promise<T>
+): Promise<T> {
+  request.catch(() => {
+    if (cache.get(key) === request) {
+      cache.delete(key);
+    }
+  });
+  cache.set(key, request);
+
+  while (cache.size > RANGE_CACHE_LIMIT) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    cache.delete(oldestKey);
+  }
+
+  return request;
+}
+
 export default function SubscribeLogPage() {
   const { t } = useTranslation("log");
   const sp = useSearch({ strict: false }) as Record<string, string | undefined>;
   const queryClient = useQueryClient();
+  const rawRangeCache = useRef(new Map<string, Promise<API.SubscribeLog[]>>());
   const rangeCache = useRef(new Map<string, Promise<EnrichedSubscribeLog[]>>());
 
   const today = todayInTimezone();
@@ -55,19 +81,16 @@ export default function SubscribeLogPage() {
     start_date: sp.start_date || sp.date || today,
     end_date: sp.end_date || sp.date || today,
     user_id: sp.user_id ? Number(sp.user_id) : undefined,
-    user_subscribe_id: sp.user_subscribe_id
-      ? Number(sp.user_subscribe_id)
-      : undefined,
+    user_subscribe_id: sp.user_subscribe_id || undefined,
   };
 
-  const loadRange = async (
+  const loadRawRange = async (
     filter: SubscribeLogFilters,
-    force: boolean
-  ): Promise<EnrichedSubscribeLog[]> => {
+    serverSubscriptionId?: number
+  ): Promise<API.SubscribeLog[]> => {
     const startDate = filter.start_date || today;
     const endDate = filter.end_date || startDate;
     const userId = toOptionalId(filter.user_id);
-    const userSubscribeId = toOptionalId(filter.user_subscribe_id);
     const dates = enumerateDateRange(startDate, endDate);
 
     const dailyLogs = await mapWithConcurrency(
@@ -79,11 +102,40 @@ export default function SubscribeLogPage() {
             ...pagination,
             date,
             user_id: userId,
-            user_subscribe_id: userSubscribeId,
+            user_subscribe_id: serverSubscriptionId,
           })
         )
     );
-    const logs = dailyLogs.flat();
+    return dailyLogs.flat();
+  };
+
+  const getRawRange = (
+    filter: SubscribeLogFilters,
+    serverSubscriptionId?: number
+  ): Promise<API.SubscribeLog[]> => {
+    const key = JSON.stringify({
+      end_date: filter.end_date || filter.start_date || today,
+      start_date: filter.start_date || today,
+      user_id: toOptionalId(filter.user_id),
+      user_subscribe_id: serverSubscriptionId,
+    });
+    const cached = rawRangeCache.current.get(key);
+    if (cached) return cached;
+
+    return cacheRangeRequest(
+      rawRangeCache.current,
+      key,
+      loadRawRange(filter, serverSubscriptionId)
+    );
+  };
+
+  const loadRange = async (
+    filter: SubscribeLogFilters,
+    selector: SubscriptionIdSelector,
+    force: boolean
+  ): Promise<EnrichedSubscribeLog[]> => {
+    const rawLogs = await getRawRange(filter, selector.singleId);
+    const logs = filterSubscribeLogsBySubscriptionId(rawLogs, selector);
     const subscriptionIds = [
       ...new Set(
         logs
@@ -131,35 +183,27 @@ export default function SubscribeLogPage() {
     filter: SubscribeLogFilters,
     force: boolean
   ): Promise<EnrichedSubscribeLog[]> => {
+    const selector = parseSubscriptionIdSelector(filter.user_subscribe_id);
     const key = JSON.stringify({
       end_date: filter.end_date || filter.start_date || today,
       start_date: filter.start_date || today,
       user_id: toOptionalId(filter.user_id),
-      user_subscribe_id: toOptionalId(filter.user_subscribe_id),
+      user_subscribe_id: selector.canonical,
     });
 
     if (force) {
-      rangeCache.current.delete(key);
+      rawRangeCache.current.clear();
+      rangeCache.current.clear();
     }
 
     const cached = rangeCache.current.get(key);
     if (cached) return cached;
 
-    const request = loadRange(filter, force);
-    request.catch(() => {
-      if (rangeCache.current.get(key) === request) {
-        rangeCache.current.delete(key);
-      }
-    });
-    rangeCache.current.set(key, request);
-
-    while (rangeCache.current.size > RANGE_CACHE_LIMIT) {
-      const oldestKey = rangeCache.current.keys().next().value;
-      if (oldestKey === undefined) break;
-      rangeCache.current.delete(oldestKey);
-    }
-
-    return request;
+    return cacheRangeRequest(
+      rangeCache.current,
+      key,
+      loadRange(filter, selector, force)
+    );
   };
 
   return (
@@ -274,7 +318,11 @@ export default function SubscribeLogPage() {
         { key: "user_id", placeholder: t("column.userId", "User ID") },
         {
           key: "user_subscribe_id",
-          placeholder: t("column.subscribeId", "Subscribe ID"),
+          inputClassName: "min-w-64 sm:min-w-80",
+          placeholder: t(
+            "filter.subscribeIdSelector",
+            "Subscription ID / range"
+          ),
         },
       ]}
       request={async (pagination, filter, context) => {
@@ -290,6 +338,17 @@ export default function SubscribeLogPage() {
         };
       }}
       requestDebounceMs={350}
+      requestErrorMessage={(error) =>
+        error instanceof SubscriptionIdSelectorError
+          ? t("filter.invalidSubscribeIdSelector", {
+              defaultValue: "Invalid subscription ID expression: {{value}}",
+              value:
+                error.token.length > 40
+                  ? `${error.token.slice(0, 40)}...`
+                  : error.token,
+            })
+          : undefined
+      }
     />
   );
 }

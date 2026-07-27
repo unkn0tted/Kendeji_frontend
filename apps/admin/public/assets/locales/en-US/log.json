@@ -32,7 +32,9 @@
   "failed": "Failed",
   "filter": {
     "endDate": "To",
-    "startDate": "From"
+    "invalidSubscribeIdSelector": "Invalid subscription ID expression: {{value}}",
+    "startDate": "From",
+    "subscribeIdSelector": "Subscription ID / range"
   },
   "sent": "Sent",
   "success": "Success",

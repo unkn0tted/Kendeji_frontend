@@ -32,7 +32,9 @@
   "failed": "失败",
   "filter": {
     "endDate": "结束",
-    "startDate": "开始"
+    "invalidSubscribeIdSelector": "订阅 ID 表达式无效：{{value}}",
+    "startDate": "开始",
+    "subscribeIdSelector": "订阅 ID / 范围"
   },
   "sent": "已发送",
   "success": "成功",

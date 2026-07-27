@@ -3,9 +3,11 @@
 import type { Table } from "@tanstack/react-table";
 import { Input } from "@workspace/ui/components/input";
 import { Combobox } from "@workspace/ui/composed/combobox";
+import { cn } from "@workspace/ui/lib/utils";
 import { useTranslation } from "react-i18next";
 
 export interface IParams {
+  inputClassName?: string;
   key: string;
   label?: string;
   placeholder?: string;
@@ -103,7 +105,7 @@ export function ColumnFilter<TData>({
         }
         return (
           <Input
-            className="min-w-32"
+            className={cn("min-w-32", param.inputClassName)}
             key={param.key}
             onChange={(event) => updateFilter(param.key, event.target.value)}
             placeholder={param.placeholder || t("filter.search", "Search...")}

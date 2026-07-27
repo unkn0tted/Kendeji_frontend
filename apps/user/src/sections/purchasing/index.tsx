@@ -45,7 +45,7 @@ export default function Purchasing() {
           <div className="space-y-6">
             {hasSelectedId && !subscription && (
               <div className="rose-panel mx-auto max-w-xl p-6 text-center text-muted-foreground">
-                {t("subscriptionNotFound", "Subscription not found")}
+                {t("subscribe:subscriptionNotFound", "Subscription not found")}
               </div>
             )}
             <ProductShowcaseContent subscriptionData={subscriptionList} />

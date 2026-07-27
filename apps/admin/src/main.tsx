@@ -19,6 +19,7 @@ import { LanguageProvider } from "@workspace/ui/integrations/language";
 import { ThemeProvider } from "@workspace/ui/integrations/theme";
 import { initializeI18n } from "@workspace/ui/lib/i18n";
 import { fallbackLng, supportedLngs } from "./config/index.ts";
+import { adminQueryClientConfig } from "./config/query-client.ts";
 // Report web vitals
 import reportWebVitals from "./reportWebVitals.ts";
 // Common utilities
@@ -42,6 +43,7 @@ initializeI18n({
     "nodes",
     "order",
     "payment",
+    "plugin",
     "product",
     "servers",
     "subscribe",
@@ -56,7 +58,9 @@ initializeI18n({
 window.logout = Logout;
 
 // Create a new router instance
-const TanStackQueryProviderContext = TanStackQueryContext();
+const TanStackQueryProviderContext = TanStackQueryContext(
+  adminQueryClientConfig
+);
 const hashHistory = createHashHistory();
 const router = createRouter({
   routeTree,
@@ -77,9 +81,10 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// Render the app
+// Render the app. The container ships with an inline boot splash
+// (see index.html), which React replaces on mount.
 const rootElement = document.getElementById("app");
-if (rootElement && !rootElement.innerHTML) {
+if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>

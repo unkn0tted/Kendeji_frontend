@@ -8,7 +8,7 @@ import { getSubscriptionRewriterPublicConfig } from "@workspace/ui/services/subs
 import { isBrowser } from "@workspace/ui/utils/index";
 import { lazy, Suspense, useEffect } from "react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon, useGetUserInfo, useSetCommon } from "@/stores/global";
 
 // Constant-folded away in production builds, so the devtools chunk is never
 // emitted and its packages stay out of the bundle entirely.
@@ -18,7 +18,9 @@ const Devtools = import.meta.env.DEV
 
 export const Route = createRootRouteWithContext()({
   component: () => {
-    const { common, setCommon, getUserInfo } = useGlobalStore();
+    const common = useCommon();
+    const setCommon = useSetCommon();
+    const getUserInfo = useGetUserInfo();
     useEffect(() => {
       const initializeApp = async () => {
         try {
@@ -72,7 +74,7 @@ export const Route = createRootRouteWithContext()({
     }, []);
 
     const { site } = common;
-    const title = site.site_name || "Loading...";
+    const title = site.site_name || "…";
     const description = site.site_desc || "";
     const keywords = site.keywords || "";
     const logo = site.site_logo || "";

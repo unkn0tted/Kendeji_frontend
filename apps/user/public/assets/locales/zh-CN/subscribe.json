@@ -55,7 +55,8 @@
     "metricPlans": "可选套餐",
     "metricStart": "起步价格",
     "subtitle": "先对比周期、流量、设备和价格，再下单。",
-    "title": "选择适合使用量的套餐"
+    "title": "选择适合使用量的套餐",
+    "livePlans_other": "{{count}} 个套餐在线"
   },
   "subscriptionNotFound": "未找到订阅",
   "subscriptionUnavailable": "暂不可购买",
@@ -71,5 +72,6 @@
     "unsubscribe": "取消订阅",
     "unsubscribeDescription": "请注意：如果您现在取消订阅，订阅的剩余价值将退还到您的账户余额中，可用于您下次的订阅购买或续订。"
   },
-  "Year": "年"
+  "Year": "年",
+  "noPaymentMethodsAvailable": "暂无可用的充值支付方式"
 }

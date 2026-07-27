@@ -36,5 +36,6 @@
     "4": "Recharge"
   },
   "viewDocument": "View Document",
-  "waitingForPayment": "Waiting for Payment"
+  "waitingForPayment": "Waiting for Payment",
+  "pageDescription": "Track and manage all of your orders"
 }

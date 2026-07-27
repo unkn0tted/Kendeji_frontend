@@ -111,6 +111,83 @@ function replaceQueryPlaceholder(
     (_match, prefix) => `${prefix}=${encodeURIComponent(value)}`
   );
 }
+
+/**
+ * Resolves a whitelisted `${...}` template expression without eval.
+ * Supported forms: `url`, `name`, `encodeURIComponent(<expr>)`,
+ * `btoa(<expr>)` / `window.btoa(<expr>)` (arbitrarily nested, e.g.
+ * `encodeURIComponent(btoa(url))`), and the Quantumult X style
+ * `JSON.stringify({server_remote: [url + ", tag=" + name]})`.
+ * Returns null when the expression is not recognized or fails to encode.
+ */
+function resolveTemplateExpression(
+  expression: string,
+  url: string,
+  name: string
+): string | null {
+  const expr = expression.trim();
+  if (expr === "url") return url;
+  if (expr === "name") return name;
+
+  const call = expr.match(/^(encodeURIComponent|window\.btoa|btoa)\((.*)\)$/s);
+  if (call) {
+    const inner = resolveTemplateExpression(call[2] ?? "", url, name);
+    if (inner === null) return null;
+    try {
+      if (call[1] === "encodeURIComponent") return encodeURIComponent(inner);
+      return isBrowser() ? window.btoa(inner) : inner;
+    } catch {
+      return null;
+    }
+  }
+
+  if (/^JSON\.stringify\(.*\)$/s.test(expr) && expr.includes("server_remote")) {
+    return JSON.stringify({ server_remote: [`${url}, tag=${name}`] });
+  }
+
+  return null;
+}
+
+/**
+ * Replaces every `${...}` placeholder in a schema template via
+ * resolveTemplateExpression. Returns null when any placeholder cannot be
+ * resolved, so callers can fall back to the raw subscription url.
+ */
+function resolveSchemaTemplate(
+  template: string,
+  url: string,
+  name: string
+): string | null {
+  let result = "";
+  let index = 0;
+  while (index < template.length) {
+    const start = template.indexOf("${", index);
+    if (start === -1) {
+      result += template.slice(index);
+      break;
+    }
+    result += template.slice(index, start);
+    let cursor = start + 2;
+    let depth = 1;
+    while (cursor < template.length && depth > 0) {
+      const char = template[cursor];
+      if (char === "{") depth += 1;
+      else if (char === "}") depth -= 1;
+      cursor += 1;
+    }
+    if (depth !== 0) return null;
+    const resolved = resolveTemplateExpression(
+      template.slice(start + 2, cursor - 1),
+      url,
+      name
+    );
+    if (resolved === null) return null;
+    result += resolved;
+    index = cursor;
+  }
+  return result;
+}
+
 /**
  * Extracts the full domain or root domain from a URL.
  *
@@ -283,88 +360,26 @@ export const useGlobalStore = create<GlobalStore>((set, get) => ({
   getAppSubLink: (url: string, schema?: string) => {
     const name = get().common?.site?.site_name || "";
 
-    if (!schema) return "url";
-    try {
-      let result = replaceQueryPlaceholder(schema, "url", url);
-      result = replaceQueryPlaceholder(result, "name", name);
-      result = result.replace(/\${url}/g, url).replace(/\${name}/g, name);
-
-      const maxLoop = 10;
-      let prev: string;
-      let loop = 0;
-      do {
-        prev = result;
-        result = result.replace(
-          /\${encodeURIComponent\(JSON\.stringify\(([^)]+)\)\)}/g,
-          (match, expr) => {
-            try {
-              const processedExpr = expr
-                .replace(/url/g, `"${url}"`)
-                .replace(/name/g, `"${name}"`);
-              if (processedExpr.includes("server_remote")) {
-                const serverRemoteValue = `${url}, tag=${name}`;
-                return encodeURIComponent(
-                  JSON.stringify({ server_remote: [serverRemoteValue] })
-                );
-              }
-              const obj = eval(`(${processedExpr})`);
-              return encodeURIComponent(JSON.stringify(obj));
-            } catch {
-              return match;
-            }
-          }
-        );
-
-        result = result.replace(
-          /\${encodeURIComponent\(([^)]+)\)}/g,
-          (match, expr) => {
-            if (expr === "url") return encodeURIComponent(url);
-            if (expr === "name") return encodeURIComponent(name);
-            try {
-              return encodeURIComponent(expr);
-            } catch {
-              return match;
-            }
-          }
-        );
-
-        result = result.replace(
-          /\${window\.btoa\(([^)]+)\)}/g,
-          (match, expr) => {
-            const btoa = isBrowser() ? window.btoa : (str: string) => str;
-            if (expr === "url") return btoa(url);
-            if (expr === "name") return btoa(name);
-            try {
-              return btoa(expr);
-            } catch {
-              return match;
-            }
-          }
-        );
-
-        result = result.replace(
-          /\${JSON\.stringify\(([^}]+)\)}/g,
-          (match, expr) => {
-            try {
-              const processedExpr = expr
-                .replace(/url/g, `"${url}"`)
-                .replace(/name/g, `"${name}"`);
-              if (processedExpr.includes("server_remote")) {
-                const serverRemoteValue = `${url}, tag=${name}`;
-                return JSON.stringify({ server_remote: [serverRemoteValue] });
-              }
-              const result = eval(`(${processedExpr})`);
-              return JSON.stringify(result);
-            } catch {
-              return match;
-            }
-          }
-        );
-        loop++;
-      } while (result !== prev && loop < maxLoop);
-      return result;
-    } catch (_error) {
-      return "";
-    }
+    if (!schema) return url;
+    // Query-position `?x=${url}` / `?x=${name}` placeholders are URL-encoded
+    // first; the remaining `${...}` expressions are resolved by the whitelist
+    // resolver (no eval). Supported: url, name, encodeURIComponent(...),
+    // btoa(...) / window.btoa(...), JSON.stringify({server_remote: ...}).
+    // Any unrecognized expression falls back to the raw subscription url.
+    let result = replaceQueryPlaceholder(schema, "url", url);
+    result = replaceQueryPlaceholder(result, "name", name);
+    return resolveSchemaTemplate(result, url, name) ?? url;
   },
 }));
+
+// Narrow selector hooks. Prefer these over a bare `useGlobalStore()` call:
+// zustand v5 subscribes bare calls to the whole store, re-rendering the
+// component on every store mutation. Action hooks select stable function
+// references, so they never trigger re-renders.
+export const useCommon = () => useGlobalStore((state) => state.common);
+export const useUser = () => useGlobalStore((state) => state.user);
+export const useSetCommon = () => useGlobalStore((state) => state.setCommon);
+export const useGetUserInfo = () =>
+  useGlobalStore((state) => state.getUserInfo);
+export const useGetUserSubscribe = () =>
+  useGlobalStore((state) => state.getUserSubscribe);

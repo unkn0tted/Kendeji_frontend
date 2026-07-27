@@ -31,31 +31,15 @@ import ServerNodeConfig from "./server-node-config";
 
 function PctBar({ value }: { value: number }) {
   const v = value.toFixed(2);
-  const widthClass =
-    value >= 90
-      ? "w-[90%]"
-      : value >= 80
-        ? "w-4/5"
-        : value >= 70
-          ? "w-[70%]"
-          : value >= 60
-            ? "w-3/5"
-            : value >= 50
-              ? "w-1/2"
-              : value >= 40
-                ? "w-2/5"
-                : value >= 30
-                  ? "w-[30%]"
-                  : value >= 20
-                    ? "w-1/5"
-                    : value >= 10
-                      ? "w-[10%]"
-                      : "w-0";
+  const width = Math.min(100, Math.max(0, value));
   return (
     <div className="min-w-24">
       <div className="text-xs leading-none">{v}%</div>
       <div className="h-1.5 w-full rounded bg-muted">
-        <div className={cn("h-1.5 rounded bg-primary", widthClass)} />
+        <div
+          className="h-1.5 rounded bg-primary"
+          style={{ width: `${width}%` }}
+        />
       </div>
     </div>
   );
@@ -375,12 +359,13 @@ export default function Servers() {
             (item) => String(item.id) === target
           );
 
-          const originalSorts = items.map((item) => item.sort);
+          const reordered = [...items];
+          const originalSorts = reordered.map((item) => item.sort);
 
-          const [movedItem] = items.splice(sourceIndex, 1);
-          items.splice(targetIndex, 0, movedItem!);
+          const [movedItem] = reordered.splice(sourceIndex, 1);
+          reordered.splice(targetIndex, 0, movedItem!);
 
-          const updatedItems = items.map((item, index) => {
+          const updatedItems = reordered.map((item, index) => {
             const originalSort = originalSorts[index];
             const newSort =
               originalSort !== undefined ? originalSort : item.sort;
@@ -388,19 +373,25 @@ export default function Servers() {
           });
 
           const changedItems = updatedItems.filter(
-            (item, index) => item.sort !== items[index]?.sort
+            (item, index) => item.sort !== reordered[index]?.sort
           );
 
-          if (changedItems.length > 0) {
-            resetSortWithServer({
+          if (changedItems.length === 0) return items;
+
+          try {
+            await resetSortWithServer({
               sort: changedItems.map((item) => ({
                 id: item.id,
                 sort: item.sort,
               })) as API.SortItem[],
             });
             toast.success(t("sorted_success", "Sorted successfully"));
+            return updatedItems;
+          } catch {
+            toast.error(t("sorted_failed", "Failed to save sort order"));
+            ref.current?.refresh();
+            return items;
           }
-          return updatedItems;
         }}
         params={[{ key: "search" }]}
         request={async (pagination, filter) => {

@@ -57,30 +57,47 @@
   "footer": {
     "copyright": "All rights reserved",
     "privacyPolicy": "Privacy Policy",
-    "tos": "Terms of Service"
+    "tos": "Terms of Service",
+    "social": {
+      "email": "Contact us by email",
+      "telegram": "Visit our Telegram",
+      "twitter": "Visit our Twitter",
+      "discord": "Visit our Discord",
+      "instagram": "Visit our Instagram",
+      "linkedin": "Visit our LinkedIn",
+      "github": "Visit our GitHub",
+      "facebook": "Visit our Facebook"
+    }
   },
   "language": "Language",
   "loginRegister": "Login / Register",
   "pricing": "Pricing",
   "menu": {
     "affiliate": "Commission",
-    "announcement": "Announcement Management",
+    "announcement": "Announcements",
     "dashboard": "Dashboard",
-    "document": "Document Management",
+    "document": "Docs",
     "finance": "Commerce",
     "help": "Users & Support",
     "logout": "Logout",
-    "order": "Order Management",
+    "order": "Orders",
     "personal": "Personal",
     "profile": "User Detail",
     "server": "Server Management",
     "subscribe": "Subscribe",
-    "ticket": "Ticket Management",
+    "ticket": "Support Tickets",
     "wallet": "Balance"
   },
   "pagination": {
     "pageInfo": "Page {{page}} of {{total}}",
-    "rowsPerPage": "Rows per page"
+    "rowsPerPage": "Rows per page",
+    "firstPage": "Go to first page",
+    "previousPage": "Go to previous page",
+    "selectPage": "Select page number",
+    "nextPage": "Go to next page",
+    "lastPage": "Go to last page",
+    "previous": "Previous",
+    "next": "Next"
   },
   "theme": {
     "dark": "Dark",
@@ -88,5 +105,80 @@
     "system": "System",
     "toggle": "Toggle theme"
   },
-  "unlimited": "unlimited"
+  "unlimited": "unlimited",
+  "filter": {
+    "choose": "Choose...",
+    "search": "Search..."
+  },
+  "table": {
+    "sortAsc": "ASC",
+    "sortDesc": "DESC",
+    "hideColumn": "Hide",
+    "selectedRows": "Selected {{count}} rows",
+    "selectAll": "Select all",
+    "selectRow": "Select row",
+    "selectedRows_one": "Selected {{count}} row",
+    "selectedRows_other": "Selected {{count}} rows",
+    "loadFailed": "Failed to load data"
+  },
+  "combobox": {
+    "select": "Select...",
+    "search": "Search...",
+    "noResults": "No results found"
+  },
+  "confirm": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "areaCode": {
+    "placeholder": "Select Area Code",
+    "search": "Search area code..."
+  },
+  "upload": {
+    "sizeExceeded": "File size exceeds the limit ({{maxSize}}MB)"
+  },
+  "markdown": {
+    "copyFailed": "Failed to copy text. Please try again."
+  },
+  "select": {
+    "placeholder": "Select"
+  },
+  "loading": "Loading...",
+  "editor": {
+    "goTemplate": {
+      "title": "Go Template Editor",
+      "description": "Go text/template syntax",
+      "descriptionSprig": "Go text/template syntax with Sprig functions",
+      "placeholder": "Enter your Go template here..."
+    },
+    "html": {
+      "title": "HTML Editor",
+      "description": "Supports HTML",
+      "preview": "HTML Preview"
+    },
+    "json": {
+      "title": "Edit JSON"
+    },
+    "markdown": {
+      "title": "Markdown Editor",
+      "description": "Supports Markdown and HTML syntax"
+    }
+  },
+  "sidebar": {
+    "title": "Sidebar",
+    "description": "Displays the mobile sidebar.",
+    "toggle": "Toggle Sidebar"
+  },
+  "carousel": {
+    "previous": "Previous slide",
+    "next": "Next slide"
+  },
+  "close": "Close",
+  "command": {
+    "title": "Command Palette",
+    "description": "Search for a command to run..."
+  },
+  "spinner": {
+    "loading": "Loading"
+  }
 }

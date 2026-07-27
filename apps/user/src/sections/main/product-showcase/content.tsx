@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
 import { SubscribeDetail } from "@/sections/subscribe/detail";
-import { useGlobalStore } from "@/stores/global";
+import { useUser } from "@/stores/global";
 import { isSubscribeSellable, isSubscribeVisible } from "@/utils/subscribe";
 import { cardReveal, sectionReveal, sectionViewport } from "../motion";
 
@@ -48,7 +48,7 @@ function parseSubscriptionDescription(value: unknown): ParsedDescription {
 
 export function Content({ subscriptionData }: ProductShowcaseProps) {
   const { t } = useTranslation("main");
-  const { user } = useGlobalStore();
+  const user = useUser();
   const visibleSubscriptionData = subscriptionData.filter(isSubscribeVisible);
   const highlightedIndex = (() => {
     const discountedIndex = visibleSubscriptionData.findIndex(

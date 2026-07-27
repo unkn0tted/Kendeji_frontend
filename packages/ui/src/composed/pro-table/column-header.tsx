@@ -14,6 +14,7 @@ import {
   ArrowUpIcon,
   EyeOffIcon,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -30,6 +31,7 @@ export function ColumnHeader<TData, TValue>({
   className,
   text,
 }: ColumnHeaderProps<TData, TValue>) {
+  const { t } = useTranslation("components");
   const column = header.column;
   const title = header.isPlaceholder
     ? null
@@ -59,18 +61,18 @@ export function ColumnHeader<TData, TValue>({
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-            {text?.asc || "ASC"}
+            {text?.asc || t("table.sortAsc", "ASC")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
             <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-            {text?.desc || "DESC"}
+            {text?.desc || t("table.sortDesc", "DESC")}
           </DropdownMenuItem>
           {column.getCanHide() && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
                 <EyeOffIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                {text?.hide || "Hide"}
+                {text?.hide || t("table.hideColumn", "Hide")}
               </DropdownMenuItem>
             </>
           )}

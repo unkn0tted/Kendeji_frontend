@@ -1,14 +1,16 @@
 "use client";
 
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import type { MarkdownProps } from "@workspace/ui/composed/markdown-content";
 import { lazy, Suspense } from "react";
-import type { MarkdownProps } from "./markdown-content";
 
-// The renderer pulls in react-markdown, rehype/remark plugins, KaTeX and the
-// syntax highlighter — several hundred KB that used to sit on the critical
-// path because the auth register form and the announcement popup import it.
+// The renderer pulls in react-markdown, rehype/remark plugins and the syntax
+// highlighter — several hundred KB that used to sit on the critical path
+// because the auth register form and the announcement popup import it.
 // Loading it on demand keeps that weight off first paint.
-const MarkdownContent = lazy(() => import("./markdown-content"));
+const MarkdownContent = lazy(
+  () => import("@workspace/ui/composed/markdown-content")
+);
 
 function MarkdownFallback() {
   return (
@@ -28,4 +30,4 @@ export function Markdown({ children, components }: MarkdownProps) {
   );
 }
 
-export type { MarkdownProps } from "./markdown-content";
+export type { MarkdownProps } from "@workspace/ui/composed/markdown-content";

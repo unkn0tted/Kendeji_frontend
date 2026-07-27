@@ -3,6 +3,7 @@
     "amount": "金额",
     "balance": "余额",
     "content": "内容",
+    "currentUsage": "当前用量",
     "date": "日期",
     "download": "下载",
     "identifier": "标识符",
@@ -25,8 +26,7 @@
     "upload": "上传",
     "user": "用户",
     "userAgent": "用户代理",
-    "userId": "用户 ID",
-    "currentUsage": "当前用量"
+    "userId": "用户 ID"
   },
   "detail": "详情",
   "failed": "失败",

@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@workspace/ui/components/button";
-import { Sidebar, SidebarContent } from "@workspace/ui/components/sidebar";
 import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
 import { isBrowser } from "@workspace/ui/utils/index";
@@ -10,25 +9,28 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Display } from "@/components/display";
 import Recharge from "@/sections/subscribe/recharge";
-import { useGlobalStore } from "@/stores/global";
+import { useUser } from "@/stores/global";
 
-interface SidebarRightProps extends React.ComponentProps<typeof Sidebar> {
+interface SidebarRightProps {
+  className?: string;
   isSubscribePage?: boolean;
 }
 
 export function SidebarRight({
   className,
   isSubscribePage = false,
-  ...props
 }: Readonly<SidebarRightProps>) {
-  const { user } = useGlobalStore();
+  const user = useUser();
   const { t } = useTranslation("layout");
-  const inviteLink = `${isBrowser() && location?.origin}/#/auth?invite=${user?.refer_code}`;
+  const inviteLink =
+    isBrowser() && user?.refer_code
+      ? `${window.location.origin}/#/auth?invite=${user.refer_code}`
+      : "";
   const shouldShowReferralPanel = isSubscribePage || Boolean(user?.refer_code);
 
   return (
-    <Sidebar className={className} collapsible="none" side="right" {...props}>
-      <SidebarContent className="subscribe-side-rail p-0 shadow-none backdrop-blur-none">
+    <aside className={className}>
+      <div className="subscribe-side-rail">
         <section className="subscribe-side-rail__panel">
           <div className="subscribe-side-rail__panel-header">
             <div className="space-y-1">
@@ -120,7 +122,7 @@ export function SidebarRight({
             </div>
           </section>
         )}
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </aside>
   );
 }

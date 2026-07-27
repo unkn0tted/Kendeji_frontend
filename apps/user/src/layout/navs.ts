@@ -13,6 +13,8 @@ export interface NavGroup {
   items?: NavItem[];
 }
 
+/** Grouped navigation for the desktop side rail and the account dropdown.
+ *  Titles are already translated — render them directly, never re-t() them. */
 export function useNavs() {
   const { t } = useTranslation("components");
 
@@ -48,7 +50,7 @@ export function useNavs() {
         {
           url: "/order",
           icon: "uil:notes",
-          title: t("menu.order", "Order Management"),
+          title: t("menu.order", "Orders"),
         },
         {
           url: "/wallet",
@@ -68,17 +70,17 @@ export function useNavs() {
         {
           url: "/document",
           icon: "uil:book-alt",
-          title: t("menu.document", "Document Management"),
+          title: t("menu.document", "Docs"),
         },
         {
           url: "/announcement",
           icon: "uil:megaphone",
-          title: t("menu.announcement", "Announcement Management"),
+          title: t("menu.announcement", "Announcements"),
         },
         {
           url: "/ticket",
           icon: "uil:message",
-          title: t("menu.ticket", "Ticket Management"),
+          title: t("menu.ticket", "Support Tickets"),
         },
       ],
     },
@@ -87,31 +89,15 @@ export function useNavs() {
   return navs;
 }
 
-export function useFindNavByUrl(url: string) {
-  const navs = useNavs();
-
-  for (const nav of navs) {
-    if (nav.url && nav.url === url) {
-      return [nav];
-    }
-    if (nav.items) {
-      const current = nav.items.find((item) => item.url === url);
-      if (current) {
-        return [nav, current];
-      }
-    }
-  }
-  return [];
-}
-
-export function useNavItems() {
+/** The five primary destinations for the mobile bottom tab bar. */
+export function useNavItems(): NavItem[] {
   const { t } = useTranslation("components");
 
   return [
     {
-      url: "/profile",
-      icon: "uil:user",
-      title: t("menu.profile", "User Detail"),
+      url: "/dashboard",
+      icon: "uil:dashboard",
+      title: t("menu.dashboard", "Dashboard"),
     },
     {
       url: "/subscribe",
@@ -121,12 +107,17 @@ export function useNavItems() {
     {
       url: "/order",
       icon: "uil:notes",
-      title: t("menu.order", "Order Management"),
+      title: t("menu.order", "Orders"),
     },
     {
       url: "/wallet",
       icon: "uil:wallet",
       title: t("menu.wallet", "Balance"),
+    },
+    {
+      url: "/profile",
+      icon: "uil:user",
+      title: t("menu.personal", "Personal"),
     },
   ];
 }

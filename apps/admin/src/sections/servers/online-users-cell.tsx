@@ -79,7 +79,7 @@ function UserSubscribeInfo({
     case "expireTime": {
       if (!data.expire_time)
         return <span className="text-muted-foreground">--</span>;
-      const isExpired = data.expire_time < Date.now() / 1000;
+      const isExpired = data.expire_time < Date.now();
       return (
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
           <span className="text-sm">{formatDate(data.expire_time)}</span>

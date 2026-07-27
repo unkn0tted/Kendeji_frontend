@@ -3,12 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@workspace/ui/components/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import {
   Form,
   FormControl,
   FormField,
@@ -45,16 +39,16 @@ export default function ChangePassword() {
   }
 
   return (
-    <Card className="min-w-80">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+    <section className="rose-panel flex min-w-80 flex-col gap-6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold">
           {t("accountSettings.accountSettings", "Password Settings")}
-          <Button form="password-form" size="sm" type="submit">
-            {t("accountSettings.updatePassword", "Update Password")}
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+        </h2>
+        <Button form="password-form" size="sm" type="submit">
+          {t("accountSettings.updatePassword", "Update Password")}
+        </Button>
+      </div>
+      <div>
         <Form {...form}>
           <form
             className="space-y-4"
@@ -101,7 +95,7 @@ export default function ChangePassword() {
             />
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

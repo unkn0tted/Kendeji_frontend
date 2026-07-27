@@ -4,11 +4,12 @@ import { Icon } from "@workspace/ui/composed/icon";
 import { motion, useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon, useUser } from "@/stores/global";
 
 export function Hero() {
   const { t } = useTranslation("main");
-  const { common, user } = useGlobalStore();
+  const common = useCommon();
+  const user = useUser();
   const { site } = common;
   const prefersReducedMotion = useReducedMotion();
   const statusItems = [

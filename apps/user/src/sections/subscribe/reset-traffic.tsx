@@ -15,7 +15,7 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
-import { useGlobalStore } from "@/stores/global";
+import { useGetUserInfo } from "@/stores/global";
 import PaymentMethods from "./payment-methods";
 
 interface ResetTrafficProps {
@@ -27,7 +27,7 @@ export default function ResetTraffic({
   replacement,
 }: Readonly<ResetTrafficProps>) {
   const { t } = useTranslation("subscribe");
-  const { getUserInfo } = useGlobalStore();
+  const getUserInfo = useGetUserInfo();
   const navigate = useNavigate();
   const [open, setOpen] = useState<boolean>(false);
   const [params, setParams] = useState<Partial<API.ResetTrafficOrderRequest>>({
@@ -99,8 +99,8 @@ export default function ResetTraffic({
                       search: { order_no: String(orderNo) },
                     });
                   }
-                } catch (error) {
-                  console.log(error);
+                } catch (_error) {
+                  /* empty */
                 }
               });
             }}

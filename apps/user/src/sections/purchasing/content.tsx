@@ -23,11 +23,12 @@ import CouponInput from "@/sections/subscribe/coupon-input";
 import { SubscribeDetail } from "@/sections/subscribe/detail";
 import DurationSelector from "@/sections/subscribe/duration-selector";
 import PaymentMethods from "@/sections/subscribe/payment-methods";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import {
   getEmailDomainWhitelist,
   isEmailDomainAllowed,
 } from "@/utils/email-domain";
+import { parseDescription } from "@/utils/parse-description";
 import { getMinimumPurchaseQuantity } from "@/utils/purchase-duration";
 import { isSubscribePurchasable } from "@/utils/subscribe";
 
@@ -36,7 +37,7 @@ export default function Content({
 }: {
   subscription?: API.Subscribe;
 }) {
-  const { t } = useTranslation("subscribe");
+  const { t } = useTranslation(["subscribe", "auth"]);
   const unitTimeMap: Record<string, string> = {
     Day: t("Day", "Day"),
     Hour: t("Hour", "Hour"),
@@ -51,7 +52,7 @@ export default function Content({
     t("paymentMethod", "Payment Method"),
   ];
   const fieldClassName = "rose-surface";
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const domainWhitelist = useMemo(
     () => getEmailDomainWhitelist(common.auth.email.domain_suffix_list),
     [common.auth.email.domain_suffix_list]
@@ -96,9 +97,9 @@ export default function Content({
           { skipErrorHandler: true }
         );
         const result = data.data;
-        return result;
+        return result ?? null;
       } catch (_error) {
-        return;
+        return null;
       }
     },
     retry: false,
@@ -141,8 +142,8 @@ export default function Content({
           );
           navigate({ to: "/purchasing/order", search: { order_no } });
         }
-      } catch (error) {
-        console.log(error);
+      } catch (_error) {
+        /* empty */
       }
     });
   }, [canPurchase, params, navigate]);
@@ -154,6 +155,8 @@ export default function Content({
       </div>
     );
   }
+
+  const { description, features } = parseDescription(subscription.description);
 
   return (
     <div className="rose-form mx-auto mt-4 max-w-6xl space-y-6 sm:mt-6">
@@ -261,7 +264,7 @@ export default function Content({
                       message: "",
                     });
                   }}
-                  placeholder="Email"
+                  placeholder={t("auth:placeholders.email", "Email")}
                   required
                   type="email"
                   value={params.identifier || ""}
@@ -283,7 +286,7 @@ export default function Content({
                     onValueChange={(value: string) =>
                       handleChange("password", value)
                     }
-                    placeholder="Password"
+                    placeholder={t("auth:placeholders.password", "Password")}
                     type="password"
                     value={params.password || ""}
                   />
@@ -311,60 +314,29 @@ export default function Content({
               {subscription.name}
             </h2>
             <ul className="mt-6 flex flex-col gap-3 text-sm">
-              {(() => {
-                let parsedDescription: {
-                  description: string;
-                  features: Array<{
-                    icon: string;
-                    label: string;
-                    type: "default" | "success" | "destructive";
-                  }>;
-                };
-                try {
-                  parsedDescription = JSON.parse(subscription.description);
-                } catch {
-                  parsedDescription = { description: "", features: [] };
-                }
-
-                const { description, features } = parsedDescription;
-                return (
-                  <>
-                    {description && (
-                      <li className="text-muted-foreground">{description}</li>
-                    )}
-                    {features?.map(
-                      (
-                        feature: {
-                          icon: string;
-                          label: string;
-                          type: "default" | "success" | "destructive";
-                        },
-                        index: number
-                      ) => (
-                        <li
-                          className={cn("flex items-center gap-2", {
-                            "text-muted-foreground line-through":
-                              feature.type === "destructive",
-                          })}
-                          key={index}
-                        >
-                          {feature.icon && (
-                            <Icon
-                              className={cn("size-5 text-primary", {
-                                "text-green-500": feature.type === "success",
-                                "text-destructive":
-                                  feature.type === "destructive",
-                              })}
-                              icon={feature.icon}
-                            />
-                          )}
-                          {feature.label}
-                        </li>
-                      )
-                    )}
-                  </>
-                );
-              })()}
+              {description && (
+                <li className="text-muted-foreground">{description}</li>
+              )}
+              {features.map((feature, index) => (
+                <li
+                  className={cn("flex items-center gap-2", {
+                    "text-muted-foreground line-through":
+                      feature.type === "destructive",
+                  })}
+                  key={index}
+                >
+                  {feature.icon && (
+                    <Icon
+                      className={cn("size-5 text-primary", {
+                        "text-green-500": feature.type === "success",
+                        "text-destructive": feature.type === "destructive",
+                      })}
+                      icon={feature.icon}
+                    />
+                  )}
+                  {feature.label}
+                </li>
+              ))}
             </ul>
             <div className="mt-6">
               <SubscribeDetail

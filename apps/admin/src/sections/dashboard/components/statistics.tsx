@@ -8,13 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@workspace/ui/components/chart";
 // (Select imports removed)
-import { Separator } from "@workspace/ui/components/separator";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import Empty from "@workspace/ui/composed/empty";
 import { Icon } from "@workspace/ui/composed/icon";
@@ -24,20 +19,64 @@ import {
 } from "@workspace/ui/services/admin/console";
 import { getLogSetting } from "@workspace/ui/services/admin/log";
 import { formatBytes } from "@workspace/ui/utils/formatting";
-import { useState } from "react";
+import { lazy, memo, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { UserSubscribeDetail } from "@/sections/user/user-detail";
 import { RevenueStatisticsCard } from "./revenue-statistics-card";
 import SystemVersionCard from "./system-version-card";
+import type { TrafficRankDatum } from "./traffic-rank-chart";
 import { UserStatisticsCard } from "./user-statistics-card";
+
+// Chart rendering is split into a lazy leaf so recharts stays out of the
+// dashboard landing chunk; stat numbers/headers paint first.
+const TrafficRankChart = lazy(() => import("./traffic-rank-chart"));
+
+const TrafficRankCard = memo(function TrafficRankCard({
+  type,
+  data,
+}: {
+  type: "nodes" | "users";
+  data: { today: TrafficRankDatum[]; yesterday: TrafficRankDatum[] };
+}) {
+  const { t } = useTranslation("dashboard");
+  const [timeFrame, setTimeFrame] = useState<"today" | "yesterday">("today");
+  const currentData = data[timeFrame];
+
+  return (
+    <Card>
+      <CardHeader className="!flex-row flex items-center justify-between">
+        <CardTitle>
+          {type === "nodes"
+            ? t("nodeTraffic", "Node Traffic")
+            : t("userTraffic", "User Traffic")}
+        </CardTitle>
+        <Tabs
+          onValueChange={(value) =>
+            setTimeFrame(value as "today" | "yesterday")
+          }
+          value={timeFrame}
+        >
+          <TabsList>
+            <TabsTrigger value="today">{t("today", "Today")}</TabsTrigger>
+            <TabsTrigger value="yesterday">
+              {t("yesterday", "Yesterday")}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </CardHeader>
+      <CardContent className="h-80">
+        {currentData.length > 0 ? (
+          <Suspense fallback={<Skeleton className="h-full w-full" />}>
+            <TrafficRankChart data={currentData} type={type} />
+          </Suspense>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Empty />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
 
 export default function Statistics() {
   const { t } = useTranslation("dashboard");
@@ -78,142 +117,35 @@ export default function Statistics() {
     logSetting?.auto_clear && logSetting.clear_days < today.getDate()
   );
 
-  const [timeFrame, setTimeFrame] = useState<string | "today" | "yesterday">(
-    "today"
+  const trafficData = useMemo(
+    () => ({
+      nodes: {
+        today:
+          ServerTotal?.server_traffic_ranking_today?.map((item) => ({
+            name: item.name,
+            traffic: item.download + item.upload,
+          })) || [],
+        yesterday:
+          ServerTotal?.server_traffic_ranking_yesterday?.map((item) => ({
+            name: item.name,
+            traffic: item.download + item.upload,
+          })) || [],
+      },
+      users: {
+        today:
+          ServerTotal?.user_traffic_ranking_today?.map((item) => ({
+            name: item.sid,
+            traffic: item.download + item.upload,
+          })) || [],
+        yesterday:
+          ServerTotal?.user_traffic_ranking_yesterday?.map((item) => ({
+            name: item.sid,
+            traffic: item.download + item.upload,
+          })) || [],
+      },
+    }),
+    [ServerTotal]
   );
-
-  const trafficData = {
-    nodes: {
-      today:
-        ServerTotal?.server_traffic_ranking_today?.map((item) => ({
-          name: item.name,
-          traffic: item.download + item.upload,
-        })) || [],
-      yesterday:
-        ServerTotal?.server_traffic_ranking_yesterday?.map((item) => ({
-          name: item.name,
-          traffic: item.download + item.upload,
-        })) || [],
-    },
-    users: {
-      today:
-        ServerTotal?.user_traffic_ranking_today?.map((item) => ({
-          name: item.sid,
-          traffic: item.download + item.upload,
-        })) || [],
-      yesterday:
-        ServerTotal?.user_traffic_ranking_yesterday?.map((item) => ({
-          name: item.sid,
-          traffic: item.download + item.upload,
-        })) || [],
-    },
-  };
-
-  const TrafficRankCard = ({ type }: { type: "nodes" | "users" }) => {
-    const currentData = trafficData[type][timeFrame as "today" | "yesterday"];
-
-    return (
-      <Card>
-        <CardHeader className="!flex-row flex items-center justify-between">
-          <CardTitle>
-            {type === "nodes"
-              ? t("nodeTraffic", "Node Traffic")
-              : t("userTraffic", "User Traffic")}
-          </CardTitle>
-          <Tabs onValueChange={setTimeFrame} value={timeFrame}>
-            <TabsList>
-              <TabsTrigger value="today">{t("today", "Today")}</TabsTrigger>
-              <TabsTrigger value="yesterday">
-                {t("yesterday", "Yesterday")}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardHeader>
-        <CardContent className="h-80">
-          {currentData.length > 0 ? (
-            <ChartContainer
-              className="max-h-80"
-              config={{
-                traffic: {
-                  label: t("traffic", "Traffic"),
-                  color: "var(--primary)",
-                },
-                type: {
-                  label: t("type", "Type"),
-                  color: "var(--muted-foreground)",
-                },
-                label: {
-                  color: "var(--foreground)",
-                },
-              }}
-            >
-              <BarChart data={currentData} height={400} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  axisLine={false}
-                  tickFormatter={(value) => formatBytes(value || 0)}
-                  tickLine={false}
-                  type="number"
-                />
-                <YAxis
-                  axisLine={false}
-                  dataKey="name"
-                  interval={0}
-                  tickFormatter={(_value, index) => String(index + 1)}
-                  tickLine={false}
-                  tickMargin={0}
-                  type="category"
-                  width={15}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => formatBytes(Number(value) || 0)}
-                      label={true}
-                      labelFormatter={(label, [payload]) =>
-                        type === "nodes" ? (
-                          `${t("nodes", "Nodes")}: ${label}`
-                        ) : (
-                          <>
-                            <div className="w-80">
-                              <UserSubscribeDetail
-                                enabled={true}
-                                id={payload?.payload.name}
-                              />
-                            </div>
-                            <Separator className="my-2" />
-                            <div>{`${t("users", "Users")}: ${label}`}</div>
-                          </>
-                        )
-                      }
-                    />
-                  }
-                  trigger="hover"
-                />
-                <Bar
-                  dataKey="traffic"
-                  fill="var(--primary)"
-                  radius={[0, 4, 4, 0]}
-                >
-                  <LabelList
-                    className="fill-foreground"
-                    dataKey="name"
-                    fontSize={12}
-                    offset={8}
-                    position="insideLeft"
-                  />
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <Empty />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
 
   return (
     <>
@@ -225,8 +157,7 @@ export default function Statistics() {
             subtitle: t("currentlyOnline", "Currently Online"),
             icon: "uil:users-alt",
             href: "/dashboard/servers",
-            color: "text-blue-600 dark:text-blue-400",
-            iconBg: "bg-blue-100 dark:bg-blue-900/30",
+            chip: "bg-primary/10 text-primary",
           },
 
           {
@@ -239,8 +170,7 @@ export default function Statistics() {
             icon: "uil:exchange-alt",
             href: "/dashboard/log/server-traffic",
             search: { date: todayDate },
-            color: "text-purple-600 dark:text-purple-400",
-            iconBg: "bg-purple-100 dark:bg-purple-900/30",
+            chip: "bg-chart-2/10 text-chart-2",
           },
           {
             title: isMonthlyDataIncomplete
@@ -262,8 +192,7 @@ export default function Statistics() {
             icon: "uil:cloud-data-connection",
             href: "/dashboard/log/server-traffic",
             search: { month: currentMonth },
-            color: "text-orange-600 dark:text-orange-400",
-            iconBg: "bg-orange-100 dark:bg-orange-900/30",
+            chip: "bg-chart-3/10 text-chart-3",
           },
           {
             title: t("totalServers", "Total Servers"),
@@ -273,8 +202,7 @@ export default function Statistics() {
             subtitle: `${t("online", "Online")} ${ServerTotal?.online_servers || 0} ${t("offline", "Offline")} ${ServerTotal?.offline_servers || 0}`,
             icon: "uil:server-network",
             href: "/dashboard/servers",
-            color: "text-green-600 dark:text-green-400",
-            iconBg: "bg-green-100 dark:bg-green-900/30",
+            chip: "bg-chart-4/10 text-chart-4",
           },
           {
             title: t("pendingTickets", "Pending Tickets"),
@@ -282,41 +210,37 @@ export default function Statistics() {
             subtitle: t("pending", "Pending"),
             icon: "uil:clipboard-notes",
             href: "/dashboard/ticket",
-            color: "text-red-600 dark:text-red-400",
-            iconBg: "bg-red-100 dark:bg-red-900/30",
+            chip: "bg-chart-5/10 text-chart-5",
           },
-        ].map((item, index) => (
+        ].map((item) => (
           <Link
-            className={item.href ? "" : "pointer-events-none"}
-            key={index}
+            className={item.href ? "h-full" : "pointer-events-none h-full"}
+            key={item.title}
             search={item.search}
             to={item.href || "#"}
           >
-            <Card className={`group ${item.href ? "cursor-pointer" : ""}`}>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="mb-2 font-medium text-muted-foreground text-sm">
-                      {item.title}
-                    </p>
-                    <div className={`mb-1 font-bold text-2xl ${item.color}`}>
-                      {item.value}
-                    </div>
-                    <div className="h-4 text-muted-foreground text-xs">
-                      {item.subtitle}
-                    </div>
+            <div
+              className={`rose-surface-interactive group h-full rounded-xl p-6 ${item.href ? "cursor-pointer" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="mb-2 font-medium text-muted-foreground text-sm">
+                    {item.title}
+                  </p>
+                  <div className="mb-1 font-bold text-2xl tabular-nums">
+                    {item.value}
                   </div>
-                  <div
-                    className={`rounded-full p-3 ${item.iconBg} transition-transform duration-300 group-hover:scale-110`}
-                  >
-                    <Icon
-                      className={`h-6 w-6 ${item.color}`}
-                      icon={item.icon}
-                    />
+                  <div className="h-4 text-muted-foreground text-xs">
+                    {item.subtitle}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div
+                  className={`rounded-full p-3 ${item.chip} transition-transform duration-300 group-hover:scale-110`}
+                >
+                  <Icon className="h-6 w-6" icon={item.icon} />
+                </div>
+              </div>
+            </div>
           </Link>
         ))}
         <SystemVersionCard />
@@ -327,8 +251,8 @@ export default function Statistics() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <TrafficRankCard type="nodes" />
-        <TrafficRankCard type="users" />
+        <TrafficRankCard data={trafficData.nodes} type="nodes" />
+        <TrafficRankCard data={trafficData.users} type="users" />
       </div>
     </>
   );

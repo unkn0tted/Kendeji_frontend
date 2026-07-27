@@ -30,6 +30,7 @@ initializeI18n({
   supportedLngs,
   fallbackLng,
   ns: [
+    "affiliate",
     "auth",
     "components",
     "dashboard",
@@ -72,9 +73,10 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// Render the app
+// Render the app. The container ships with an inline boot splash
+// (see index.html), which React replaces on mount.
 const rootElement = document.getElementById("app");
-if (rootElement && !rootElement.innerHTML) {
+if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>

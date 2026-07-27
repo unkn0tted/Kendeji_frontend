@@ -51,10 +51,10 @@ export function SubscriptionDetail({
                   <ConfirmButton
                     cancelText={t("cancel", "Cancel")}
                     confirmText={t("confirm", "Confirm")}
-                    description={t(
-                      "kickOfflineConfirm",
-                      `Kick device ${row.ip} offline?`
-                    )}
+                    description={t("kickOfflineConfirm", {
+                      defaultValue: "Kick device {{ip}} offline?",
+                      ip: row.ip,
+                    })}
                     key="offline"
                     onConfirm={async () => {
                       await kickOfflineByUserDevice({ id: row.id });

@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   ProList,
   type ProListActions,
@@ -9,9 +8,11 @@ import { queryUserBalanceLog } from "@workspace/ui/services/user/user";
 import { formatDate } from "@workspace/ui/utils/formatting";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { DescriptionList } from "@/components/description-list";
 import { Display } from "@/components/display";
+import { PageHeader } from "@/components/page-header";
 import Recharge from "@/sections/subscribe/recharge";
-import { useGlobalStore } from "@/stores/global";
+import { useUser } from "@/stores/global";
 
 export default function Wallet() {
   const { t } = useTranslation("wallet");
@@ -40,99 +41,94 @@ export default function Wallet() {
     341: t("type.341", "Increase"),
     342: t("type.342", "Reduce"),
   };
-  const { user } = useGlobalStore();
+  const user = useUser();
   const ref = useRef<ProListActions>(null);
   const totalAssets =
     (user?.balance || 0) + (user?.commission || 0) + (user?.gift_amount || 0);
   return (
-    <>
-      <Card>
-        <CardContent>
-          <h2 className="mb-4 font-bold text-2xl text-foreground">
-            {t("assetOverview", "Asset Overview")}
-          </h2>
-          <div className="mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">
-                  {t("totalAssets", "Total Assets")}
-                </p>
-                <p className="font-bold text-3xl">
-                  <Display type="currency" value={totalAssets} />
-                </p>
-              </div>
-              <Recharge />
-            </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        actions={<Recharge />}
+        description={t(
+          "pageDescription",
+          "Manage your balance and review every transaction"
+        )}
+        title={t("assetOverview", "Asset Overview")}
+      />
+      <section className="rose-panel p-5 sm:p-6">
+        <div className="mb-5">
+          <p className="font-medium text-muted-foreground text-sm">
+            {t("totalAssets", "Total Assets")}
+          </p>
+          <p className="font-bold text-3xl">
+            <Display type="currency" value={totalAssets} />
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rose-surface rounded-lg p-4">
+            <p className="font-medium text-muted-foreground text-sm">
+              {t("balance", "Balance")}
+            </p>
+            <p className="font-bold text-2xl">
+              <Display type="currency" value={user?.balance} />
+            </p>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="rounded-lg bg-secondary p-4 shadow-sm transition-all duration-300 hover:shadow-md">
-              <p className="font-medium text-secondary-foreground text-sm opacity-80">
-                {t("balance", "Balance")}
-              </p>
-              <p className="font-bold text-2xl text-secondary-foreground">
-                <Display type="currency" value={user?.balance} />
-              </p>
-            </div>
-            <div className="rounded-lg bg-secondary p-4 shadow-sm transition-all duration-300 hover:shadow-md">
-              <p className="font-medium text-secondary-foreground text-sm opacity-80">
-                {t("giftAmount", "Gift Amount")}
-              </p>
-              <p className="font-bold text-2xl text-secondary-foreground">
-                <Display type="currency" value={user?.gift_amount} />
-              </p>
-            </div>
-            <div className="rounded-lg bg-secondary p-4 shadow-sm transition-all duration-300 hover:shadow-md">
-              <p className="font-medium text-secondary-foreground text-sm opacity-80">
-                {t("commission", "Commission")}
-              </p>
-              <p className="font-bold text-2xl text-secondary-foreground">
-                <Display type="currency" value={user?.commission} />
-              </p>
-            </div>
+          <div className="rose-surface rounded-lg p-4">
+            <p className="font-medium text-muted-foreground text-sm">
+              {t("giftAmount", "Gift Amount")}
+            </p>
+            <p className="font-bold text-2xl">
+              <Display type="currency" value={user?.gift_amount} />
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="rose-surface rounded-lg p-4">
+            <p className="font-medium text-muted-foreground text-sm">
+              {t("commission", "Commission")}
+            </p>
+            <p className="font-bold text-2xl">
+              <Display type="currency" value={user?.commission} />
+            </p>
+          </div>
+        </div>
+      </section>
       <ProList<API.BalanceLog, Record<string, unknown>>
         action={ref}
         renderItem={(item) => (
-          <Card className="overflow-hidden">
-            <CardContent className="text-sm">
-              <ul className="grid grid-cols-2 gap-3 *:flex *:flex-col lg:grid-cols-4">
-                <li className="font-semibold">
-                  <span className="text-muted-foreground">
-                    {t("createdAt", "Created At")}
-                  </span>
-                  <time>{formatDate(item.timestamp)}</time>
-                </li>
-                <li className="font-semibold">
-                  <span className="text-muted-foreground">
-                    {t("type.0", "Type")}
-                  </span>
-                  <span>
-                    {typeMap[item.type] ||
-                      t(`type.${item.type}`, "Unknown Type")}
-                  </span>
-                </li>
-                <li className="font-semibold">
-                  <span className="text-muted-foreground">
-                    {t("amount", "Amount")}
-                  </span>
-                  <span>
-                    <Display type="currency" value={item.amount} />
-                  </span>
-                </li>
-
-                <li>
-                  <span className="text-muted-foreground">
-                    {t("balance", "Balance")}
-                  </span>
-                  <span>
-                    <Display type="currency" value={item.balance} />
-                  </span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+          <div className="rose-panel p-4 text-sm sm:p-5">
+            <DescriptionList
+              items={[
+                {
+                  label: t("createdAt", "Created At"),
+                  value: <time>{formatDate(item.timestamp)}</time>,
+                },
+                {
+                  label: t("type.0", "Type"),
+                  value: (
+                    <span>
+                      {typeMap[item.type] ||
+                        t(`type.${item.type}`, "Unknown Type")}
+                    </span>
+                  ),
+                },
+                {
+                  label: t("amount", "Amount"),
+                  value: (
+                    <span>
+                      <Display type="currency" value={item.amount} />
+                    </span>
+                  ),
+                },
+                {
+                  label: t("balance", "Balance"),
+                  value: (
+                    <span>
+                      <Display type="currency" value={item.balance} />
+                    </span>
+                  ),
+                },
+              ]}
+            />
+          </div>
         )}
         request={async (pagination, filter) => {
           const response = await queryUserBalanceLog({
@@ -145,6 +141,6 @@ export default function Wallet() {
           };
         }}
       />
-    </>
+    </div>
   );
 }

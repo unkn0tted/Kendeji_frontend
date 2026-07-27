@@ -103,7 +103,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       assetsDir: "static",
-      chunkSizeWarningLimit: 800,
+      chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
           manualChunks: vendorChunks,

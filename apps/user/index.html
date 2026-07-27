@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Favicons -->
-    <!-- <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico"> -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
     <!-- PWA -->
@@ -23,13 +23,51 @@
     >
 
     <!-- SEO -->
-    <meta name="description" content="Loading...">
+    <meta
+      name="description"
+      content="Kendeji — subscriptions, orders, and account management."
+    >
     <meta name="keywords" content="">
 
-    <title>Loading...</title>
+    <title>Kendeji</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Boot splash: replaced by React on mount -->
+      <style>
+      #app {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff4f8;
+      }
+      #app .boot-spin {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 3px solid rgba(219, 39, 119, 0.2);
+        border-top-color: #db2777;
+        animation: bootspin 0.7s linear infinite;
+      }
+      @keyframes bootspin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        #app {
+          background: #1f1519;
+        }
+        #app .boot-spin {
+          border-color: rgba(244, 114, 182, 0.2);
+          border-top-color: #f472b6;
+        }
+      }
+      </style>
+      <div class="boot-spin" role="status" aria-label="Loading"></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

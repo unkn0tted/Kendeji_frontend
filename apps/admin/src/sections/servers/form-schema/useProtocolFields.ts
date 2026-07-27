@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  generateMLKEM768KeyPair,
-  generatePassword,
-  generateRealityKeyPair,
-  generateRealityShortId,
-} from "../generate";
+import { generateRealityShortId } from "../generate/short-id";
+import { generatePassword } from "../generate/uid";
 import {
   CERT_MODES,
   ENCRYPTION_MODES,
@@ -31,6 +27,15 @@ import {
 import type { FieldConfig } from "./types";
 
 type Condition = (protocol: Record<string, any>) => boolean;
+
+// Heavy crypto (curve math / WASM) loads on demand when a generate button is
+// clicked, keeping it out of the servers route chunk. Call sites already await
+// generate functions, so the extra Promise is transparent.
+const generateRealityKeyPair = () =>
+  import("../generate/x25519").then((m) => m.generateRealityKeyPair());
+
+const generateMLKEM768KeyPair = () =>
+  import("../generate/mlkem768").then((m) => m.generateMLKEM768KeyPair());
 
 function pluginOptions(value: unknown): Record<string, unknown> {
   if (value && typeof value === "object" && !Array.isArray(value)) {

@@ -11,11 +11,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as mainIndexRouteImport } from './routes/(main)/index'
+import { Route as mainuserRouteRouteImport } from './routes/(main)/(user)/route'
 import { Route as mainPurchasingOrderIndexRouteImport } from './routes/(main)/purchasing/order/index'
 
 const mainRouteLazyRouteImport = createFileRoute('/(main)')()
 const AuthIndexLazyRouteImport = createFileRoute('/auth/')()
-const mainIndexLazyRouteImport = createFileRoute('/(main)/')()
 const OauthPlatformLazyRouteImport = createFileRoute('/oauth/$platform')()
 const BindPlatformLazyRouteImport = createFileRoute('/bind/$platform')()
 const mainTosLazyRouteImport = createFileRoute('/(main)/tos')()
@@ -23,7 +24,6 @@ const mainPrivacyPolicyLazyRouteImport = createFileRoute(
   '/(main)/privacy-policy',
 )()
 const mainPaymentLazyRouteImport = createFileRoute('/(main)/payment')()
-const mainuserRouteLazyRouteImport = createFileRoute('/(main)/(user)')()
 const mainPurchasingIndexLazyRouteImport = createFileRoute(
   '/(main)/purchasing/',
 )()
@@ -60,7 +60,7 @@ const AuthIndexLazyRoute = AuthIndexLazyRouteImport.update({
   path: '/auth/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/auth/index.lazy').then((d) => d.Route))
-const mainIndexLazyRoute = mainIndexLazyRouteImport
+const mainIndexRoute = mainIndexRouteImport
   .update({
     id: '/',
     path: '/',
@@ -104,7 +104,7 @@ const mainPaymentLazyRoute = mainPaymentLazyRouteImport
     getParentRoute: () => mainRouteLazyRoute,
   } as any)
   .lazy(() => import('./routes/(main)/payment.lazy').then((d) => d.Route))
-const mainuserRouteLazyRoute = mainuserRouteLazyRouteImport
+const mainuserRouteRoute = mainuserRouteRouteImport
   .update({
     id: '/(user)',
     getParentRoute: () => mainRouteLazyRoute,
@@ -123,21 +123,21 @@ const mainuserWalletLazyRoute = mainuserWalletLazyRouteImport
   .update({
     id: '/wallet',
     path: '/wallet',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() => import('./routes/(main)/(user)/wallet.lazy').then((d) => d.Route))
 const mainuserTicketLazyRoute = mainuserTicketLazyRouteImport
   .update({
     id: '/ticket',
     path: '/ticket',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() => import('./routes/(main)/(user)/ticket.lazy').then((d) => d.Route))
 const mainuserSubscribeLazyRoute = mainuserSubscribeLazyRouteImport
   .update({
     id: '/subscribe',
     path: '/subscribe',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() =>
     import('./routes/(main)/(user)/subscribe.lazy').then((d) => d.Route),
@@ -146,7 +146,7 @@ const mainuserProfileLazyRoute = mainuserProfileLazyRouteImport
   .update({
     id: '/profile',
     path: '/profile',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() =>
     import('./routes/(main)/(user)/profile.lazy').then((d) => d.Route),
@@ -155,14 +155,14 @@ const mainuserOrderLazyRoute = mainuserOrderLazyRouteImport
   .update({
     id: '/order',
     path: '/order',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() => import('./routes/(main)/(user)/order.lazy').then((d) => d.Route))
 const mainuserDocumentLazyRoute = mainuserDocumentLazyRouteImport
   .update({
     id: '/document',
     path: '/document',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() =>
     import('./routes/(main)/(user)/document.lazy').then((d) => d.Route),
@@ -171,7 +171,7 @@ const mainuserDashboardLazyRoute = mainuserDashboardLazyRouteImport
   .update({
     id: '/dashboard',
     path: '/dashboard',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() =>
     import('./routes/(main)/(user)/dashboard.lazy').then((d) => d.Route),
@@ -180,7 +180,7 @@ const mainuserAnnouncementLazyRoute = mainuserAnnouncementLazyRouteImport
   .update({
     id: '/announcement',
     path: '/announcement',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() =>
     import('./routes/(main)/(user)/announcement.lazy').then((d) => d.Route),
@@ -189,7 +189,7 @@ const mainuserAffiliateLazyRoute = mainuserAffiliateLazyRouteImport
   .update({
     id: '/affiliate',
     path: '/affiliate',
-    getParentRoute: () => mainuserRouteLazyRoute,
+    getParentRoute: () => mainuserRouteRoute,
   } as any)
   .lazy(() =>
     import('./routes/(main)/(user)/affiliate.lazy').then((d) => d.Route),
@@ -205,7 +205,7 @@ const mainPurchasingOrderIndexRoute = mainPurchasingOrderIndexRouteImport
   )
 
 export interface FileRoutesByFullPath {
-  '/': typeof mainIndexLazyRoute
+  '/': typeof mainIndexRoute
   '/payment': typeof mainPaymentLazyRoute
   '/privacy-policy': typeof mainPrivacyPolicyLazyRoute
   '/tos': typeof mainTosLazyRoute
@@ -225,12 +225,12 @@ export interface FileRoutesByFullPath {
   '/purchasing/order': typeof mainPurchasingOrderIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof mainIndexLazyRoute
   '/payment': typeof mainPaymentLazyRoute
   '/privacy-policy': typeof mainPrivacyPolicyLazyRoute
   '/tos': typeof mainTosLazyRoute
   '/bind/$platform': typeof BindPlatformLazyRoute
   '/oauth/$platform': typeof OauthPlatformLazyRoute
+  '/': typeof mainIndexRoute
   '/auth': typeof AuthIndexLazyRoute
   '/affiliate': typeof mainuserAffiliateLazyRoute
   '/announcement': typeof mainuserAnnouncementLazyRoute
@@ -247,13 +247,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(main)': typeof mainRouteLazyRouteWithChildren
-  '/(main)/(user)': typeof mainuserRouteLazyRouteWithChildren
+  '/(main)/(user)': typeof mainuserRouteRouteWithChildren
   '/(main)/payment': typeof mainPaymentLazyRoute
   '/(main)/privacy-policy': typeof mainPrivacyPolicyLazyRoute
   '/(main)/tos': typeof mainTosLazyRoute
   '/bind/$platform': typeof BindPlatformLazyRoute
   '/oauth/$platform': typeof OauthPlatformLazyRoute
-  '/(main)/': typeof mainIndexLazyRoute
+  '/(main)/': typeof mainIndexRoute
   '/auth/': typeof AuthIndexLazyRoute
   '/(main)/(user)/affiliate': typeof mainuserAffiliateLazyRoute
   '/(main)/(user)/announcement': typeof mainuserAnnouncementLazyRoute
@@ -290,12 +290,12 @@ export interface FileRouteTypes {
     | '/purchasing/order'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/payment'
     | '/privacy-policy'
     | '/tos'
     | '/bind/$platform'
     | '/oauth/$platform'
+    | '/'
     | '/auth'
     | '/affiliate'
     | '/announcement'
@@ -359,7 +359,7 @@ declare module '@tanstack/react-router' {
       id: '/(main)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof mainIndexLazyRouteImport
+      preLoaderRoute: typeof mainIndexRouteImport
       parentRoute: typeof mainRouteLazyRoute
     }
     '/oauth/$platform': {
@@ -399,9 +399,9 @@ declare module '@tanstack/react-router' {
     }
     '/(main)/(user)': {
       id: '/(main)/(user)'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof mainuserRouteLazyRouteImport
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof mainuserRouteRouteImport
       parentRoute: typeof mainRouteLazyRoute
     }
     '/(main)/purchasing/': {
@@ -416,63 +416,63 @@ declare module '@tanstack/react-router' {
       path: '/wallet'
       fullPath: '/wallet'
       preLoaderRoute: typeof mainuserWalletLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/ticket': {
       id: '/(main)/(user)/ticket'
       path: '/ticket'
       fullPath: '/ticket'
       preLoaderRoute: typeof mainuserTicketLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/subscribe': {
       id: '/(main)/(user)/subscribe'
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof mainuserSubscribeLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/profile': {
       id: '/(main)/(user)/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof mainuserProfileLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/order': {
       id: '/(main)/(user)/order'
       path: '/order'
       fullPath: '/order'
       preLoaderRoute: typeof mainuserOrderLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/document': {
       id: '/(main)/(user)/document'
       path: '/document'
       fullPath: '/document'
       preLoaderRoute: typeof mainuserDocumentLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/dashboard': {
       id: '/(main)/(user)/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof mainuserDashboardLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/announcement': {
       id: '/(main)/(user)/announcement'
       path: '/announcement'
       fullPath: '/announcement'
       preLoaderRoute: typeof mainuserAnnouncementLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/(user)/affiliate': {
       id: '/(main)/(user)/affiliate'
       path: '/affiliate'
       fullPath: '/affiliate'
       preLoaderRoute: typeof mainuserAffiliateLazyRouteImport
-      parentRoute: typeof mainuserRouteLazyRoute
+      parentRoute: typeof mainuserRouteRoute
     }
     '/(main)/purchasing/order/': {
       id: '/(main)/purchasing/order/'
@@ -484,7 +484,7 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface mainuserRouteLazyRouteChildren {
+interface mainuserRouteRouteChildren {
   mainuserAffiliateLazyRoute: typeof mainuserAffiliateLazyRoute
   mainuserAnnouncementLazyRoute: typeof mainuserAnnouncementLazyRoute
   mainuserDashboardLazyRoute: typeof mainuserDashboardLazyRoute
@@ -496,7 +496,7 @@ interface mainuserRouteLazyRouteChildren {
   mainuserWalletLazyRoute: typeof mainuserWalletLazyRoute
 }
 
-const mainuserRouteLazyRouteChildren: mainuserRouteLazyRouteChildren = {
+const mainuserRouteRouteChildren: mainuserRouteRouteChildren = {
   mainuserAffiliateLazyRoute: mainuserAffiliateLazyRoute,
   mainuserAnnouncementLazyRoute: mainuserAnnouncementLazyRoute,
   mainuserDashboardLazyRoute: mainuserDashboardLazyRoute,
@@ -508,25 +508,26 @@ const mainuserRouteLazyRouteChildren: mainuserRouteLazyRouteChildren = {
   mainuserWalletLazyRoute: mainuserWalletLazyRoute,
 }
 
-const mainuserRouteLazyRouteWithChildren =
-  mainuserRouteLazyRoute._addFileChildren(mainuserRouteLazyRouteChildren)
+const mainuserRouteRouteWithChildren = mainuserRouteRoute._addFileChildren(
+  mainuserRouteRouteChildren,
+)
 
 interface mainRouteLazyRouteChildren {
-  mainuserRouteLazyRoute: typeof mainuserRouteLazyRouteWithChildren
+  mainuserRouteRoute: typeof mainuserRouteRouteWithChildren
   mainPaymentLazyRoute: typeof mainPaymentLazyRoute
   mainPrivacyPolicyLazyRoute: typeof mainPrivacyPolicyLazyRoute
   mainTosLazyRoute: typeof mainTosLazyRoute
-  mainIndexLazyRoute: typeof mainIndexLazyRoute
+  mainIndexRoute: typeof mainIndexRoute
   mainPurchasingIndexLazyRoute: typeof mainPurchasingIndexLazyRoute
   mainPurchasingOrderIndexRoute: typeof mainPurchasingOrderIndexRoute
 }
 
 const mainRouteLazyRouteChildren: mainRouteLazyRouteChildren = {
-  mainuserRouteLazyRoute: mainuserRouteLazyRouteWithChildren,
+  mainuserRouteRoute: mainuserRouteRouteWithChildren,
   mainPaymentLazyRoute: mainPaymentLazyRoute,
   mainPrivacyPolicyLazyRoute: mainPrivacyPolicyLazyRoute,
   mainTosLazyRoute: mainTosLazyRoute,
-  mainIndexLazyRoute: mainIndexLazyRoute,
+  mainIndexRoute: mainIndexRoute,
   mainPurchasingIndexLazyRoute: mainPurchasingIndexLazyRoute,
   mainPurchasingOrderIndexRoute: mainPurchasingOrderIndexRoute,
 }

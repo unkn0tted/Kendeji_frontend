@@ -14,7 +14,7 @@ import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import type { TurnstileRef } from "../turnstile";
 import CloudFlareTurnstile from "../turnstile";
 
@@ -32,7 +32,7 @@ export default function LoginForm({
   onSwitchForm: Dispatch<SetStateAction<"register" | "reset" | "login">>;
 }) {
   const { t } = useTranslation("auth");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { verify } = common;
 
   const formSchema = z.object({

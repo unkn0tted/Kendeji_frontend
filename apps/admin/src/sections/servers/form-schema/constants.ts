@@ -1,3 +1,5 @@
+import i18next from "i18next";
+
 export const protocols = [
   "shadowsocks",
   "vmess",
@@ -167,7 +169,28 @@ export const SNELL_VERSIONS = ["5", "6"] as const;
 export const SNELL_OBFS = ["none", "http", "tls"] as const;
 export const SNELL_V6_MODES = ["default", "unshaped", "unsafe-raw"] as const;
 
+// Plain-English labels that need translation; technical terms (TCP,
+// WebSocket, gRPC, Chrome...) stay as-is.
+const TRANSLATABLE_LABEL_KEYS: Record<string, string> = {
+  low: "low",
+  middle: "middle",
+  high: "high",
+  MULTIPLEXING_OFF: "off",
+  MULTIPLEXING_LOW: "low",
+  MULTIPLEXING_MIDDLE: "middle",
+  MULTIPLEXING_HIGH: "high",
+  default: "default",
+  unshaped: "unshaped",
+  "unsafe-raw": "unsafeRaw",
+};
+
 export function getLabel(value: string): string {
   const label = (LABELS as Record<string, string>)[value];
+  const translatableKey = TRANSLATABLE_LABEL_KEYS[value];
+  if (translatableKey) {
+    return i18next.t(`servers:labels.${translatableKey}`, {
+      defaultValue: label ?? value,
+    });
+  }
   return label ?? value.toUpperCase();
 }

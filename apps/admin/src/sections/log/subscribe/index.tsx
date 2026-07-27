@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { IpLink } from "@/components/ip-link";
 import { UserDetail, UserSubscribeDetail } from "@/sections/user/user-detail";
 import { fetchAllPaginated } from "@/stores/pagination";
-import { formatDate } from "@/utils/common";
+import { formatDate, todayInTimezone } from "@/utils/common";
 import {
   type EnrichedSubscribeLog,
   enumerateDateRange,
@@ -49,7 +49,7 @@ export default function SubscribeLogPage() {
   const queryClient = useQueryClient();
   const rangeCache = useRef(new Map<string, Promise<EnrichedSubscribeLog[]>>());
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInTimezone();
 
   const initialFilters = {
     start_date: sp.start_date || sp.date || today,

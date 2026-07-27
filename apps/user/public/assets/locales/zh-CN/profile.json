@@ -26,6 +26,31 @@
     "title": "第三方账户",
     "unbind": "解绑",
     "update": "更新",
-    "updateSuccess": "更新成功"
-  }
+    "updateSuccess": "更新成功",
+    "email": {
+      "description": "绑定您的邮箱地址"
+    },
+    "mobile": {
+      "description": "绑定您的手机号码"
+    },
+    "telegram": {
+      "description": "使用 Telegram 登录"
+    },
+    "apple": {
+      "description": "使用 Apple 登录"
+    },
+    "google": {
+      "description": "使用 Google 登录"
+    },
+    "facebook": {
+      "description": "使用 Facebook 登录"
+    },
+    "github": {
+      "description": "使用 GitHub 登录"
+    },
+    "device": {
+      "description": "使用设备 ID 登录"
+    }
+  },
+  "pageDescription": "管理您的绑定账号、通知与密码"
 }

@@ -1,5 +1,4 @@
 {
-  "cancel": "取消",
   "bulkClose": {
     "all": "关闭所有工单",
     "allConfirm": "确定关闭所有工单吗？",
@@ -12,8 +11,11 @@
     "replied": "关闭所有已回复工单",
     "repliedConfirm": "确定关闭所有已回复工单吗？",
     "repliedWarning": "这会关闭所有当前正在等待用户回复的工单。该操作无法撤销。",
-    "success": "已关闭 {{count}} 个工单"
+    "success": "已关闭 {{count}} 个工单",
+    "success_one": "已关闭 {{count}} 个工单",
+    "success_other": "已关闭 {{count}} 个工单"
   },
+  "cancel": "取消",
   "check": "查看",
   "close": "关闭",
   "closeSuccess": "关闭成功",

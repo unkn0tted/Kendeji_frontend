@@ -3,13 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@workspace/ui/components/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -49,6 +42,8 @@ import { formatDate } from "@workspace/ui/utils/formatting";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { DescriptionList } from "@/components/description-list";
+import { PageHeader } from "@/components/page-header";
 
 export default function Ticket() {
   const { t } = useTranslation("ticket");
@@ -88,55 +83,55 @@ export default function Ticket() {
   const ref = useRef<ProListActions>(null);
   const [create, setCreate] =
     useState<Partial<API.CreateUserTicketRequest & { open: boolean }>>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
-    <>
-      <ProList<API.Ticket, { status: number }>
-        action={ref}
-        empty={<Empty />}
-        header={{
-          title: t("ticketList", "Ticket List"),
-          toolbar: (
-            <Dialog
-              onOpenChange={(open) => setCreate({ open })}
-              open={create?.open}
-            >
-              <DialogTrigger asChild>
-                <Button size="sm">{t("createTicket", "Create Ticket")}</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {t("createTicket", "Create Ticket")}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {t("createTicketDescription", "Create Ticket Description")}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <Label htmlFor="title">{t("title", "Title")}</Label>
-                  <Input
-                    defaultValue={create?.title}
-                    id="title"
-                    onChange={(e) =>
-                      setCreate({ ...create, title: e.target.value! })
-                    }
-                  />
-                  <Label htmlFor="content">
-                    {t("description", "Description")}
-                  </Label>
-                  <Textarea
-                    defaultValue={create?.description}
-                    id="content"
-                    onChange={(e) =>
-                      setCreate({ ...create, description: e.target.value! })
-                    }
-                  />
-                </div>
-                <DialogFooter>
-                  <Button
-                    disabled={!(create?.title && create?.description)}
-                    onClick={async () => {
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        actions={
+          <Dialog
+            onOpenChange={(open) => setCreate({ open })}
+            open={create?.open}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm">{t("createTicket", "Create Ticket")}</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{t("createTicket", "Create Ticket")}</DialogTitle>
+                <DialogDescription>
+                  {t("createTicketDescription", "Create Ticket Description")}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <Label htmlFor="title">{t("title", "Title")}</Label>
+                <Input
+                  defaultValue={create?.title}
+                  id="title"
+                  onChange={(e) =>
+                    setCreate({ ...create, title: e.target.value! })
+                  }
+                />
+                <Label htmlFor="content">
+                  {t("description", "Description")}
+                </Label>
+                <Textarea
+                  defaultValue={create?.description}
+                  id="content"
+                  onChange={(e) =>
+                    setCreate({ ...create, description: e.target.value! })
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  disabled={
+                    isSubmitting || !(create?.title && create?.description)
+                  }
+                  onClick={async () => {
+                    if (isSubmitting) return;
+                    setIsSubmitting(true);
+                    try {
                       await createUserTicket({
                         title: create!.title!,
                         description: create!.description!,
@@ -144,15 +139,23 @@ export default function Ticket() {
                       ref.current?.refresh();
                       toast.success(t("createSuccess", "Create Success"));
                       setCreate({ open: false });
-                    }}
-                  >
-                    {t("submit", "Submit")}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          ),
-        }}
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                >
+                  {t("submit", "Submit")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+        description={t("pageDescription", "Get help from our support team")}
+        title={t("ticketList", "Ticket List")}
+      />
+      <ProList<API.Ticket, { status: number }>
+        action={ref}
+        empty={<Empty />}
         params={[
           {
             key: "search",
@@ -169,29 +172,27 @@ export default function Ticket() {
           },
         ]}
         renderItem={(item) => (
-          <Card className="overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 bg-muted/50 p-3">
-              <CardTitle>
-                <span
-                  className={cn(
-                    "flex items-center gap-2 before:block before:size-1.5 before:animate-pulse before:rounded-full before:ring-2 before:ring-opacity-50",
-                    {
-                      "before:bg-yellow-500 before:ring-yellow-500":
-                        item.status === 1,
-                      "before:bg-rose-500 before:ring-rose-500":
-                        item.status === 2,
-                      "before:bg-green-500 before:ring-green-500":
-                        item.status === 3,
-                      "before:bg-zinc-500 before:ring-zinc-500":
-                        item.status === 4,
-                    }
-                  )}
-                >
-                  {statusMap[item.status] ||
-                    t(`status.${item.status}`, "Unknown Status")}
-                </span>
-              </CardTitle>
-              <CardDescription className="flex gap-2">
+          <div className="rose-panel overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b p-3 sm:px-4">
+              <span
+                className={cn(
+                  "flex items-center gap-2 font-semibold before:block before:size-1.5 before:animate-pulse before:rounded-full before:ring-2",
+                  {
+                    "before:bg-chart-3 before:ring-chart-3/50":
+                      item.status === 1,
+                    "before:bg-primary before:ring-primary/50":
+                      item.status === 2,
+                    "before:bg-chart-2 before:ring-chart-2/50":
+                      item.status === 3,
+                    "before:bg-muted-foreground before:ring-muted-foreground/50":
+                      item.status === 4,
+                  }
+                )}
+              >
+                {statusMap[item.status] ||
+                  t(`status.${item.status}`, "Unknown Status")}
+              </span>
+              <div className="flex flex-wrap gap-2">
                 {item.status !== 4 ? (
                   <>
                     <Button
@@ -234,32 +235,29 @@ export default function Ticket() {
                     {t("check", "Check")}
                   </Button>
                 )}
-              </CardDescription>
-            </CardHeader>
+              </div>
+            </div>
 
-            <CardContent className="p-3 text-sm">
-              <ul className="grid gap-3 *:flex *:flex-col lg:grid-cols-3">
-                <li>
-                  <span className="text-muted-foreground">
-                    {t("title", "Title")}
-                  </span>
-                  <span> {item.title}</span>
-                </li>
-                <li className="font-semibold">
-                  <span className="text-muted-foreground">
-                    {t("description", "Description")}
-                  </span>
-                  <time>{item.description}</time>
-                </li>
-                <li className="font-semibold">
-                  <span className="text-muted-foreground">
-                    {t("updatedAt", "Updated At")}
-                  </span>
-                  <time>{formatDate(item.updated_at)}</time>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+            <div className="p-3 text-sm sm:p-4">
+              <DescriptionList
+                className="grid-cols-1 lg:grid-cols-3"
+                items={[
+                  {
+                    label: t("title", "Title"),
+                    value: <span> {item.title}</span>,
+                  },
+                  {
+                    label: t("description", "Description"),
+                    value: <time>{item.description}</time>,
+                  },
+                  {
+                    label: t("updatedAt", "Updated At"),
+                    value: <time>{formatDate(item.updated_at)}</time>,
+                  },
+                ]}
+              />
+            </div>
+          </div>
         )}
         request={async (pagination, filters) => {
           const { data } = await getUserTicketList({
@@ -423,6 +421,6 @@ export default function Ticket() {
           )}
         </DrawerContent>
       </Drawer>
-    </>
+    </div>
   );
 }

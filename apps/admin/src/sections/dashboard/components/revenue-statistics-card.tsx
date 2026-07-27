@@ -8,14 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@workspace/ui/components/chart";
 import { Separator } from "@workspace/ui/components/separator";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -24,20 +18,13 @@ import {
 } from "@workspace/ui/components/tabs";
 import Empty from "@workspace/ui/composed/empty";
 import { queryRevenueStatistics } from "@workspace/ui/services/admin/console";
-import { unitConversion } from "@workspace/ui/utils/unit-conversions";
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Label,
-  Pie,
-  PieChart,
-  XAxis,
-} from "recharts";
 import { Display } from "@/components/display";
+
+// Chart rendering is split into a lazy leaf so recharts stays out of the
+// dashboard landing chunk; stat numbers/headers paint first.
+const RevenueChart = lazy(() => import("./revenue-chart"));
 
 export function RevenueStatisticsCard() {
   const { t, i18n } = useTranslation("dashboard");
@@ -81,68 +68,14 @@ export function RevenueStatisticsCard() {
           <CardContent className="h-80">
             {RevenueStatistics?.today.new_order_amount ||
             RevenueStatistics?.today.renewal_order_amount ? (
-              <ChartContainer
-                className="mx-auto max-h-80"
-                config={IncomeStatisticsConfig}
-              >
-                <PieChart>
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <ChartTooltip
-                    content={<ChartTooltipContent hideLabel />}
-                    cursor={false}
-                  />
-                  <Pie
-                    data={[
-                      {
-                        type: "new_purchase",
-                        value: unitConversion(
-                          "centsToDollars",
-                          RevenueStatistics?.today.new_order_amount
-                        ),
-                        fill: "var(--color-new_purchase)",
-                      },
-                      {
-                        type: "repurchase",
-                        value: unitConversion(
-                          "centsToDollars",
-                          RevenueStatistics?.today.renewal_order_amount
-                        ),
-                        fill: "var(--color-repurchase)",
-                      },
-                    ]}
-                    dataKey="value"
-                    innerRadius={50}
-                    nameKey="type"
-                    strokeWidth={5}
-                  >
-                    <Label
-                      content={({ viewBox }) => {
-                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                          return (
-                            <text
-                              dominantBaseline="middle"
-                              textAnchor="middle"
-                              x={viewBox.cx}
-                              y={viewBox.cy}
-                            >
-                              <tspan
-                                className="fill-foreground font-bold text-2xl"
-                                x={viewBox.cx}
-                                y={viewBox.cy}
-                              >
-                                {unitConversion(
-                                  "centsToDollars",
-                                  RevenueStatistics?.today.amount_total
-                                )}
-                              </tspan>
-                            </text>
-                          );
-                        }
-                      }}
-                    />
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
+              <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                <RevenueChart
+                  config={IncomeStatisticsConfig}
+                  data={RevenueStatistics?.today}
+                  locale={locale}
+                  variant="today"
+                />
+              </Suspense>
             ) : (
               <div className="flex h-full items-center justify-center">
                 <Empty />
@@ -194,95 +127,14 @@ export function RevenueStatisticsCard() {
           <CardContent className="h-80">
             {RevenueStatistics?.monthly.list &&
             RevenueStatistics?.monthly.list.length > 0 ? (
-              <ChartContainer
-                className="max-h-80 w-full"
-                config={IncomeStatisticsConfig}
-              >
-                <BarChart
-                  accessibilityLayer
-                  data={
-                    RevenueStatistics?.monthly.list?.map((item) => ({
-                      date: item.date,
-                      new_purchase: unitConversion(
-                        "centsToDollars",
-                        item.new_order_amount
-                      ),
-                      repurchase: unitConversion(
-                        "centsToDollars",
-                        item.renewal_order_amount
-                      ),
-                      total: unitConversion(
-                        "centsToDollars",
-                        item.new_order_amount + item.renewal_order_amount
-                      ),
-                    })) || []
-                  }
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    axisLine={false}
-                    dataKey="date"
-                    tickFormatter={(value) => {
-                      const [year, month, day] = value.split("-");
-                      return new Date(year, month - 1, day).toLocaleDateString(
-                        locale,
-                        {
-                          month: "short",
-                          day: "numeric",
-                        }
-                      );
-                    }}
-                    tickLine={false}
-                    tickMargin={10}
-                  />
-                  <Bar
-                    dataKey="new_purchase"
-                    fill="var(--color-new_purchase)"
-                    radius={[0, 0, 4, 4]}
-                    stackId="a"
-                  />
-                  <Bar
-                    dataKey="repurchase"
-                    fill="var(--color-repurchase)"
-                    radius={[4, 4, 0, 0]}
-                    stackId="a"
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value, name, item, index) => (
-                          <>
-                            <div
-                              className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[--color-bg]"
-                              style={
-                                {
-                                  "--color-bg": `var(--color-${name})`,
-                                } as React.CSSProperties
-                              }
-                            />
-                            {IncomeStatisticsConfig[
-                              name as keyof typeof IncomeStatisticsConfig
-                            ]?.label || name}
-                            <div className="ml-auto flex items-baseline gap-0.5 font-medium font-mono text-foreground tabular-nums">
-                              {value}
-                            </div>
-                            {index === 1 && (
-                              <div className="flex basis-full items-center border-t pt-1.5 font-medium text-foreground text-xs">
-                                {t("totalIncome", "Total Income")}
-                                <div className="ml-auto flex items-baseline gap-0.5 font-medium font-mono text-foreground tabular-nums">
-                                  {item.payload.total}
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      />
-                    }
-                    cursor={false}
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </BarChart>
-              </ChartContainer>
+              <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                <RevenueChart
+                  config={IncomeStatisticsConfig}
+                  data={RevenueStatistics?.monthly}
+                  locale={locale}
+                  variant="month"
+                />
+              </Suspense>
             ) : (
               <div className="flex h-full items-center justify-center">
                 <Empty />
@@ -334,101 +186,14 @@ export function RevenueStatisticsCard() {
           <CardContent className="h-80">
             {RevenueStatistics?.all.list &&
             RevenueStatistics?.all.list.length > 0 ? (
-              <ChartContainer
-                className="max-h-80 w-full"
-                config={IncomeStatisticsConfig}
-              >
-                <AreaChart
-                  accessibilityLayer
-                  data={
-                    RevenueStatistics?.all.list?.map((item) => ({
-                      date: item.date,
-                      new_purchase: unitConversion(
-                        "centsToDollars",
-                        item.new_order_amount
-                      ),
-                      repurchase: unitConversion(
-                        "centsToDollars",
-                        item.renewal_order_amount
-                      ),
-                      total: unitConversion(
-                        "centsToDollars",
-                        item.new_order_amount + item.renewal_order_amount
-                      ),
-                    })) || []
-                  }
-                  margin={{
-                    left: 12,
-                    right: 12,
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    axisLine={false}
-                    dataKey="date"
-                    tickFormatter={(value) => {
-                      const [year, month] = value.split("-");
-                      return new Date(year, month - 1).toLocaleDateString(
-                        locale,
-                        {
-                          month: "short",
-                        }
-                      );
-                    }}
-                    tickLine={false}
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value, name, item, index) => (
-                          <>
-                            <div
-                              className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[--color-bg]"
-                              style={
-                                {
-                                  "--color-bg": `var(--color-${name})`,
-                                } as React.CSSProperties
-                              }
-                            />
-                            {IncomeStatisticsConfig[
-                              name as keyof typeof IncomeStatisticsConfig
-                            ]?.label || name}
-                            <div className="ml-auto flex items-baseline gap-0.5 font-medium font-mono text-foreground tabular-nums">
-                              {value}
-                            </div>
-                            {index === 1 && (
-                              <div className="flex basis-full items-center border-t pt-1.5 font-medium text-foreground text-xs">
-                                {t("totalIncome", "Total Income")}
-                                <div className="ml-auto flex items-baseline gap-0.5 font-medium font-mono text-foreground tabular-nums">
-                                  {item.payload.total}
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      />
-                    }
-                    cursor={false}
-                  />
-                  <Area
-                    dataKey="new_purchase"
-                    fill="var(--color-new_purchase)"
-                    fillOpacity={0.4}
-                    stackId="a"
-                    stroke="var(--color-new_purchase)"
-                    type="natural"
-                  />
-                  <Area
-                    dataKey="repurchase"
-                    fill="var(--color-repurchase)"
-                    fillOpacity={0.4}
-                    stackId="a"
-                    stroke="var(--color-repurchase)"
-                    type="natural"
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </AreaChart>
-              </ChartContainer>
+              <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                <RevenueChart
+                  config={IncomeStatisticsConfig}
+                  data={RevenueStatistics?.all}
+                  locale={locale}
+                  variant="total"
+                />
+              </Suspense>
             ) : (
               <div className="flex h-full items-center justify-center">
                 <Empty />

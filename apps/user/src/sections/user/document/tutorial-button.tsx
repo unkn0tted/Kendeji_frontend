@@ -53,7 +53,10 @@ export function TutorialButton({ items }: { items: Item[] }) {
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "auto";
+    };
   }, [active]);
 
   useOutsideClick(ref as RefObject<HTMLDivElement>, () => setActive(null));
@@ -77,7 +80,7 @@ export function TutorialButton({ items }: { items: Item[] }) {
               animate={{
                 opacity: 1,
               }}
-              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-white dark:text-black"
+              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background"
               exit={{
                 opacity: 0,
                 transition: {
@@ -120,21 +123,21 @@ export function TutorialButton({ items }: { items: Item[] }) {
       <div className="flex w-full flex-col gap-4">
         {items.map((item) => (
           <motion.div
-            className="flex cursor-pointer items-center justify-between rounded-xl border bg-background p-4 hover:bg-accent"
+            className="rose-surface-interactive flex cursor-pointer items-center justify-between gap-3 rounded-xl p-4"
             key={`card-${item.title}-${id}`}
             layoutId={`card-${item.title}-${id}`}
             onClick={() => setActive(item)}
           >
-            <div className="flex flex-row items-center gap-4">
+            <div className="flex min-w-0 flex-row items-center gap-4">
               <motion.div layoutId={`image-${item.title}-${id}`}>
                 <Avatar className="size-12">
                   <AvatarImage alt={item.title ?? ""} src={item.icon ?? ""} />
-                  <AvatarFallback className="bg-primary/80 text-white">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
                     {item.title.split("")[0]}
                   </AvatarFallback>
                 </Avatar>
               </motion.div>
-              <div className="">
+              <div className="min-w-0">
                 <motion.h3
                   className="font-medium"
                   layoutId={`title-${item.title}-${id}`}
@@ -143,7 +146,7 @@ export function TutorialButton({ items }: { items: Item[] }) {
                 </motion.h3>
                 {item.updated_at && (
                   <motion.p
-                    className="text-center text-neutral-600 md:text-left dark:text-neutral-400"
+                    className="text-center text-muted-foreground md:text-left"
                     layoutId={`description-${item.title}-${id}`}
                   >
                     {formatDate(new Date(item.updated_at), false)}

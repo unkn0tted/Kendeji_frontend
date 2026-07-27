@@ -14,6 +14,7 @@ import {
 } from "@workspace/ui/components/alert";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import Empty from "@workspace/ui/composed/empty";
 import { normalizePageSize } from "@workspace/ui/composed/pagination-config";
 import {
@@ -25,6 +26,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { ListRestart, Loader, RefreshCcw } from "lucide-react";
 import type React from "react";
 import { useEffect, useImperativeHandle, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export interface ProListProps<TData, TValue> {
   request: (
@@ -41,6 +43,7 @@ export interface ProListProps<TData, TValue> {
   };
   batchRender?: (rows: TData[]) => React.ReactNode[];
   renderItem: (item: TData, checkbox: React.ReactNode) => React.ReactNode;
+  rowKey?: (item: TData, index: number) => React.Key;
   action?: React.Ref<ProListActions | undefined>;
   texts?: Partial<{
     textRowsPerPage: string;
@@ -60,10 +63,12 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
   header,
   batchRender,
   renderItem,
+  rowKey,
   action,
   texts,
   empty,
 }: ProListProps<TData, TValue>) {
+  const { t } = useTranslation("components");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<{ [key: number]: boolean }>(
     {}
@@ -79,8 +84,14 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
   const table = useReactTable({
     data,
     columns: [],
-    onPaginationChange: setPagination,
-    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: (updater) => {
+      setPagination(updater);
+      setRowSelection({});
+    },
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater);
+      setRowSelection({});
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -181,9 +192,11 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
 
       {selectedCount > 0 && batchRender && (
         <Alert className="flex items-center justify-between">
-          <AlertTitle className="m-0">
+          <AlertTitle className="m-0 tabular-nums">
             {texts?.selectedRowsText?.(selectedCount) ||
-              `Selected ${selectedCount} rows`}
+              t("table.selectedRows", "Selected {{count}} rows", {
+                count: selectedCount,
+              })}
           </AlertTitle>
           <AlertDescription className="flex gap-2">
             {batchRender(selectedRows)}
@@ -193,17 +206,31 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
 
       <div
         className={cn("relative overflow-x-auto", {
-          "rounded-xl border": data.length === 0,
+          "rounded-xl border": !loading && data.length === 0,
         })}
       >
         <div className="grid grid-cols-1 gap-4">
-          {data.length ? (
+          {loading && data.length === 0 ? (
+            Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
+              <div
+                className="rose-surface flex flex-col gap-3 rounded-xl p-4"
+                key={`skeleton-${index}`}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-1/3 max-w-40" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-3 w-2/3 max-w-72" />
+                <Skeleton className="h-3 w-1/2 max-w-56" />
+              </div>
+            ))
+          ) : data.length ? (
             data.map((item, index) => {
               const isSelected = !!rowSelection[index];
 
               const checkbox = (
                 <Checkbox
-                  aria-label="Select row"
+                  aria-label={t("table.selectRow", "Select row")}
                   checked={isSelected}
                   onCheckedChange={(value) =>
                     handleSelectionChange(index, !!value)
@@ -211,16 +238,20 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
                 />
               );
 
-              return <div key={index}>{renderItem(item, checkbox)}</div>;
+              return (
+                <div key={rowKey ? rowKey(item, index) : index}>
+                  {renderItem(item, checkbox)}
+                </div>
+              );
             })
           ) : (
-            <div className="flex items-center justify-center py-24">
+            <div className="flex items-center justify-center py-16">
               {empty || <Empty />}
             </div>
           )}
         </div>
 
-        {loading && (
+        {loading && data.length > 0 && (
           <div className="absolute top-0 z-20 flex h-full w-full items-center justify-center bg-muted/80">
             <Loader className="h-4 w-4 animate-spin" />
           </div>
@@ -230,3 +261,5 @@ export function ProList<TData, TValue extends Record<string, unknown>>({
     </div>
   );
 }
+
+const SKELETON_CARD_COUNT = 3;

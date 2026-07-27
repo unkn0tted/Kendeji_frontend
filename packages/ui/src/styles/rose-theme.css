@@ -19,11 +19,16 @@
 /* ============================ 1. TOKENS ================================= */
 
 :root {
+  color-scheme: light;
+
   /* -- aurora palette: the four lights the whole theme is built from ---- */
   --aurora-rose: oklch(0.7 0.2 355);
   --aurora-magenta: oklch(0.68 0.22 330);
   --aurora-coral: oklch(0.76 0.16 25);
   --aurora-lilac: oklch(0.74 0.15 305);
+  /* Deep coral caps the light end of CTA gradients so near-white button
+     text keeps AA-ish contrast across the whole sweep. */
+  --aurora-coral-deep: oklch(0.61 0.17 20);
 
   /* -- semantic surface tokens ----------------------------------------- */
   --background: oklch(0.988 0.008 350);
@@ -41,6 +46,7 @@
   --accent: oklch(0.948 0.03 348);
   --accent-foreground: oklch(0.3 0.045 350);
   --destructive: oklch(0.6 0.2 22);
+  --destructive-foreground: oklch(0.985 0.008 20);
   --border: oklch(0.895 0.022 350);
   --input: oklch(0.905 0.022 350);
   --ring: oklch(0.68 0.17 355);
@@ -52,7 +58,8 @@
   --chart-5: oklch(0.7 0.16 12);
 
   --theme-color-light: #fff5f9;
-  --theme-color-dark: #17101a;
+  /* Matches dark --background oklch(0.165 0.018 340). */
+  --theme-color-dark: #140b11;
 
   /* -- glass recipe ----------------------------------------------------- */
   --glass-bg: oklch(1 0 0 / 0.66);
@@ -63,6 +70,15 @@
   --glass-highlight: oklch(1 0 0 / 0.75);
   --glass-blur: 18px;
   --glass-blur-strong: 28px;
+
+  /* -- sheen: the one shared recipe every sweep highlight reuses --------- */
+  --sheen-peak: 0.45;
+  --rose-sheen: linear-gradient(
+    110deg,
+    transparent 32%,
+    oklch(1 0 0 / var(--sheen-peak)) 50%,
+    transparent 68%
+  );
 
   /* -- elevation: pink-tinted, actually visible -------------------------- */
   --shadow-sm:
@@ -103,10 +119,13 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   --aurora-rose: oklch(0.62 0.19 352);
   --aurora-magenta: oklch(0.58 0.2 328);
   --aurora-coral: oklch(0.64 0.15 22);
   --aurora-lilac: oklch(0.6 0.16 302);
+  --aurora-coral-deep: oklch(0.66 0.15 22);
 
   --background: oklch(0.165 0.018 340);
   --foreground: oklch(0.955 0.008 350);
@@ -123,6 +142,7 @@
   --accent: oklch(0.32 0.042 344);
   --accent-foreground: oklch(0.945 0.01 350);
   --destructive: oklch(0.68 0.17 22);
+  --destructive-foreground: oklch(0.985 0.008 20);
   --border: oklch(1 0 0 / 0.1);
   --input: oklch(1 0 0 / 0.14);
   --ring: oklch(0.73 0.16 355);
@@ -139,6 +159,9 @@
   --glass-border: oklch(1 0 0 / 0.1);
   --glass-border-strong: oklch(0.75 0.14 352 / 0.32);
   --glass-highlight: oklch(1 0 0 / 0.08);
+
+  /* Soften the near-white sheen flash on dark surfaces. */
+  --sheen-peak: 0.14;
 
   --shadow-sm:
     0 1px 2px oklch(0.08 0.02 340 / 0.4), 0 2px 8px -2px
@@ -165,13 +188,24 @@
 
 /* ============================= 2. BASE ================================== */
 
-html {
+/* Smooth-scroll only while keyboard focus is inside the page: anchor and
+   focus jumps animate, but route changes snap instantly instead of
+   animate-scrolling across the whole document. */
+html:focus-within {
   scroll-behavior: smooth;
+}
+
+/* dvh fallback for engines that predate dynamic viewport units. */
+@supports not (min-height: 100dvh) {
+  body,
+  #app {
+    min-height: 100vh;
+  }
 }
 
 body {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
@@ -186,7 +220,9 @@ body {
 body::before {
   position: fixed;
   z-index: -2;
-  inset: -35%;
+  /* A slim bleed keeps the composited layer close to viewport size; the
+     drift keyframes scale up slightly to cover the travel instead. */
+  inset: -10%;
   background:
     radial-gradient(
       closest-side at 22% 26%,
@@ -236,7 +272,7 @@ body::after {
 
 #app {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 h1,
@@ -246,6 +282,7 @@ h4,
 .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.011em;
+  text-wrap: balance;
 }
 
 ::selection {
@@ -307,14 +344,17 @@ h4,
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
     box-shadow: var(--shadow-lg);
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.4);
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.4);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.45);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.45);
   }
 
-  /* Specular highlight along the top edge — what sells the glass. */
+  /* Specular highlight along the top edge — what sells the glass. Decorative
+     layers (this highlight, .rose-grid, the hero backdrops) sit at z-index -1
+     inside the shell's isolated stacking context, so in-flow content paints
+     above them with no per-child lifting rules. */
   .rose-shell::before {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     inset: 0;
     border-radius: inherit;
     background: linear-gradient(
@@ -324,14 +364,6 @@ h4,
     );
     content: "";
     pointer-events: none;
-  }
-
-  /* Lift real content above the decorative layers. Decoration is excluded by
-     name so the rule cannot fight the absolute positioning of those layers,
-     regardless of where they appear in this file. */
-  .rose-shell > *:not(.rose-grid, [class*="main-hero__"]) {
-    position: relative;
-    z-index: 1;
   }
 
   /* -- .rose-panel: nested surface, one elevation step down ------------- */
@@ -351,7 +383,7 @@ h4,
 
   .rose-panel::before {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     inset: 0;
     border-radius: inherit;
     background: linear-gradient(
@@ -362,11 +394,6 @@ h4,
     content: "";
     opacity: 0.7;
     pointer-events: none;
-  }
-
-  .rose-panel > *:not(.rose-grid, [class*="main-hero__"]) {
-    position: relative;
-    z-index: 1;
   }
 
   /* -- .rose-surface: soft translucent tile ----------------------------- */
@@ -407,36 +434,32 @@ h4,
     border: 1px solid var(--glass-border-strong);
     background: color-mix(in oklab, var(--primary) 10%, var(--glass-bg-strong));
     padding: 0.4rem 0.85rem;
-    font-size: 0.7rem;
+    font-size: 0.74rem;
     font-weight: 650;
     line-height: 1;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--primary);
+    color: color-mix(in oklab, var(--primary) 82%, var(--foreground));
     box-shadow: var(--shadow-sm);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
-  /* A single sheen sweep on load — draws the eye, then stops. */
+  /* A single sheen sweep shortly after load — draws the eye, then stops. */
   .rose-pill::after {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      110deg,
-      transparent 30%,
-      oklch(1 0 0 / 0.55) 50%,
-      transparent 70%
-    );
+    background: var(--rose-sheen);
     content: "";
-    animation: sheen-sweep 4.5s ease-in-out infinite;
+    transform: translateX(-130%);
+    animation: sheen-sweep 1.4s ease-in-out 1.2s 1 both;
     pointer-events: none;
   }
 
   /* -- .rose-grid: ambient blueprint grid ------------------------------ */
   .rose-grid {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     inset: 0;
     background-image:
       linear-gradient(
@@ -475,8 +498,8 @@ h4,
     border: 1px solid var(--glass-border);
     background: var(--glass-bg-strong);
     box-shadow: var(--shadow-md);
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.5);
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.5);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.45);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.45);
   }
 
   .rose-nav-shell::before {
@@ -498,6 +521,8 @@ h4,
   }
 
   /* -- gradient section headings --------------------------------------- */
+  /* Static aurora gradient: animating background-position under
+     background-clip: text repaints the glyphs every frame. */
   .rose-section-title {
     background: linear-gradient(
       100deg,
@@ -505,11 +530,9 @@ h4,
       var(--aurora-magenta) 45%,
       var(--aurora-coral)
     );
-    background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: gradient-pan 9s ease-in-out infinite;
   }
 
   /* ========================= 4. CONTROLS ============================== */
@@ -535,40 +558,35 @@ h4,
     transform: translateY(0.5px) scale(0.99);
   }
 
-  [data-slot="button"][class~="bg-primary"]:not(:disabled) {
+  [data-slot="button"][data-variant="default"]:not(:disabled) {
     background-image: linear-gradient(
       130deg,
       var(--aurora-magenta) 0%,
       var(--primary) 48%,
-      var(--aurora-coral) 100%
+      var(--aurora-coral-deep) 100%
     );
     background-size: 150% 100%;
     box-shadow: var(--shadow-glow);
   }
 
-  [data-slot="button"][class~="bg-primary"]:not(:disabled):hover {
+  [data-slot="button"][data-variant="default"]:not(:disabled):hover {
     transform: translateY(-1px);
     background-position: 100% 0;
     filter: saturate(1.08);
   }
 
   /* The sheen that sweeps across primary buttons on hover. */
-  [data-slot="button"][class~="bg-primary"]::after {
+  [data-slot="button"][data-variant="default"]::after {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      110deg,
-      transparent 32%,
-      oklch(1 0 0 / 0.42) 50%,
-      transparent 68%
-    );
+    background: var(--rose-sheen);
     content: "";
     transform: translateX(-110%);
     transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
   }
 
-  [data-slot="button"][class~="bg-primary"]:hover::after {
+  [data-slot="button"][data-variant="default"]:hover::after {
     transform: translateX(110%);
   }
 
@@ -603,8 +621,8 @@ h4,
     border-color: var(--glass-border);
     background: var(--glass-bg-strong);
     box-shadow: var(--shadow-lg);
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.4);
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.4);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.45);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.45);
   }
 
   [data-slot="dropdown-menu-item"],
@@ -703,7 +721,7 @@ h4,
   /* A slow conic wash behind the hero, above the page aurora. */
   .main-hero__aura {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     inset: -20%;
     background: conic-gradient(
       from 140deg at 66% 42%,
@@ -723,7 +741,7 @@ h4,
 
   .main-hero__scan {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     inset: 0;
     background: linear-gradient(
       108deg,
@@ -746,9 +764,10 @@ h4,
 
   .main-hero__particles {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     inset: 0;
     overflow: hidden;
+    content-visibility: auto;
     pointer-events: none;
   }
 
@@ -762,8 +781,8 @@ h4,
     border-radius: 999px;
     background: var(--aurora-rose);
     box-shadow:
-      0 0 0 0.4rem color-mix(in oklab, var(--aurora-rose) 12%, transparent),
-      0 0 1.5rem color-mix(in oklab, var(--aurora-rose) 45%, transparent);
+      0 0 0 0.3rem color-mix(in oklab, var(--aurora-rose) 12%, transparent),
+      0 0 1.1rem color-mix(in oklab, var(--aurora-rose) 45%, transparent);
     animation: particle-drift 12s ease-in-out infinite;
     animation-delay: calc(var(--particle-index) * -0.85s);
     opacity: 0.6;
@@ -777,11 +796,9 @@ h4,
       var(--primary) 42%,
       var(--aurora-coral)
     );
-    background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: gradient-pan 8s ease-in-out infinite;
   }
 
   .main-hero__visual {
@@ -1043,6 +1060,9 @@ h4,
     box-shadow: var(--shadow-md);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
+    /* Skip rendering the whole stage while it is off-screen. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 30rem;
   }
 
   .main-map-stage > * {
@@ -1171,17 +1191,6 @@ h4,
     isolation: isolate;
   }
 
-  .subscribe-hero__beam {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      circle at 78% 30%,
-      color-mix(in oklab, var(--aurora-rose) 22%, transparent) 0%,
-      transparent 70%
-    );
-    pointer-events: none;
-  }
-
   .subscribe-hero__metric {
     position: relative;
     overflow: hidden;
@@ -1204,7 +1213,7 @@ h4,
   .subscribe-hero__metric-label {
     display: block;
     margin-bottom: 0.45rem;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -1363,6 +1372,7 @@ h4,
     font-size: 0.95rem;
     line-height: 1.7;
     color: var(--muted-foreground);
+    text-wrap: pretty;
   }
 
   .subscribe-card__badge {
@@ -1373,7 +1383,7 @@ h4,
     border: 1px solid var(--glass-border);
     background: var(--glass-bg-soft);
     padding: 0.4rem 0.8rem;
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -1437,7 +1447,7 @@ h4,
   }
 
   .subscribe-card__eyebrow {
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -1646,9 +1656,15 @@ h4,
     overflow: hidden;
     border: 0;
     border-radius: var(--rose-radius-control);
+    /* The light end of the accent is pulled toward a deep rose so the
+       near-white label keeps contrast on every plan accent. */
     background-image: linear-gradient(
       135deg,
-      var(--plan-accent, var(--aurora-magenta)),
+      color-mix(
+        in oklab,
+        var(--plan-accent, var(--aurora-magenta)) 72%,
+        oklch(0.42 0.18 356)
+      ),
       var(--plan-accent-deep, var(--primary))
     );
     color: oklch(0.99 0.006 350);
@@ -1664,12 +1680,7 @@ h4,
   .subscribe-card__button::before {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      110deg,
-      transparent 30%,
-      oklch(1 0 0 / 0.45) 50%,
-      transparent 70%
-    );
+    background: var(--rose-sheen);
     content: "";
     transform: translateX(-115%);
     transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -1684,11 +1695,6 @@ h4,
 
   .subscribe-card__button:hover::before {
     transform: translateX(115%);
-  }
-
-  /* Legacy hook kept as a no-op: the grid now lives on the stage. */
-  .subscribe-card__grid {
-    display: none;
   }
 
   /* -- the subscribe side rail ------------------------------------------ */
@@ -1739,7 +1745,7 @@ h4,
   }
 
   .subscribe-side-rail__eyebrow {
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -1883,16 +1889,11 @@ h4,
       box-shadow 240ms ease;
   }
 
-  /* Sheen sweeps across on card hover. */
+  /* Sheen sweeps across on card hover; --sheen-peak softens it in dark. */
   .dashboard-subscription-name::before {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      110deg,
-      transparent 34%,
-      oklch(1 0 0 / 0.4) 50%,
-      transparent 66%
-    );
+    background: var(--rose-sheen);
     content: "";
     opacity: 0;
     transform: translateX(-120%);
@@ -1900,15 +1901,6 @@ h4,
       transform 760ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 240ms ease;
     pointer-events: none;
-  }
-
-  .dark .dashboard-subscription-name::before {
-    background: linear-gradient(
-      110deg,
-      transparent 34%,
-      oklch(1 0 0 / 0.14) 50%,
-      transparent 66%
-    );
   }
 
   .dashboard-subscription-name__text {
@@ -1986,8 +1978,23 @@ h4,
     transition: background-color 140ms ease;
   }
 
+  [data-slot="table-row"]:nth-child(even) {
+    background: color-mix(in oklab, var(--primary) 3%, transparent);
+  }
+
+  /* Pinned (sticky) cells carry an opaque background so scrolled content
+     passes underneath — keep them in step with the zebra/hover tints so the
+     stripe doesn't visibly stop at the pinned column. */
+  [data-slot="table-row"]:nth-child(even) > [data-slot="table-cell"].sticky {
+    background: color-mix(in oklab, var(--primary) 3%, var(--background));
+  }
+
   [data-slot="table-row"]:hover {
     background: color-mix(in oklab, var(--primary) 5%, transparent);
+  }
+
+  [data-slot="table-row"]:hover > [data-slot="table-cell"].sticky {
+    background: color-mix(in oklab, var(--primary) 5%, var(--background));
   }
 
   [data-slot="table-head"] {
@@ -2125,13 +2132,13 @@ h4,
 
 @keyframes aurora-drift {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1.04);
   }
   50% {
-    transform: translate3d(3%, -2%, 0) scale(1.08);
+    transform: translate3d(3%, -2%, 0) scale(1.14);
   }
   100% {
-    transform: translate3d(-2%, 3%, 0) scale(1.04);
+    transform: translate3d(-2%, 3%, 0) scale(1.1);
   }
 }
 
@@ -2169,22 +2176,11 @@ h4,
   }
 }
 
-@keyframes gradient-pan {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
 @keyframes sheen-sweep {
-  0%,
-  62% {
+  from {
     transform: translateX(-130%);
   }
-  100% {
+  to {
     transform: translateX(130%);
   }
 }
@@ -2320,6 +2316,15 @@ h4,
   .subscribe-card__stat-grid {
     grid-template-columns: 1fr;
   }
+
+  /* A phone never needs thirty concurrent ambient loops. */
+  .main-hero__particles span,
+  .main-orbit__ring,
+  .main-orbit__dot,
+  .main-map-stage__route,
+  .main-map-stage__node {
+    animation-play-state: paused;
+  }
 }
 
 /* Backdrop blur is the single most expensive effect here. Below the tablet
@@ -2337,6 +2342,20 @@ h4,
     -webkit-backdrop-filter: none;
     background: color-mix(in oklab, var(--card) 92%, transparent);
   }
+
+  /* Overlays and tab rails are the largest mobile surfaces — give them a
+     fully opaque card background instead of a 28px composited blur. */
+  [data-slot="dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="select-content"],
+  [data-slot="popover-content"],
+  [data-slot="tabs-list"] {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--card);
+  }
 }
 
 @supports not (backdrop-filter: blur(1px)) {
@@ -2347,15 +2366,53 @@ h4,
   .main-map-stage,
   .subscribe-side-rail__panel,
   [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
   [data-slot="popover-content"],
   [data-slot="select-content"],
-  [data-slot="dialog-content"] {
+  [data-slot="dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="tabs-list"] {
     background: var(--card);
   }
 }
 
+/* Users who ask for less transparency get solid card surfaces. */
+/* biome-ignore lint/correctness/noUnknownMediaFeatureName: prefers-reduced-transparency is a standard Media Queries L5 feature */
+@media (prefers-reduced-transparency: reduce) {
+  .rose-shell,
+  .rose-panel,
+  .rose-nav-shell,
+  .rose-pill,
+  .main-hero-console,
+  .main-hero-floating,
+  .main-map-stage,
+  .subscribe-side-rail__panel,
+  [data-slot="dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="select-content"],
+  [data-slot="popover-content"],
+  [data-slot="tabs-list"] {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--card);
+  }
+}
+
+/* Gradient text needs background-clip: text; elsewhere, fall back to solid
+   pink instead of transparent (invisible) glyphs. */
+@supports not (background-clip: text) {
+  .rose-section-title,
+  .main-hero__title-gradient,
+  .subscribe-side-rail__balance-value {
+    background: none;
+    color: var(--primary);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html {
+  html:focus-within {
     scroll-behavior: auto;
   }
 
@@ -2371,8 +2428,6 @@ h4,
   .main-hero__aura,
   .main-hero__scan,
   .main-hero__particles span,
-  .main-hero__title-gradient,
-  .rose-section-title,
   .rose-pill::after,
   .main-orbit__ring,
   .main-orbit__dot,
@@ -2385,5 +2440,15 @@ h4,
   .aurora-orb__node,
   .aurora-orb__core-pulse {
     animation: none !important;
+  }
+
+  /* Nothing animates, so release the promoted compositor layers too. */
+  body::before,
+  .main-hero__aura,
+  .main-hero__scan,
+  .main-hero__particles span,
+  .aurora-orb__glow,
+  .aurora-orb__orbit {
+    will-change: auto;
   }
 }

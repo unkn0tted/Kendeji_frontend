@@ -65,7 +65,7 @@ export default function SystemLogsDialog({
             <div className="flex h-full items-center justify-center">
               <Icon
                 className="h-8 w-8 animate-spin text-primary"
-                icon="uil:loading"
+                icon="mdi:loading"
               />
             </div>
           ) : (

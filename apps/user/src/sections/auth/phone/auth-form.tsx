@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useGlobalStore } from "@/stores/global";
+import { useGetUserInfo } from "@/stores/global";
 import { getRedirectUrl, setAuthorization } from "@/utils/common";
 import LoginForm from "./login-form";
 import RegisterForm from "./register-form";
@@ -19,7 +19,7 @@ import ResetForm from "./reset-form";
 export default function PhoneAuthForm() {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
-  const { getUserInfo } = useGlobalStore();
+  const getUserInfo = useGetUserInfo();
   const searchParams = useSearch({ strict: false }) as { invite?: string };
   const [type, setType] = useState<"login" | "register" | "reset">("login");
   const [loading, startTransition] = useTransition();
@@ -72,7 +72,7 @@ export default function PhoneAuthForm() {
         toast.error(
           error?.response?.data?.message ||
             error?.message ||
-            "An error occurred"
+            t("common.error", "An error occurred")
         );
       }
     });

@@ -2,7 +2,7 @@
 
 import { useRouter, useSearch } from "@tanstack/react-router";
 import { oAuthLoginGetToken } from "@workspace/ui/services/common/oauth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getRedirectUrl, setAuthorization } from "@/utils/common";
 
 interface CertificationProps {
@@ -16,8 +16,15 @@ export default function Certification({
 }: CertificationProps) {
   const router = useRouter();
   const searchParams = useSearch({ strict: false });
+  // OAuth codes are single-use: a second exchange (e.g. StrictMode re-running
+  // the effect) would fail and bounce the freshly logged-in user back to /auth.
+  const executedRef = useRef(false);
 
   useEffect(() => {
+    if (executedRef.current) return;
+    executedRef.current = true;
+
+    let succeeded = false;
     const inviteCode = localStorage.getItem("invite") || "";
     oAuthLoginGetToken({
       method: platform,
@@ -30,10 +37,13 @@ export default function Certification({
           throw new Error("Invalid token");
         }
         setAuthorization(token);
+        succeeded = true;
         router.navigate({ to: getRedirectUrl() });
       })
       .catch(() => {
-        router.navigate({ to: "/auth" });
+        if (!succeeded) {
+          router.navigate({ to: "/auth" });
+        }
       });
   }, [platform, router, searchParams]);
 

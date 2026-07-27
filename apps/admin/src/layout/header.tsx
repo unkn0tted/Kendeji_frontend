@@ -12,17 +12,19 @@ import { Icon } from "@workspace/ui/composed/icon";
 import { LanguageSwitch } from "@workspace/ui/composed/language-switch";
 import { ThemeSwitch } from "@workspace/ui/composed/theme-switch";
 import { Fragment, useMemo } from "react";
-import { useGlobalStore } from "@/stores/global";
+import { useTranslation } from "react-i18next";
+import { useCommon } from "@/stores/global";
 import { findNavByUrl, useNavs } from "./navs";
 import TimezoneSwitch from "./timezone-switch";
 import { UserNav } from "./user-nav";
 
 export function Header() {
+  const { t } = useTranslation("menu");
   const pathname = useLocation({ select: (location) => location.pathname });
   const navs = useNavs();
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { site } = common;
-  const items = useMemo(() => findNavByUrl(navs, pathname), [pathname]);
+  const items = useMemo(() => findNavByUrl(navs, pathname), [navs, pathname]);
   return (
     <header className="sticky top-0 z-50 shrink-0 bg-background/90 px-3 pt-3 pb-3 backdrop-blur-md sm:px-5">
       <div className="rose-nav-shell px-3 py-2 sm:px-4">
@@ -74,7 +76,7 @@ export function Header() {
                   <BreadcrumbItem>
                     <BreadcrumbPage className="inline-flex items-center gap-1.5 font-medium">
                       <Icon className="size-4 text-primary" icon="uil:apps" />
-                      Dashboard
+                      {t("Dashboard", "Dashboard")}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
                 )}

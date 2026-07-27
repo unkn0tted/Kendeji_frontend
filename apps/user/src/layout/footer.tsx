@@ -1,10 +1,10 @@
 "use client";
 
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useMatches } from "@tanstack/react-router";
 import { Icon } from "@workspace/ui/composed/icon";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 interface CustomData {
   community?: {
@@ -24,22 +24,10 @@ interface CustomData {
   website?: string;
 }
 
-const compactFooterPaths = [
-  "/affiliate",
-  "/announcement",
-  "/dashboard",
-  "/document",
-  "/order",
-  "/profile",
-  "/subscribe",
-  "/ticket",
-  "/wallet",
-];
-
 export default function Footer() {
   const { t } = useTranslation("components");
-  const location = useLocation();
-  const { common } = useGlobalStore();
+  const matches = useMatches();
+  const common = useCommon();
   const { site } = common;
 
   const customData = useMemo<CustomData>(() => {
@@ -106,14 +94,16 @@ export default function Footer() {
     : customData.website?.replace(/^https?:\/\//, "");
   const supportText =
     site.site_desc || t("footer.copyright", "All rights reserved");
-  const isCompactFooter = compactFooterPaths.some(
-    (path) =>
-      location.pathname === path || location.pathname.startsWith(`${path}/`)
+  // Any page inside the logged-in (user) layout group gets the compact footer.
+  const isCompactFooter = matches.some(
+    (match) => match.routeId === "/(main)/(user)"
   );
 
   if (isCompactFooter) {
     return (
-      <footer className="pt-4 pb-8 sm:pt-5 sm:pb-10">
+      // The bottom padding below lg clears the fixed mobile tab bar, which is
+      // only rendered inside the (user) layout — i.e. exactly the compact case.
+      <footer className="pt-4 pb-[calc(4.5rem+max(env(safe-area-inset-bottom),0.625rem))] sm:pt-5 lg:pb-10">
         <div className="container">
           <div className="rose-shell px-5 py-4 sm:px-6 sm:py-5">
             <div className="rose-grid opacity-20" />

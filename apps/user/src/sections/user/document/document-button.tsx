@@ -12,7 +12,11 @@ import { formatDate } from "@workspace/ui/utils/formatting";
 import { AnimatePresence, motion } from "motion/react";
 import { type RefObject, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import {
+  useCommon,
+  useGetUserSubscribe,
+  useSubscriptionLinkConfigStatus,
+} from "@/stores/global";
 import { CloseIcon } from "./close-icon";
 
 export function DocumentButton({ items }: { items: API.Document[] }) {
@@ -32,8 +36,9 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
     },
   });
 
-  const { common, getUserSubscribe, subscriptionLinkConfigStatus } =
-    useGlobalStore();
+  const common = useCommon();
+  const getUserSubscribe = useGetUserSubscribe();
+  const subscriptionLinkConfigStatus = useSubscriptionLinkConfigStatus();
   const { data: userSubscriptions } = useQuery({
     queryKey: ["queryUserSubscribe"],
     queryFn: async () => {
@@ -100,7 +105,10 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "auto";
+    };
   }, [active]);
 
   useOutsideClick(ref as RefObject<HTMLDivElement>, () => setActive(null));
@@ -124,7 +132,7 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
               animate={{
                 opacity: 1,
               }}
-              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-white dark:text-black"
+              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background"
               exit={{
                 opacity: 0,
                 transition: {
@@ -153,20 +161,20 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
       <div className="flex w-full flex-col gap-4">
         {items.map((item) => (
           <motion.div
-            className="flex cursor-pointer items-center justify-between rounded-xl border bg-background p-4 hover:bg-accent"
+            className="rose-surface-interactive flex cursor-pointer items-center justify-between gap-3 rounded-xl p-4"
             key={`card-${item.id}-${id}`}
             layoutId={`card-${item.id}-${id}`}
             onClick={() => setActive(item)}
           >
-            <div className="flex flex-row items-center gap-4">
+            <div className="flex min-w-0 flex-row items-center gap-4">
               <motion.div layoutId={`image-${item.id}-${id}`}>
                 <Avatar className="size-12">
-                  <AvatarFallback className="bg-primary/80 text-white">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
                     {item.title.split("")[0]}
                   </AvatarFallback>
                 </Avatar>
               </motion.div>
-              <div className="">
+              <div className="min-w-0">
                 <motion.h3
                   className="font-medium"
                   layoutId={`title-${item.id}-${id}`}
@@ -174,7 +182,7 @@ export function DocumentButton({ items }: { items: API.Document[] }) {
                   {item.title}
                 </motion.h3>
                 <motion.p
-                  className="text-neutral-600 text-sm dark:text-neutral-400"
+                  className="text-muted-foreground text-sm"
                   layoutId={`description-${item.id}-${id}`}
                 >
                   {formatDate(item.updated_at)}

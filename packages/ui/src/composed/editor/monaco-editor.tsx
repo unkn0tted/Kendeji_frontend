@@ -2,8 +2,8 @@
 
 import { Editor, type Monaco, type OnMount } from "@monaco-editor/react";
 import { Button } from "@workspace/ui/components/button";
+import { useSize } from "@workspace/ui/hooks/use-size";
 import { cn } from "@workspace/ui/lib/utils";
-import { useSize } from "ahooks";
 import { EyeIcon, EyeOff, FullscreenIcon, MinimizeIcon } from "lucide-react";
 import DraculaTheme from "monaco-themes/themes/Dracula.json" with {
   type: "json",
@@ -66,22 +66,21 @@ export function MonacoEditor({
     }
   }, [propValue]);
 
+  // Keep a ref to the latest onChange so the stable debounced wrapper never
+  // calls a stale closure.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   const debouncedOnChange = useRef(
     debounce((newValue: string | undefined) => {
-      if (onChange) {
-        onChange(newValue);
-      }
+      onChangeRef.current?.(newValue);
     }, 300)
   ).current;
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     if (onMount) onMount(editor, monaco);
-
-    editor.onDidChangeModelContent(() => {
-      const newValue = editor.getValue();
-      setInternalValue(newValue);
-      debouncedOnChange(newValue);
-    });
 
     editor.onDidBlurEditorWidget(() => {
       if (onBlur) {

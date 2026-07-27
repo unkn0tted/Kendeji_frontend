@@ -30,9 +30,9 @@ export function EnhancedInput<T = string>({
   ...props
 }: EnhancedInputProps<T>) {
   const getProcessedValue = (inputValue: unknown) => {
-    if (inputValue === "" || inputValue === 0 || inputValue === "0") return "";
-    const newValue = String(inputValue ?? "");
-    return formatInput ? formatInput(inputValue as T) : newValue;
+    if (inputValue === "" || inputValue === null || inputValue === undefined)
+      return "";
+    return formatInput ? formatInput(inputValue as T) : String(inputValue);
   };
 
   const [value, setValue] = useState<string | number>(() =>
@@ -56,10 +56,6 @@ export function EnhancedInput<T = string>({
   const processValue = (inputValue: string | number): T => {
     let processedValue: number | string = inputValue?.toString().trim();
 
-    if (processedValue === "0" && props.type === "number") {
-      return (formatOutput ? formatOutput(0) : 0) as T;
-    }
-
     if (processedValue && props.type === "number")
       processedValue = Number(processedValue);
     return formatOutput ? formatOutput(processedValue) : (processedValue as T);
@@ -69,13 +65,6 @@ export function EnhancedInput<T = string>({
     let inputValue = e.target.value;
 
     if (props.type === "number") {
-      if (inputValue === "0") {
-        setValue("");
-        setInternalValue(0);
-        onValueChange?.(processValue(0));
-        return;
-      }
-
       if (
         /^-?\d*\.?\d*$/.test(inputValue) ||
         inputValue === "-" ||
@@ -83,6 +72,7 @@ export function EnhancedInput<T = string>({
       ) {
         const numericValue = Number(inputValue);
         if (
+          inputValue !== "" &&
           !Number.isNaN(numericValue) &&
           inputValue !== "-" &&
           inputValue !== "."
@@ -94,40 +84,35 @@ export function EnhancedInput<T = string>({
             ? props.max
             : Number.POSITIVE_INFINITY;
           const constrainedValue = Math.max(min!, Math.min(max!, numericValue));
-          inputValue = String(constrainedValue);
-          setInternalValue(constrainedValue);
-        } else {
-          setInternalValue(inputValue);
+          if (constrainedValue !== numericValue) {
+            inputValue = String(constrainedValue);
+          }
         }
-        setValue(inputValue === "0" ? "" : inputValue);
+        setValue(inputValue);
       }
     } else {
       setValue(inputValue);
-      setInternalValue(inputValue);
     }
 
     const outputValue = processValue(inputValue);
+    // Track what we EMITTED (post-formatOutput), not what was typed: when the
+    // parent echoes this value back through the `value` prop, the resync
+    // effect must recognize it as self-inflicted — otherwise clearing a
+    // cents-backed field ("" -> formatOutput 0) snaps the display back to "0".
+    setInternalValue(outputValue ?? "");
     onValueChange?.(outputValue);
   };
 
   const handleBlur = () => {
-    if (props.type === "number" && value) {
-      if (value === "-" || value === ".") {
-        setValue("");
-        setInternalValue("");
-        onValueBlur?.("" as T);
-        return;
-      }
-
-      if (value === "0") {
-        setValue("");
-        onValueBlur?.(processValue(0));
-        return;
-      }
+    if (props.type === "number" && (value === "-" || value === ".")) {
+      setValue("");
+      setInternalValue("");
+      onValueBlur?.("" as T);
+      return;
     }
 
     const outputValue = processValue(value);
-    if ((initialValue || "") !== outputValue) {
+    if ((initialValue ?? "") !== (outputValue ?? "")) {
       onValueBlur?.(outputValue);
     }
   };

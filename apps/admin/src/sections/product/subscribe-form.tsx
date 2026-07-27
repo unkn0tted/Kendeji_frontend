@@ -51,7 +51,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import { useNode } from "@/stores/node";
 
 interface SubscribeFormProps<T> {
@@ -92,6 +92,17 @@ function getMinimumQuantity(values?: Record<string, any>) {
   return quantities.length > 0 ? Math.min(...quantities) : 1;
 }
 
+function parseDescription(value?: string) {
+  if (!value) return;
+  try {
+    return JSON.parse(value) as Record<string, unknown>;
+  } catch {
+    // Legacy plain-text descriptions: JSONEditor accepts a raw string,
+    // so preserve the text instead of crashing the form.
+    return value;
+  }
+}
+
 function getFormValues(initialValues?: Record<string, any>) {
   const values = assign(
     defaultValues,
@@ -111,7 +122,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
   trigger,
   title,
 }: Readonly<SubscribeFormProps<T>>) {
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { currency } = common;
 
   const { t } = useTranslation("product");
@@ -594,7 +605,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
                                 additionalProperties: false,
                               }}
                               title={t("form.description")}
-                              value={field.value && JSON.parse(field.value)}
+                              value={parseDescription(field.value)}
                             />
                           </FormControl>
                           <FormMessage />

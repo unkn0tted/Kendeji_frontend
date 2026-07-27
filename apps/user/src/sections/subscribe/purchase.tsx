@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import CouponInput from "@/sections/subscribe/coupon-input";
 import DurationSelector from "@/sections/subscribe/duration-selector";
 import PaymentMethods from "@/sections/subscribe/payment-methods";
-import { useGlobalStore } from "@/stores/global";
+import { useGetUserInfo } from "@/stores/global";
 import { getMinimumPurchaseQuantity } from "@/utils/purchase-duration";
 import { isSubscribePurchasable } from "@/utils/subscribe";
 import { SubscribeBilling } from "./billing";
@@ -35,7 +35,7 @@ export default function Purchase({
   setSubscribe,
 }: Readonly<PurchaseProps>) {
   const { t } = useTranslation("subscribe");
-  const { getUserInfo } = useGlobalStore();
+  const getUserInfo = useGetUserInfo();
   const router = useRouter();
   const canPurchase = isSubscribePurchasable(subscribe);
   const [params, setParams] = useState<Partial<API.PurchaseOrderRequest>>({
@@ -51,6 +51,7 @@ export default function Purchase({
     enabled: canPurchase && !!subscribe?.id && params.payment !== undefined,
     queryKey: [
       "preCreateOrder",
+      "purchase",
       subscribe?.id,
       params.quantity,
       params.payment,
@@ -67,9 +68,9 @@ export default function Purchase({
           { skipErrorHandler: true }
         );
         const result = data.data;
-        return result;
+        return result ?? null;
       } catch (_error) {
-        return;
+        return null;
       }
     },
     retry: false,

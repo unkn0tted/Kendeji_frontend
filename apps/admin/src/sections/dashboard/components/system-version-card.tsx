@@ -159,10 +159,17 @@ export default function SystemVersionCard() {
                     disabled={isRestarting}
                     onClick={async () => {
                       setIsRestarting(true);
-                      await restartSystem();
-                      await new Promise((resolve) => setTimeout(resolve, 5000));
-                      setIsRestarting(false);
-                      setOpenRestart(false);
+                      try {
+                        await restartSystem();
+                      } catch {
+                        // Connection drop is expected while the system reboots
+                      } finally {
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, 5000)
+                        );
+                        setIsRestarting(false);
+                        setOpenRestart(false);
+                      }
                     }}
                   >
                     {isRestarting && (

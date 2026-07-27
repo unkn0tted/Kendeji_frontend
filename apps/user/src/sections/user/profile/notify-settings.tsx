@@ -3,12 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@workspace/ui/components/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import {
   Form,
   FormControl,
   FormField,
@@ -21,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useGetUserInfo, useUser } from "@/stores/global";
 
 const FormSchema = z.object({
   enable_balance_notify: z.boolean(),
@@ -32,10 +26,13 @@ const FormSchema = z.object({
 
 export default function NotifySettings() {
   const { t } = useTranslation("profile");
-  const { user, getUserInfo } = useGlobalStore();
+  const user = useUser();
+  const getUserInfo = useGetUserInfo();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
-    defaultValues: {
+    // `values` (not `defaultValues`) keeps the form in sync when the user
+    // hydrates asynchronously, e.g. after a hard refresh.
+    values: {
       enable_balance_notify: user?.enable_balance_notify ?? false,
       enable_login_notify: user?.enable_login_notify ?? false,
       enable_subscribe_notify: user?.enable_subscribe_notify ?? false,
@@ -50,16 +47,16 @@ export default function NotifySettings() {
   }
 
   return (
-    <Card className="min-w-80">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+    <section className="rose-panel flex min-w-80 flex-col gap-6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold">
           {t("notify.notificationSettings", "Notification Settings")}
-          <Button form="notify-form" size="sm" type="submit">
-            {t("notify.save", "Save Changes")}
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-6">
+        </h2>
+        <Button form="notify-form" size="sm" type="submit">
+          {t("notify.save", "Save Changes")}
+        </Button>
+      </div>
+      <div className="grid gap-6">
         <Form {...form}>
           <form
             className="space-y-4"
@@ -107,7 +104,7 @@ export default function NotifySettings() {
             </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

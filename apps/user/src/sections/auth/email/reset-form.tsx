@@ -14,7 +14,7 @@ import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import SendCode from "../send-code";
 import type { TurnstileRef } from "../turnstile";
 import CloudFlareTurnstile from "../turnstile";
@@ -34,7 +34,7 @@ export default function ResetForm({
 }) {
   const { t } = useTranslation("auth");
 
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { verify, auth } = common;
 
   const formSchema = z.object({
@@ -73,7 +73,7 @@ export default function ResetForm({
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder="Enter your email..."
+                    placeholder={t("placeholders.email", "Enter your email...")}
                     type="email"
                     {...field}
                   />
@@ -91,7 +91,7 @@ export default function ResetForm({
                   <div className="flex items-center gap-2">
                     <Input
                       disabled={loading}
-                      placeholder="Enter code..."
+                      placeholder={t("placeholders.code", "Enter code...")}
                       type="text"
                       {...field}
                       value={field.value as string}
@@ -116,7 +116,10 @@ export default function ResetForm({
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder="Enter your new password..."
+                    placeholder={t(
+                      "placeholders.newPassword",
+                      "Enter your new password..."
+                    )}
                     type="password"
                     {...field}
                   />

@@ -16,7 +16,14 @@ import {
   getConfiguredPublicSubscriptionUrls,
   hasConfiguredPublicSubscriptionUrls,
 } from "@/config/subscription-link-policy";
-import { useGlobalStore } from "@/stores/global";
+import {
+  useClearUserLoading,
+  useCommon,
+  useGetUserInfo,
+  useGlobalStore,
+  useSetCommon,
+  useSetSubscriptionLinkConfigStatus,
+} from "@/stores/global";
 
 const REWRITER_RETRY_INITIAL_DELAY_MS = 5000;
 const REWRITER_RETRY_MAX_DELAY_MS = 60_000;
@@ -29,13 +36,12 @@ const Devtools = import.meta.env.DEV
 
 export const Route = createRootRouteWithContext()({
   component: () => {
-    const {
-      common,
-      setCommon,
-      getUserInfo,
-      clearUserLoading,
-      setSubscriptionLinkConfigStatus,
-    } = useGlobalStore();
+    const common = useCommon();
+    const setCommon = useSetCommon();
+    const getUserInfo = useGetUserInfo();
+    const clearUserLoading = useClearUserLoading();
+    const setSubscriptionLinkConfigStatus =
+      useSetSubscriptionLinkConfigStatus();
     useEffect(() => {
       const controller = new AbortController();
       const { signal } = controller;
@@ -153,10 +159,9 @@ export const Route = createRootRouteWithContext()({
             rewriterConfig = remoteRewriterConfig;
             updateOptionalConfigCache({ rewriterConfig });
             applyOptionalConfig();
-            if (!markSubscriptionLinksReady()) {
-              setSubscriptionLinkConfigStatus("retrying");
+            if (markSubscriptionLinksReady()) {
+              return;
             }
-            return;
           }
 
           if (!hasConfiguredPublicSubscriptionUrls(rewriterConfig)) {
@@ -166,6 +171,25 @@ export const Route = createRootRouteWithContext()({
           await waitForRetry(retryDelay);
           if (signal.aborted) return;
           retryDelay = Math.min(retryDelay * 2, REWRITER_RETRY_MAX_DELAY_MS);
+          if (globalConfig === undefined) {
+            // A rewriter config without public URLs is only usable once the
+            // global config is present, so keep retrying it as well when the
+            // initial request failed.
+            await getGlobalConfig()
+              .then((response) => {
+                if (signal.aborted) return;
+                globalConfig = response.data.data;
+                if (globalConfig) {
+                  setCommon(globalConfig);
+                  applyOptionalConfig();
+                }
+              })
+              .catch(() => null);
+            if (signal.aborted) return;
+            if (markSubscriptionLinksReady()) {
+              return;
+            }
+          }
           remoteRewriterConfig = await requestRewriterConfig();
         }
       };
@@ -208,8 +232,8 @@ export const Route = createRootRouteWithContext()({
           <meta content={description} name="description" />
           <meta content={keywords} name="keywords" />
           <link href={url} rel="canonical" />
-          <link href={logo} rel="icon" />
-          <link href={logo} rel="apple-touch-icon" sizes="180x180" />
+          {logo && <link href={logo} rel="icon" />}
+          {logo && <link href={logo} rel="apple-touch-icon" sizes="180x180" />}
           <link href="/site.webmanifest" rel="manifest" />
         </Helmet>
         <NavigationProgress />

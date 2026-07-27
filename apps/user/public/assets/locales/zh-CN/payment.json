@@ -3,25 +3,25 @@
     "card": {
       "loading": "正在加载 Stripe..."
     },
-    "card_name": "",
-    "card_number": "",
-    "element_error": "",
+    "card_name": "持卡人姓名",
+    "card_number": "卡号",
+    "element_error": "请填写完整的银行卡信息",
     "error": "发生错误",
-    "expiry_date": "",
-    "loading": "",
-    "name_placeholder": "",
-    "name_required": "",
-    "pay_button": "",
-    "payment_failed": "",
-    "processing": "",
-    "processing_button": "",
+    "expiry_date": "有效期",
+    "loading": "正在加载 Stripe...",
+    "name_placeholder": "银行卡上的完整姓名",
+    "name_required": "请填写持卡人姓名",
+    "pay_button": "立即支付",
+    "payment_failed": "支付失败",
+    "processing": "正在处理支付...",
+    "processing_button": "处理中...",
     "qrcode": {
       "alipay": "使用支付宝扫码支付",
       "wechat_pay": "使用微信扫码支付"
     },
-    "secure_notice": "",
-    "security_code": "",
-    "success_message": "",
-    "success_title": ""
+    "secure_notice": "支付过程安全加密",
+    "security_code": "CVC 安全码",
+    "success_message": "感谢您的购买，您的订单已处理完成。",
+    "success_title": "支付成功"
   }
 }

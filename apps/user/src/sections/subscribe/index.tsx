@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent } from "@workspace/ui/components/card";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import Empty from "@workspace/ui/composed/empty";
 import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
@@ -11,19 +12,9 @@ import type { TFunction } from "i18next";
 import { type CSSProperties, type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
+import { parseDescription } from "@/utils/parse-description";
 import { isSubscribeSellable, isSubscribeVisible } from "@/utils/subscribe";
 import Purchase from "./purchase";
-
-type ParsedFeature = {
-  icon: string;
-  label: string;
-  type: "default" | "success" | "destructive";
-};
-
-type ParsedDescription = {
-  description: string;
-  features: ParsedFeature[];
-};
 
 type PlanTheme = {
   accent: string;
@@ -70,59 +61,6 @@ const PLAN_THEMES: PlanTheme[] = [
     icon: "lucide:rocket",
   },
 ];
-
-function normalizeFeatureType(type?: string): ParsedFeature["type"] {
-  if (type === "success" || type === "destructive") {
-    return type;
-  }
-
-  return "default";
-}
-
-function normalizeFeature(feature: unknown): ParsedFeature | null {
-  if (!feature || typeof feature !== "object") {
-    return null;
-  }
-
-  const partialFeature = feature as Partial<ParsedFeature>;
-  const label =
-    typeof partialFeature.label === "string" ? partialFeature.label : "";
-
-  if (!label) {
-    return null;
-  }
-
-  return {
-    icon: typeof partialFeature.icon === "string" ? partialFeature.icon : "",
-    label,
-    type: normalizeFeatureType(partialFeature.type),
-  };
-}
-
-function parseDescription(rawDescription?: string): ParsedDescription {
-  if (!rawDescription) {
-    return { description: "", features: [] };
-  }
-
-  try {
-    const parsed = JSON.parse(rawDescription) as Partial<ParsedDescription>;
-
-    return {
-      description:
-        typeof parsed.description === "string" ? parsed.description : "",
-      features: Array.isArray(parsed.features)
-        ? parsed.features
-            .map(normalizeFeature)
-            .filter((feature): feature is ParsedFeature => Boolean(feature))
-        : [],
-    };
-  } catch {
-    return {
-      description: rawDescription,
-      features: [],
-    };
-  }
-}
 
 function getPricing(subscribe: API.Subscribe) {
   const primaryDiscount = subscribe.discount?.[0];
@@ -174,7 +112,7 @@ export default function Subscribe() {
   const locale = i18n.language;
   const [subscribe, setSubscribe] = useState<API.Subscribe>();
 
-  const { data: subscribeList } = useQuery({
+  const { data: subscribeList, isLoading } = useQuery({
     queryKey: ["querySubscribeList", locale],
     queryFn: async () => {
       const { data } = await querySubscribeList({ language: locale });
@@ -242,7 +180,15 @@ export default function Subscribe() {
           </div>
         </section>
 
-        {filteredData.length > 0 ? (
+        {isLoading ? (
+          <section className="subscribe-plan-stage p-4 sm:p-5 lg:p-6">
+            <div className="subscribe-plan-stage__list">
+              {[0, 1, 2].map((index) => (
+                <CardPlanSkeleton key={index} />
+              ))}
+            </div>
+          </section>
+        ) : filteredData.length > 0 ? (
           <section className="subscribe-plan-stage p-4 sm:p-5 lg:p-6">
             <div className="subscribe-plan-stage__list">
               {filteredData.map((item, index) => (
@@ -263,6 +209,31 @@ export default function Subscribe() {
       </div>
       <Purchase setSubscribe={setSubscribe} subscribe={subscribe} />
     </>
+  );
+}
+
+function CardPlanSkeleton() {
+  return (
+    <Card className="subscribe-card h-full gap-0 border-0 bg-transparent py-0 shadow-none">
+      <CardContent className="subscribe-card__shell px-5 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">
+        <div className="subscribe-card__topline">
+          <Skeleton className="h-6 w-14 rounded-full" />
+          <Skeleton className="size-11 rounded-xl" />
+        </div>
+        <div className="mt-5 space-y-3">
+          <Skeleton className="h-7 w-2/5" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+        <Skeleton className="mt-6 h-24 w-full rounded-xl" />
+        <Skeleton className="mt-4 h-11 w-full rounded-lg" />
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -322,7 +293,6 @@ function CardPlan({
       className="subscribe-card fade-in-0 slide-in-from-bottom-6 h-full animate-in gap-0 border-0 bg-transparent py-0 shadow-none duration-700"
       style={cardStyle}
     >
-      <div className="subscribe-card__grid" />
       <CardContent className="subscribe-card__shell px-5 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">
         <div className="subscribe-card__topline">
           <div className="flex flex-wrap items-center gap-2.5">

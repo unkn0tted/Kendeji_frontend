@@ -3,6 +3,7 @@
 import type { Table } from "@tanstack/react-table";
 import { Input } from "@workspace/ui/components/input";
 import { Combobox } from "@workspace/ui/composed/combobox";
+import { useTranslation } from "react-i18next";
 
 export interface IParams {
   key: string;
@@ -22,6 +23,7 @@ export function ColumnFilter<TData>({
   params,
   filters,
 }: ColumnFilterProps<TData>) {
+  const { t } = useTranslation("components");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateFilter = (key: string, value: any) => {
     table.setColumnFilters((prev) => {
@@ -53,7 +55,7 @@ export function ColumnFilter<TData>({
                 updateFilter(param.key, value);
               }}
               options={param.options}
-              placeholder={param.placeholder || "Choose..."}
+              placeholder={param.placeholder || t("filter.choose", "Choose...")}
               value={filters[param.key] || ""}
             />
           );
@@ -85,7 +87,7 @@ export function ColumnFilter<TData>({
             className="w-32"
             key={param.key}
             onChange={(event) => updateFilter(param.key, event.target.value)}
-            placeholder={param.placeholder || "Search..."}
+            placeholder={param.placeholder || t("filter.search", "Search...")}
             value={filters[param.key] || ""}
           />
         );

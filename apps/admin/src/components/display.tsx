@@ -1,7 +1,7 @@
 import { formatBytes } from "@workspace/ui/utils/formatting";
 import { unitConversion } from "@workspace/ui/utils/unit-conversions";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 type DisplayType = "currency" | "traffic" | "number" | "trafficSpeed";
 
@@ -17,7 +17,7 @@ export function Display<T extends number | undefined | null>({
   type = "number",
 }: DisplayProps<T>): string {
   const { t } = useTranslation("components");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { currency } = common;
 
   if (type === "currency") {

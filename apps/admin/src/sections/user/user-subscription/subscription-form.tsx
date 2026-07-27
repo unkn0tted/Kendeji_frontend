@@ -117,7 +117,10 @@ export function SubscriptionForm({
                             value: item.id!,
                             label: item.name!,
                           }))}
-                          placeholder="Select Subscription"
+                          placeholder={t(
+                            "selectSubscription",
+                            "Select Subscription"
+                          )}
                           value={field.value}
                         />
                       </FormControl>

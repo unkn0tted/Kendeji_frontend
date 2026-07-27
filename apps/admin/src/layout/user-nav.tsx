@@ -15,12 +15,12 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Icon } from "@workspace/ui/composed/icon";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useUser } from "@/stores/global";
 import { Logout } from "@/utils/common";
 
 export function UserNav() {
   const { t } = useTranslation("auth");
-  const { user } = useGlobalStore();
+  const user = useUser();
 
   if (user) {
     return (
@@ -59,7 +59,9 @@ export function UserNav() {
                 <p className="truncate font-medium text-sm leading-none">
                   {user?.auth_methods?.[0]?.auth_identifier}
                 </p>
-                <p className="text-muted-foreground text-xs">Admin</p>
+                <p className="text-muted-foreground text-xs">
+                  {t("admin", "Admin")}
+                </p>
               </div>
               {/* <p className='text-xs leading-none text-muted-foreground'>ID: {user?.id}</p> */}
             </div>

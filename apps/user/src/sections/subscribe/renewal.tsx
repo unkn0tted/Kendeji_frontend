@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import CouponInput from "@/sections/subscribe/coupon-input";
 import DurationSelector from "@/sections/subscribe/duration-selector";
 import PaymentMethods from "@/sections/subscribe/payment-methods";
-import { useGlobalStore } from "@/stores/global";
+import { useGetUserInfo } from "@/stores/global";
 import { getMinimumPurchaseQuantity } from "@/utils/purchase-duration";
 import { isSubscribeSellable } from "@/utils/subscribe";
 import { SubscribeBilling } from "./billing";
@@ -33,7 +33,7 @@ interface RenewalProps {
 
 export default function Renewal({ id, subscribe }: Readonly<RenewalProps>) {
   const { t } = useTranslation("subscribe");
-  const { getUserInfo } = useGlobalStore();
+  const getUserInfo = useGetUserInfo();
   const navigate = useNavigate();
   const canRenew = isSubscribeSellable(subscribe);
   const [open, setOpen] = useState<boolean>(false);
@@ -50,6 +50,8 @@ export default function Renewal({ id, subscribe }: Readonly<RenewalProps>) {
     enabled: canRenew && !!subscribe.id && open && params.payment !== undefined,
     queryKey: [
       "preCreateOrder",
+      "renewal",
+      id,
       subscribe.id,
       params.quantity,
       params.payment,
@@ -66,9 +68,9 @@ export default function Renewal({ id, subscribe }: Readonly<RenewalProps>) {
           { skipErrorHandler: true }
         );
         const result = data.data;
-        return result;
+        return result ?? null;
       } catch (_error) {
-        return;
+        return null;
       }
     },
     retry: false,

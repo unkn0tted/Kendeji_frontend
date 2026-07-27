@@ -21,5 +21,6 @@
   "withdrawFailed": "Failed to submit withdrawal request",
   "withdrawInfo": "Withdrawal Info",
   "withdrawInfoPlaceholder": "Enter payment account or withdrawal instructions",
-  "withdrawSuccess": "Withdrawal request submitted"
+  "withdrawSuccess": "Withdrawal request submitted",
+  "pageDescription": "Invite friends and earn commission on their purchases"
 }

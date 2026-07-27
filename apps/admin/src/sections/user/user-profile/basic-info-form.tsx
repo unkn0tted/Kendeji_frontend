@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import * as z from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 const basicInfoSchema = z.object({
   avatar: z.string().optional(),
@@ -51,7 +51,7 @@ export function BasicInfoForm({
 }) {
   const { t } = useTranslation("user");
 
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { currency } = common;
 
   const form = useForm<BasicInfoValues>({

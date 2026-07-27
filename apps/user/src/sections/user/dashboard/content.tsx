@@ -27,6 +27,7 @@ import {
 import { Separator } from "@workspace/ui/components/separator";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { Icon } from "@workspace/ui/composed/icon";
+import { useTheme } from "@workspace/ui/integrations/theme";
 import { cn } from "@workspace/ui/lib/utils";
 import { getClient } from "@workspace/ui/services/common/common";
 import { querySubscribeList } from "@workspace/ui/services/user/subscribe";
@@ -49,7 +50,12 @@ import CopyToClipboard from "react-copy-to-clipboard";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Display } from "@/components/display";
-import { useGlobalStore } from "@/stores/global";
+import {
+  useCommon,
+  useGetAppSubLink,
+  useGetUserSubscribe,
+  useSubscriptionLinkConfigStatus,
+} from "@/stores/global";
 import { getPlatform } from "@/utils/common";
 import { isSubscribeSellable } from "@/utils/subscribe";
 import Subscribe from "../../subscribe";
@@ -68,12 +74,15 @@ const platforms: (keyof API.DownloadLink)[] = [
 
 export default function Content() {
   const { t, i18n } = useTranslation("dashboard");
-  const {
-    common,
-    getUserSubscribe,
-    getAppSubLink,
-    subscriptionLinkConfigStatus,
-  } = useGlobalStore();
+  const { resolvedTheme } = useTheme();
+  // sRGB equivalents of the theme's --primary token (oklch(0.62 0.216 3)
+  // light / oklch(0.73 0.185 355) dark) — QRCodeCanvas needs a concrete
+  // color and cannot read CSS variables.
+  const qrFgColor = resolvedTheme === "dark" ? "#fd6eae" : "#e6357a";
+  const common = useCommon();
+  const getUserSubscribe = useGetUserSubscribe();
+  const getAppSubLink = useGetAppSubLink();
+  const subscriptionLinkConfigStatus = useSubscriptionLinkConfigStatus();
 
   const protocolOptions = React.useMemo(
     () =>
@@ -112,6 +121,7 @@ export default function Content() {
     data: userSubscribe = [],
     refetch,
     isLoading,
+    isFetching,
     isError,
   } = useQuery({
     queryKey: ["queryUserSubscribe"],
@@ -156,6 +166,18 @@ export default function Content() {
 
     return platforms.filter((platform) => platformsSet.has(platform));
   }, [applications]);
+
+  const redirectCheckTimeout = React.useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  React.useEffect(
+    () => () => {
+      if (redirectCheckTimeout.current) {
+        clearTimeout(redirectCheckTimeout.current);
+      }
+    },
+    []
+  );
 
   const [platform, setPlatform] = useState<keyof API.DownloadLink>(() => {
     const detectedPlatform =
@@ -239,7 +261,7 @@ export default function Content() {
             </h2>
             <div className="flex gap-2">
               <Button
-                className={isLoading ? "animate-pulse" : ""}
+                className={isFetching ? "animate-pulse" : ""}
                 onClick={() => {
                   refetch();
                 }}
@@ -605,12 +627,15 @@ export default function Content() {
                         {t("expirationDays", "Expiration Days")}
                       </span>
                       <span className="font-semibold text-2xl">
-                        {}
                         {item.expire_time
-                          ? differenceInDays(
-                              new Date(item.expire_time),
-                              new Date()
-                            ) || t("unknown", "Unknown")
+                          ? Math.max(
+                              0,
+                              Math.ceil(
+                                (new Date(item.expire_time).getTime() -
+                                  Date.now()) /
+                                  (1000 * 60 * 60 * 24)
+                              )
+                            )
                           : t("noLimit", "No Limit")}
                       </span>
                     </li>
@@ -740,12 +765,18 @@ export default function Content() {
 
                                       if (isBrowser() && href && !isHttpLink) {
                                         window.location.href = href;
-                                        const checkRedirect = setTimeout(() => {
-                                          if (window.location.href !== href) {
-                                            showSuccessMessage();
-                                          }
-                                          clearTimeout(checkRedirect);
-                                        }, 1000);
+                                        if (redirectCheckTimeout.current) {
+                                          clearTimeout(
+                                            redirectCheckTimeout.current
+                                          );
+                                        }
+                                        redirectCheckTimeout.current =
+                                          setTimeout(() => {
+                                            redirectCheckTimeout.current = null;
+                                            if (window.location.href !== href) {
+                                              showSuccessMessage();
+                                            }
+                                          }, 1000);
                                         return;
                                       }
 
@@ -821,7 +852,7 @@ export default function Content() {
                                 <span>{t("qrCode", "QR Code")}</span>
                                 <QRCodeCanvas
                                   bgColor="transparent"
-                                  fgColor="rgb(190, 120, 145)"
+                                  fgColor={qrFgColor}
                                   size={80}
                                   value={url}
                                 />

@@ -30,6 +30,20 @@ export function differenceInDays(date1: Date, date2: Date): number {
   return diffDays;
 }
 
+export function todayInTimezone(timeZone?: string): string {
+  const tz = timeZone || localStorage.getItem("timezone") || "UTC";
+  try {
+    // en-CA formats as YYYY-MM-DD
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(
+      new Date()
+    );
+  } catch {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" }).format(
+      new Date()
+    );
+  }
+}
+
 export function formatDate(date?: Date | number, showTime = true) {
   if (!date) return;
   const timeZone = localStorage.getItem("timezone") || "UTC";

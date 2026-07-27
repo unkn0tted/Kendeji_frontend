@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import {
   getEmailDomainWhitelist,
   isEmailDomainAllowed,
@@ -49,7 +49,7 @@ export default function RegisterForm({
   onSwitchForm: Dispatch<SetStateAction<"register" | "reset" | "login">>;
 }) {
   const { t } = useTranslation("auth");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { verify, auth, invite } = common;
   const domainWhitelist = useMemo(
     () => getEmailDomainWhitelist(auth.email.domain_suffix_list),

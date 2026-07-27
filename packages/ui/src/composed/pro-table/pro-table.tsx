@@ -19,6 +19,7 @@ import {
 } from "@workspace/ui/components/alert";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
   Table,
   TableBody,
@@ -39,6 +40,7 @@ import { Pagination } from "@workspace/ui/composed/pro-table/pagination";
 import { SortableRow } from "@workspace/ui/composed/pro-table/sortable-row";
 import { ProTableWrapper } from "@workspace/ui/composed/pro-table/wrapper";
 import { cn } from "@workspace/ui/lib/utils";
+import type { TFunction } from "i18next";
 import { GripVertical, ListRestart, Loader, RefreshCcw } from "lucide-react";
 import type React from "react";
 import {
@@ -49,6 +51,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 export interface ProTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -88,6 +92,7 @@ export interface ProTableProps<TData, TValue> {
   ) => Promise<TData[]>;
   initialFilters?: Record<string, unknown>;
   requestDebounceMs?: number;
+  getRowId?: (originalRow: TData, index: number) => string;
 }
 
 export interface ProTableRequestContext {
@@ -114,8 +119,10 @@ export function ProTable<
   empty,
   onSort,
   initialFilters,
-  requestDebounceMs = 0,
+  requestDebounceMs = 300,
+  getRowId,
 }: ProTableProps<TData, TValue>) {
+  const { t } = useTranslation("components");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
     if (initialFilters) {
@@ -136,6 +143,7 @@ export function ProTable<
   });
   const [isLoading, setIsLoading] = useState(false);
   const requestSequence = useRef(0);
+  const hasFetchedRef = useRef(false);
 
   const tableColumns = useMemo(
     () =>
@@ -152,7 +160,7 @@ export function ProTable<
               },
             ]
           : []),
-        ...(actions?.batchRender ? [createSelectColumn<TData, TValue>()] : []),
+        ...(actions?.batchRender ? [createSelectColumn<TData, TValue>(t)] : []),
         ...columns.map(
           (column) =>
             ({
@@ -178,21 +186,27 @@ export function ProTable<
             ] as ColumnDef<TData, TValue>[])
           : []),
       ] as ColumnDef<TData, TValue>[],
-    [actions, columns, onSort, texts?.actions]
+    [actions, columns, onSort, texts?.actions, t]
   );
 
   const table = useReactTable({
     data,
     columns: tableColumns,
-    onPaginationChange: setPagination,
+    getRowId,
+    onPaginationChange: (updater) => {
+      setPagination(updater);
+      setRowSelection({});
+    },
     onSortingChange: (updater) => {
       setSorting(updater);
+      setRowSelection({});
       setPagination((current) =>
         current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
       );
     },
     onColumnFiltersChange: (updater) => {
       setColumnFilters(updater);
+      setRowSelection({});
       setPagination((current) =>
         current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
       );
@@ -237,7 +251,8 @@ export function ProTable<
       }
     } catch (error) {
       if (sequence === requestSequence.current) {
-        console.log("Fetch data error:", error);
+        console.error("Fetch data error:", error);
+        toast.error(t("table.loadFailed", "Failed to load data"));
       }
     } finally {
       if (sequence === requestSequence.current) {
@@ -262,7 +277,10 @@ export function ProTable<
   }));
 
   useEffect(() => {
-    if (requestDebounceMs <= 0) {
+    // The first fetch fires immediately; the debounce only smooths later
+    // page/filter/sort churn (e.g. typing into a column filter).
+    if (requestDebounceMs <= 0 || !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchData();
       return;
     }
@@ -321,9 +339,11 @@ export function ProTable<
 
       {selectedCount > 0 && actions?.batchRender && (
         <Alert className="flex items-center justify-between">
-          <AlertTitle className="m-0">
+          <AlertTitle className="m-0 tabular-nums">
             {texts?.selectedRowsText?.(selectedCount) ||
-              `Selected ${selectedCount} rows`}
+              t("table.selectedRows", "Selected {{count}} rows", {
+                count: selectedCount,
+              })}
           </AlertTitle>
           <AlertDescription className="flex gap-2">
             {actions.batchRender(selectedRows)}
@@ -339,10 +359,7 @@ export function ProTable<
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead
-                      className={cn(
-                        "!z-auto",
-                        getTableHeaderClass(header.column.id)
-                      )}
+                      className={getTableHeaderClass(header.column.id)}
                       key={header.id}
                     >
                       <ColumnHeader
@@ -359,7 +376,25 @@ export function ProTable<
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel()?.rows?.length ? (
+              {isLoading && !table.getRowModel()?.rows?.length ? (
+                Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
+                  <TableRow key={`skeleton-${rowIndex}`}>
+                    {table
+                      .getVisibleFlatColumns()
+                      .map((column, columnIndex) => (
+                        <TableCell
+                          className={getTableCellClass(column.id)}
+                          key={column.id}
+                        >
+                          <SkeletonCell
+                            columnId={column.id}
+                            seed={rowIndex + columnIndex}
+                          />
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel()?.rows?.length ? (
                 onSort ? (
                   table.getRowModel().rows.map((row) => (
                     <SortableRow
@@ -414,8 +449,13 @@ export function ProTable<
                 )
               ) : (
                 <TableRow>
-                  <TableCell className="py-24" colSpan={columns.length + 2}>
-                    {empty || <Empty />}
+                  <TableCell
+                    className="py-16"
+                    colSpan={table.getVisibleFlatColumns().length}
+                  >
+                    <div className="flex items-center justify-center">
+                      {empty || <Empty />}
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -423,8 +463,8 @@ export function ProTable<
           </Table>
         </ProTableWrapper>
 
-        {isLoading && (
-          <div className="absolute top-0 z-20 flex h-full w-full items-center justify-center bg-muted/80">
+        {isLoading && data.length > 0 && (
+          <div className="absolute top-0 z-30 flex h-full w-full items-center justify-center bg-muted/80">
             <Loader className="h-4 w-4 animate-spin" />
           </div>
         )}
@@ -434,12 +474,14 @@ export function ProTable<
   );
 }
 
-function createSelectColumn<TData, TValue>(): ColumnDef<TData, TValue> {
+function createSelectColumn<TData, TValue>(
+  t: TFunction<"components">
+): ColumnDef<TData, TValue> {
   return {
     id: "selected",
     header: ({ table }) => (
       <Checkbox
-        aria-label="Select all"
+        aria-label={t("table.selectAll", "Select all")}
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -449,7 +491,7 @@ function createSelectColumn<TData, TValue>(): ColumnDef<TData, TValue> {
     ),
     cell: ({ row }) => (
       <Checkbox
-        aria-label="Select row"
+        aria-label={t("table.selectRow", "Select row")}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
       />
@@ -459,14 +501,22 @@ function createSelectColumn<TData, TValue>(): ColumnDef<TData, TValue> {
   };
 }
 
+/**
+ * Header cells are sticky on the top axis so the header row stays readable
+ * when the table's scroll container scrolls vertically. The bg must be
+ * opaque (`bg-card`) so zebra rows never show through; the pinned corner
+ * cells (select / actions) get a higher z-index so they win over the plain
+ * header cells during horizontal scrolling, mirroring the body's pinned
+ * columns.
+ */
 function getTableHeaderClass(columnId: string) {
   if (["sortable", "selected"].includes(columnId)) {
-    return "sticky left-0 z-10 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] [&:has([role=checkbox])]:pr-2";
+    return "sticky top-0 left-0 z-20 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] [&:has([role=checkbox])]:pr-2";
   }
   if (columnId === "actions") {
-    return "sticky right-0 z-10 text-right bg-background shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+    return "sticky top-0 right-0 z-20 text-right bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]";
   }
-  return "truncate";
+  return "sticky top-0 z-10 truncate bg-card";
 }
 
 function getTableCellClass(columnId: string) {
@@ -477,4 +527,25 @@ function getTableCellClass(columnId: string) {
     return "sticky right-0 bg-background shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]";
   }
   return "truncate";
+}
+
+const SKELETON_ROW_COUNT = 8;
+const SKELETON_CELL_WIDTHS = ["w-24", "w-16", "w-32", "w-20", "w-28"];
+
+/** Placeholder cell shown while the first page of data is loading. */
+function SkeletonCell({ columnId, seed }: { columnId: string; seed: number }) {
+  if (["sortable", "selected"].includes(columnId)) {
+    return <Skeleton className="size-4" />;
+  }
+  if (columnId === "actions") {
+    return <Skeleton className="ml-auto h-4 w-16" />;
+  }
+  return (
+    <Skeleton
+      className={cn(
+        "h-4",
+        SKELETON_CELL_WIDTHS[seed % SKELETON_CELL_WIDTHS.length]
+      )}
+    />
+  );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { addCollection } from "@iconify/react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Command,
@@ -19,6 +20,18 @@ import { cn } from "@workspace/ui/lib/utils";
 import { countries, type ICountry } from "@workspace/ui/utils/countries";
 import { BoxIcon, Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+
+// Country codes are unbounded, so this component needs the full flagpack
+// collection (~320 kB gzip). It loads as its own lazy chunk — registered here,
+// its only consumer — so neither the boot-path icon chunk nor the auth pages
+// embedding this component have to wait for flag data; components re-render
+// once it registers.
+let flagpackReady = false;
+const flagpack = import("@iconify-json/flagpack").then(({ icons }) => {
+  addCollection(icons);
+  flagpackReady = true;
+});
 
 interface AreaCodeSelectProps {
   value?: string;
@@ -51,13 +64,23 @@ export const AreaCodeSelect = ({
   value,
   onChange,
   className,
-  placeholder = "Select Area Code",
+  placeholder,
   simple = false,
   whitelist,
 }: AreaCodeSelectProps) => {
+  const { t } = useTranslation("components");
   const [open, setOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ICountry | undefined>();
+  const [, setFlagsReady] = useState(flagpackReady);
   const items = filterItems(whitelist);
+
+  // Re-render once the flagpack collection chunk has registered so flags
+  // rendered before it arrived fill in.
+  useEffect(() => {
+    if (!flagpackReady) {
+      flagpack.then(() => setFlagsReady(true));
+    }
+  }, []);
 
   useEffect(() => {
     if (value !== selectedItem?.phone) {
@@ -85,14 +108,16 @@ export const AreaCodeSelect = ({
               {!simple && `(${selectedItem.name})`}
             </div>
           ) : (
-            placeholder
+            (placeholder ?? t("areaCode.placeholder", "Select Area Code"))
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="p-0">
         <Command>
-          <CommandInput placeholder="Search area code..." />
+          <CommandInput
+            placeholder={t("areaCode.search", "Search area code...")}
+          />
           <CommandList>
             <CommandEmpty>
               <BoxIcon className="inline-block text-slate-500" />

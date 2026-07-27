@@ -8,7 +8,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 interface SendCodeProps {
   type: "email" | "phone";
@@ -26,7 +26,7 @@ export default function SendCode({
   disabled: disabledProp,
 }: SendCodeProps) {
   const { t } = useTranslation("auth");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { verify_code_interval } = common.verify_code;
   const [targetDate, setTargetDate] = useState<number>();
   const [seconds, setSeconds] = useState(0);
@@ -102,7 +102,9 @@ export default function SendCode({
       }
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || error?.message || "An error occurred"
+        error?.response?.data?.message ||
+          error?.message ||
+          t("common.error", "An error occurred")
       );
     }
   };

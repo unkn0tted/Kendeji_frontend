@@ -1,4 +1,5 @@
 import { getSubscribeList } from "@workspace/ui/services/admin/subscribe";
+import i18next from "i18next";
 import { create } from "zustand";
 import { fetchAllPaginated } from "./pagination";
 
@@ -47,7 +48,13 @@ export const useSubscribeStore = create<SubscribeState>((set, get) => ({
   getSubscribeName: (subscribeId?: number) => {
     if (!subscribeId) return "--";
     const subscribe = get().subscribes.find((s) => s.id === subscribeId);
-    return subscribe?.name ?? `Subscribe ${subscribeId}`;
+    return (
+      subscribe?.name ??
+      i18next.t("subscribe:fallbackName", {
+        defaultValue: "Subscribe {{id}}",
+        id: subscribeId,
+      })
+    );
   },
 
   getSubscribeById: (subscribeId: number) =>

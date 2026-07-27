@@ -132,5 +132,8 @@
     "seconds": "秒",
     "times": "次",
     "title": "验证码设置"
-  }
+  },
+  "basicSettingsDescription": "站点信息、货币、服务条款与隐私政策",
+  "userSecuritySettingsDescription": "注册、邀请与安全验证设置",
+  "logSettingsDescription": "日志保留与自动清理规则"
 }

@@ -3,6 +3,7 @@ import { Label } from "@workspace/ui/components/label";
 import { cn } from "@workspace/ui/lib/utils";
 import { Upload } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type ReturnType = "base64" | "file";
 
@@ -23,6 +24,7 @@ export const UploadImage = ({
   className,
   maxSize = 1,
 }: UploadImageProps) => {
+  const { t } = useTranslation("components");
   const [isDragging, setIsDragging] = useState(false);
 
   const toBase64 = (file: File): Promise<string> =>
@@ -36,7 +38,15 @@ export const UploadImage = ({
   const validateFileSize = (file: File): boolean => {
     const maxSizeInBytes = maxSize * 1024 * 1024;
     if (file.size > maxSizeInBytes) {
-      alert(`File size exceeds the limit (${maxSize}MB)`);
+      alert(
+        t(
+          "upload.sizeExceeded",
+          "File size exceeds the limit ({{maxSize}}MB)",
+          {
+            maxSize,
+          }
+        )
+      );
       return false;
     }
     return true;

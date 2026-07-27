@@ -55,7 +55,9 @@
     "metricPlans": "Plans",
     "metricStart": "Starting at",
     "subtitle": "Compare duration, traffic, devices, and price before you purchase.",
-    "title": "Choose a plan for your usage"
+    "title": "Choose a plan for your usage",
+    "livePlans_one": "{{count}} live plan",
+    "livePlans_other": "{{count}} live plans"
   },
   "subscriptionNotFound": "Subscription not found",
   "subscriptionUnavailable": "Not available for purchase",
@@ -71,5 +73,6 @@
     "unsubscribe": "Unsubscribe",
     "unsubscribeDescription": "Please note: If you unsubscribe now, the remaining value of the subscription will be refunded to your account balance, which can be used for your next subscription purchase or renewal."
   },
-  "Year": "Year"
+  "Year": "Year",
+  "noPaymentMethodsAvailable": "No payment methods available for recharge"
 }

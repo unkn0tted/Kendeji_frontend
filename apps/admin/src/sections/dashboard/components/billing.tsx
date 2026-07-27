@@ -63,7 +63,10 @@ export default function Billing({ type }: BillingProps) {
           })
         : [];
     },
-    initialData: [],
+    placeholderData: [],
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+    retry: 1,
   });
 
   if (!list?.length) return null;

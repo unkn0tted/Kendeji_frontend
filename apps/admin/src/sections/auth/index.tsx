@@ -7,7 +7,7 @@ import { LanguageSwitch } from "@workspace/ui/composed/language-switch";
 import { ThemeSwitch } from "@workspace/ui/composed/theme-switch";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon, useUser } from "@/stores/global";
 import EmailAuthForm from "./email/auth-form";
 
 function stripSiteName(value: string, siteName: string) {
@@ -19,7 +19,8 @@ function stripSiteName(value: string, siteName: string) {
 
 export default function Auth() {
   const { t } = useTranslation("auth");
-  const { common, user } = useGlobalStore();
+  const common = useCommon();
+  const user = useUser();
   const { site } = common;
   const sanitizedSiteDescription = site.site_name
     ? stripSiteName(site.site_desc || "", site.site_name)
@@ -50,7 +51,7 @@ export default function Auth() {
                 width={44}
               />
             </Link>
-            <span className="rose-pill mt-8">Admin</span>
+            <span className="rose-pill mt-8">{t("adminBadge", "Admin")}</span>
             <h1 className="mt-6 max-w-xl font-display text-5xl leading-tight">
               <span className="rose-section-title">
                 {site.site_name || t("login.title", "Login")}
@@ -68,7 +69,7 @@ export default function Auth() {
           </div>
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
-              { icon: "uil:shield-check", title: "Admin" },
+              { icon: "uil:shield-check", title: t("adminBadge", "Admin") },
               { icon: "uil:lock-access", title: t("check.title", "Verify") },
               { icon: "uil:setting", title: t("login.title", "Login") },
             ].map((item) => (
@@ -104,7 +105,7 @@ export default function Auth() {
                 </span>
               </Link>
               <div className="mt-6 lg:mt-0">
-                <span className="rose-pill">Admin</span>
+                <span className="rose-pill">{t("adminBadge", "Admin")}</span>
               </div>
               <div className="mt-8">
                 <EmailAuthForm />

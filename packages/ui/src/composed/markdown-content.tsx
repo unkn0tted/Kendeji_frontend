@@ -4,6 +4,7 @@ import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { Check, Copy } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown, {
   type Components,
   defaultUrlTransform,
@@ -30,10 +31,8 @@ import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx";
 import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import remarkToc from "remark-toc";
 
 // The full `Prism` build registers ~300 grammars. Only the languages that
@@ -82,22 +81,28 @@ interface CodeBlockProps {
 }
 
 function CodeBlock({ className, children, ...props }: CodeBlockProps) {
+  const { t } = useTranslation("components");
   const [copied, setCopied] = useState(false);
   const match = className?.startsWith("language-")
     ? /language-(\w+)/.exec(className)
     : null;
 
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 3000);
-      })
-      .catch(() => {
-        alert("Failed to copy text. Please try again.");
-      });
-  }, []);
+  const handleCopy = useCallback(
+    (text: string) => {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 3000);
+        })
+        .catch(() => {
+          alert(
+            t("markdown.copyFailed", "Failed to copy text. Please try again.")
+          );
+        });
+    },
+    [t]
+  );
 
   if (match) {
     return (
@@ -309,8 +314,8 @@ export default function MarkdownContent({
           },
           ...components,
         }}
-        rehypePlugins={[rehypeRaw, rehypeKatex]}
-        remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
+        rehypePlugins={[rehypeRaw]}
+        remarkPlugins={[remarkGfm, remarkToc]}
         urlTransform={appUrlTransform}
       >
         {children}

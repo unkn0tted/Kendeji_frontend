@@ -26,7 +26,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 interface UserFormProps<T> {
   onSubmit: (data: T) => Promise<boolean> | boolean;
@@ -45,7 +45,7 @@ export default function UserForm<T extends Record<string, any>>({
   title,
 }: Readonly<UserFormProps<T>>) {
   const { t } = useTranslation("user");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { currency } = common;
 
   const [open, setOpen] = useState(false);

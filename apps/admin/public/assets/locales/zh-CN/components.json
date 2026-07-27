@@ -1,4 +1,46 @@
 {
+  "areaCode": {
+    "placeholder": "选择区号",
+    "search": "搜索区号..."
+  },
+  "carousel": {
+    "next": "下一张",
+    "previous": "上一张"
+  },
+  "close": "关闭",
+  "combobox": {
+    "search": "搜索...",
+    "select": "请选择...",
+    "noResults": "未找到结果"
+  },
+  "command": {
+    "description": "搜索要执行的命令...",
+    "title": "命令面板"
+  },
+  "confirm": {
+    "cancel": "取消",
+    "confirm": "确认"
+  },
+  "editor": {
+    "goTemplate": {
+      "description": "Go text/template 语法",
+      "descriptionSprig": "Go text/template 语法（支持 Sprig 函数）",
+      "placeholder": "在此输入 Go 模板...",
+      "title": "Go 模板编辑器"
+    },
+    "html": {
+      "description": "支持 HTML",
+      "preview": "HTML 预览",
+      "title": "HTML 编辑器"
+    },
+    "json": {
+      "title": "编辑 JSON"
+    },
+    "markdown": {
+      "description": "支持 Markdown 和 HTML 语法",
+      "title": "Markdown 编辑器"
+    }
+  },
   "empty": {
     "tips": {
       "0": "想象一下这里充满了精彩的内容！现在，你只能发挥你的想象力了...",
@@ -14,9 +56,6 @@
     }
   },
   "error": {
-    "400": "请求参数不正确，请检查后重新提交。",
-    "401": "请求过于频繁，请稍后再试。",
-    "500": "服务器出现了一些问题，请稍后再试。",
     "10001": "查询不成功，请稍后再试或检查查询条件。",
     "10002": "更新操作不成功，请稍后再试。",
     "10003": "插入操作暂时无法完成，请稍后再试。",
@@ -33,10 +72,13 @@
     "30003": "分组已存在，请尝试使用不同的名称。",
     "30004": "找不到分组，请验证信息后重试。",
     "30005": "分组中还有内容，请清空后再试。",
+    "400": "请求参数不正确，请检查后重新提交。",
     "40002": "未找到有效的 Token，请登录后再试。",
     "40003": "当前 Token 无效，请重新获取后再试。",
     "40004": "Token 已过期，请重新登录。",
     "40005": "您没有访问权限，如有疑问请联系管理员。",
+    "401": "请求过于频繁，请稍后再试。",
+    "500": "服务器出现了一些问题，请稍后再试。",
     "50001": "找不到对应的优惠券信息，请检查后重试。",
     "50002": "该优惠券已被使用，无法再次使用。",
     "60001": "订阅已过期，请续费后使用。",
@@ -54,10 +96,46 @@
     "timeout": "请求响应超时，请稍后重试。",
     "unknown": "系统发生错误，请稍后再试。"
   },
+  "filter": {
+    "choose": "请选择...",
+    "search": "搜索..."
+  },
   "language": "语言",
+  "loading": "加载中...",
+  "markdown": {
+    "copyFailed": "复制失败，请重试。"
+  },
   "pagination": {
+    "firstPage": "跳转到第一页",
+    "lastPage": "跳转到最后一页",
+    "next": "下一页",
+    "nextPage": "跳转到下一页",
     "pageInfo": "第 {{page}} 页，共 {{total}} 页",
-    "rowsPerPage": "每页行数"
+    "previous": "上一页",
+    "previousPage": "跳转到上一页",
+    "rowsPerPage": "每页行数",
+    "selectPage": "选择页码"
+  },
+  "select": {
+    "placeholder": "请选择"
+  },
+  "sidebar": {
+    "description": "显示移动端侧边栏。",
+    "title": "侧边栏",
+    "toggle": "切换侧边栏"
+  },
+  "spinner": {
+    "loading": "加载中"
+  },
+  "table": {
+    "hideColumn": "隐藏",
+    "selectAll": "全选",
+    "selectRow": "选择此行",
+    "selectedRows_one": "已选择 {{count}} 行",
+    "selectedRows_other": "已选择 {{count}} 行",
+    "sortAsc": "升序",
+    "sortDesc": "降序",
+    "loadFailed": "数据加载失败"
   },
   "theme": {
     "dark": "深色",
@@ -65,5 +143,15 @@
     "system": "系统",
     "toggle": "切换主题"
   },
-  "unlimited": "无限制"
+  "timezone": {
+    "all": "全部",
+    "current": "当前",
+    "recommended": "推荐",
+    "searchPlaceholder": "搜索...",
+    "server": "服务器"
+  },
+  "unlimited": "无限制",
+  "upload": {
+    "sizeExceeded": "文件大小超出限制（{{maxSize}}MB）"
+  }
 }

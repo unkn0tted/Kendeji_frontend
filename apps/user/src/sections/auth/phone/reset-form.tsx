@@ -15,7 +15,7 @@ import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import SendCode from "../send-code";
 import type { TurnstileRef } from "../turnstile";
 import CloudFlareTurnstile from "../turnstile";
@@ -34,7 +34,7 @@ export default function ResetForm({
 }) {
   const { t } = useTranslation("auth");
 
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { verify, auth } = common;
 
   const formSchema = z.object({
@@ -88,7 +88,10 @@ export default function ResetForm({
                                   );
                                 }
                               }}
-                              placeholder="Area code..."
+                              placeholder={t(
+                                "placeholders.areaCode",
+                                "Area code..."
+                              )}
                               simple
                               value={field.value}
                             />
@@ -99,7 +102,10 @@ export default function ResetForm({
                     />
                     <Input
                       className="rounded-l-none"
-                      placeholder="Enter your telephone..."
+                      placeholder={t(
+                        "placeholders.telephone",
+                        "Enter your telephone..."
+                      )}
                       type="tel"
                       {...field}
                     />
@@ -117,7 +123,7 @@ export default function ResetForm({
                 <FormControl>
                   <div className="flex items-center gap-2">
                     <Input
-                      placeholder="Enter code..."
+                      placeholder={t("placeholders.code", "Enter code...")}
                       type="text"
                       {...field}
                       value={field.value as string}
@@ -143,7 +149,10 @@ export default function ResetForm({
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder="Enter your new password..."
+                    placeholder={t(
+                      "placeholders.newPassword",
+                      "Enter your new password..."
+                    )}
                     type="password"
                     {...field}
                   />

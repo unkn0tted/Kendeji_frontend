@@ -38,7 +38,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 interface PaymentFormProps<T extends { platform?: string }> {
   trigger: React.ReactNode;
@@ -58,7 +58,7 @@ export default function PaymentForm<T extends { platform?: string }>({
   isEdit,
 }: PaymentFormProps<T>) {
   const { t } = useTranslation("payment");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { currency } = common;
   const [open, setOpen] = useState(false);
 

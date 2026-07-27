@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   Avatar,
   AvatarFallback,
@@ -17,13 +17,13 @@ import {
 import { Icon } from "@workspace/ui/composed/icon";
 import { useTranslation } from "react-i18next";
 import { useNavs } from "@/layout/navs";
-import { useGlobalStore } from "@/stores/global";
+import { useSetUser, useUser } from "@/stores/global";
 import { Logout } from "@/utils/common";
 
 export function UserNav() {
   const { t } = useTranslation("components");
-  const { user, setUser } = useGlobalStore();
-  const navigate = useNavigate();
+  const user = useUser();
+  const setUser = useSetUser();
   const navs = useNavs();
 
   const handleLogout = () => {
@@ -57,7 +57,7 @@ export function UserNav() {
             />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64" forceMount>
+        <DropdownMenuContent align="end" className="w-64">
           <div className="flex items-center justify-start gap-2 p-2">
             <Avatar className="h-10 w-10">
               <AvatarImage
@@ -84,22 +84,21 @@ export function UserNav() {
           {navs.map((nav) => (
             <DropdownMenuGroup key={nav.title}>
               {(nav.items || [nav]).map((item) => (
-                <DropdownMenuItem
-                  className="flex cursor-pointer items-center gap-2 py-2"
-                  key={item.title}
-                  onClick={() => {
-                    navigate({ to: item.url });
-                  }}
-                >
-                  <Icon
-                    className="size-4 flex-none text-muted-foreground"
-                    icon={item.icon as string}
-                  />
-                  <span className="grow truncate">{item.title}</span>
-                  <Icon
-                    className="size-4 text-muted-foreground opacity-50"
-                    icon="lucide:chevron-right"
-                  />
+                <DropdownMenuItem asChild key={item.title}>
+                  <Link
+                    className="flex cursor-pointer items-center gap-2 py-2"
+                    to={item.url || "/"}
+                  >
+                    <Icon
+                      className="size-4 flex-none text-muted-foreground"
+                      icon={item.icon as string}
+                    />
+                    <span className="grow truncate">{item.title}</span>
+                    <Icon
+                      className="size-4 text-muted-foreground opacity-50"
+                      icon="lucide:chevron-right"
+                    />
+                  </Link>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>

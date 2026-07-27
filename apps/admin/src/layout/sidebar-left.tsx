@@ -18,8 +18,17 @@ import {
 import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
 import React, { useState } from "react";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import { type NavItem, useNavs } from "./navs";
+
+/** Nav link look: quiet by default, pink surface + a small left accent bar
+ *  when active. `group/nav` lets the icon pick up hover/active tinting. */
+const navButtonClass =
+  "group/nav relative h-9 rounded-md transition-colors before:absolute before:top-1/2 before:left-0 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:content-[''] data-[active=true]:bg-primary/10 data-[active=true]:font-medium data-[active=true]:text-primary data-[active=true]:before:opacity-100";
+
+/** Monochrome nav icons: muted at rest, primary on hover / active row. */
+const navIconClass =
+  "size-4 shrink-0 text-muted-foreground transition-colors group-hover/nav:text-primary group-data-[active=true]/nav:text-primary";
 
 function hasChildren(obj: any): obj is { items: any[] } {
   return (
@@ -30,7 +39,7 @@ function hasChildren(obj: any): obj is { items: any[] } {
 export function SidebarLeft({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { site } = common;
   const navs = useNavs();
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -79,41 +88,58 @@ export function SidebarLeft({
   }, [pathname, navs]);
 
   const renderCollapsedFlyout = (nav: NavItem) => {
-    const ParentButton = (
-      <SidebarMenuButton
-        aria-label={nav.title}
-        className="h-9 justify-center rounded-md"
-        isActive={false}
-        size="sm"
-      >
-        {"url" in nav && nav.url ? (
-          <Link to={nav.url as string}>
-            {"icon" in nav && (nav as any).icon ? (
-              <Icon className="size-4" icon={(nav as any).icon} />
-            ) : null}
-          </Link>
-        ) : "icon" in nav && (nav as any).icon ? (
-          <Icon className="size-4" icon={(nav as any).icon} />
-        ) : null}
-      </SidebarMenuButton>
-    );
+    const active = isGroupActive(nav);
 
-    if (!hasChildren(nav)) return ParentButton;
+    if (!hasChildren(nav)) {
+      // Leaf entry in collapsed mode: the sidebar kit's built-in tooltip
+      // provides the label.
+      return (
+        <SidebarMenuButton
+          aria-label={nav.title}
+          asChild={!!nav.url}
+          className={cn(navButtonClass, "justify-center")}
+          isActive={active}
+          size="sm"
+          tooltip={nav.title}
+        >
+          {nav.url ? (
+            <Link to={nav.url}>
+              {nav.icon ? (
+                <Icon className={navIconClass} icon={nav.icon} />
+              ) : null}
+            </Link>
+          ) : nav.icon ? (
+            <Icon className={navIconClass} icon={nav.icon} />
+          ) : null}
+        </SidebarMenuButton>
+      );
+    }
 
     return (
       <HoverCard closeDelay={200} openDelay={40}>
-        <HoverCardTrigger asChild>{ParentButton}</HoverCardTrigger>
+        <HoverCardTrigger asChild>
+          <SidebarMenuButton
+            aria-label={nav.title}
+            className={cn(navButtonClass, "justify-center")}
+            isActive={active}
+            size="sm"
+          >
+            {nav.icon ? (
+              <Icon className={navIconClass} icon={nav.icon} />
+            ) : null}
+          </SidebarMenuButton>
+        </HoverCardTrigger>
         <HoverCardContent
           align="start"
           avoidCollisions
-          className="z-[9999] w-64 overflow-hidden p-0"
+          className="z-50 w-64 overflow-hidden p-0"
           collisionPadding={8}
           side="right"
           sideOffset={10}
         >
           <div className="flex items-center gap-2 border-border border-b bg-primary/5 px-3 py-2">
-            {"icon" in nav && (nav as any).icon ? (
-              <Icon className="size-4" icon={(nav as any).icon} />
+            {nav.icon ? (
+              <Icon className="size-4 text-primary" icon={nav.icon} />
             ) : null}
             <span className="truncate font-medium text-muted-foreground text-xs">
               {nav.title}
@@ -145,7 +171,7 @@ export function SidebarLeft({
 
   return (
     <Sidebar
-      className="border-r-0 bg-transparent p-3 pr-0"
+      className="border-r-0 bg-transparent p-3 pr-0 [&_[data-slot=sidebar-inner]]:bg-transparent"
       collapsible="icon"
       {...props}
     >
@@ -193,23 +219,19 @@ export function SidebarLeft({
                 if (hasChildren(nav)) {
                   const isOpen = openGroups[nav.title] ?? false;
                   return (
-                    <SidebarGroup className={cn("py-1")} key={nav.title}>
+                    <SidebarGroup className="py-1" key={nav.title}>
                       <SidebarMenuButton
                         className={cn(
-                          "mb-1 flex h-9 w-full items-center justify-between rounded-md text-muted-foreground hover:bg-accent/70 hover:text-accent-foreground data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+                          "group/nav mb-1 flex h-9 w-full items-center justify-between rounded-md font-medium text-muted-foreground transition-colors hover:bg-accent/70 hover:text-accent-foreground data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
                         )}
                         isActive={isGroupActive(nav)}
                         onClick={() => handleToggleGroup(nav.title)}
                         size="sm"
-                        style={{ fontWeight: 500 }}
                         tabIndex={0}
                       >
                         <span className="flex min-w-0 items-center gap-2">
-                          {"icon" in nav && (nav as any).icon ? (
-                            <Icon
-                              className="size-4 shrink-0"
-                              icon={(nav as any).icon}
-                            />
+                          {nav.icon ? (
+                            <Icon className={navIconClass} icon={nav.icon} />
                           ) : null}
                           <span className="truncate text-sm">{nav.title}</span>
                         </span>
@@ -225,7 +247,7 @@ export function SidebarLeft({
                               <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton
                                   asChild
-                                  className="h-9 rounded-md transition-colors data-[active=true]:bg-primary/10 data-[active=true]:font-medium data-[active=true]:text-primary"
+                                  className={navButtonClass}
                                   isActive={isActiveUrl(item.url)}
                                   size="sm"
                                   tooltip={item.title}
@@ -233,7 +255,7 @@ export function SidebarLeft({
                                   <Link to={item.url}>
                                     {item.icon && (
                                       <Icon
-                                        className="size-4"
+                                        className={navIconClass}
                                         icon={item.icon}
                                       />
                                     )}
@@ -257,32 +279,28 @@ export function SidebarLeft({
                       <SidebarMenu>
                         <SidebarMenuItem>
                           <SidebarMenuButton
-                            asChild={"url" in nav && !!(nav as any).url}
-                            className="h-9 rounded-md transition-colors data-[active=true]:bg-primary/10 data-[active=true]:font-medium data-[active=true]:text-primary"
-                            isActive={
-                              "url" in nav && (nav as any).url
-                                ? isActiveUrl((nav as any).url)
-                                : false
-                            }
+                            asChild={!!nav.url}
+                            className={navButtonClass}
+                            isActive={nav.url ? isActiveUrl(nav.url) : false}
                             size="sm"
                             tooltip={nav.title}
                           >
-                            {"url" in nav && (nav as any).url ? (
-                              <Link to={(nav as any).url}>
-                                {"icon" in nav && (nav as any).icon ? (
+                            {nav.url ? (
+                              <Link to={nav.url}>
+                                {nav.icon ? (
                                   <Icon
-                                    className="size-4"
-                                    icon={(nav as any).icon}
+                                    className={navIconClass}
+                                    icon={nav.icon}
                                   />
                                 ) : null}
                                 <span className="text-sm">{nav.title}</span>
                               </Link>
                             ) : (
                               <>
-                                {"icon" in nav && (nav as any).icon ? (
+                                {nav.icon ? (
                                   <Icon
-                                    className="size-4"
-                                    icon={(nav as any).icon}
+                                    className={navIconClass}
+                                    icon={nav.icon}
                                   />
                                 ) : null}
                                 <span className="text-sm">{nav.title}</span>

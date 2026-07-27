@@ -1,6 +1,5 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@workspace/ui/components/card";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +12,11 @@ import { Markdown } from "@workspace/ui/composed/markdown";
 import { queryAnnouncement } from "@workspace/ui/services/user/announcement";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useUser } from "@/stores/global";
 
 export default function Announcement({ type }: { type: "popup" | "pinned" }) {
   const { t } = useTranslation("dashboard");
-  const { user } = useGlobalStore();
+  const user = useUser();
   const [open, setOpen] = useState(false);
 
   const { data } = useQuery({
@@ -64,9 +63,9 @@ export default function Announcement({ type }: { type: "popup" | "pinned" }) {
           <Icon className="size-5" icon="uil:bell" />
           {t("latestAnnouncement", "Latest Announcement")}
         </h2>
-        <Card className="p-6">
+        <div className="rose-panel p-6">
           {data?.content ? <Markdown>{data?.content}</Markdown> : <Empty />}
-        </Card>
+        </div>
       </>
     );
   }

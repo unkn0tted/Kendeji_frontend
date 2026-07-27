@@ -36,5 +36,6 @@
     "4": "充值"
   },
   "viewDocument": "查看文档",
-  "waitingForPayment": "等待支付"
+  "waitingForPayment": "等待支付",
+  "pageDescription": "查看和管理您的全部订单"
 }

@@ -3,6 +3,7 @@
     "amount": "Amount",
     "balance": "Balance",
     "content": "Content",
+    "currentUsage": "Current Usage",
     "date": "Date",
     "download": "Download",
     "identifier": "Identifier",
@@ -25,8 +26,7 @@
     "upload": "Upload",
     "user": "User",
     "userAgent": "User Agent",
-    "userId": "User ID",
-    "currentUsage": "Current Usage"
+    "userId": "User ID"
   },
   "detail": "Detail",
   "failed": "Failed",

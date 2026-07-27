@@ -19,9 +19,7 @@
     "@stripe/stripe-js": "^8.5.2",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/match-sorter-utils": "^8.19.4",
-    "@tanstack/react-devtools": "^0.7.0",
     "@tanstack/react-form": "^1.0.0",
-    "@tanstack/react-router-devtools": "^1.132.0",
     "@tanstack/react-table": "^8.21.2",
     "@tanstack/router-plugin": "^1.132.0",
     "@workspace/typescript-config": "workspace:*",
@@ -38,6 +36,8 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@tanstack/devtools-vite": "^0.3.11",
+    "@tanstack/react-devtools": "^0.7.0",
+    "@tanstack/react-router-devtools": "^1.132.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@vitejs/plugin-react": "^5.0.4",

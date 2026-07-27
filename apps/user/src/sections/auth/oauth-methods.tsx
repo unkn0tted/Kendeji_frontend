@@ -3,7 +3,8 @@
 import { Button } from "@workspace/ui/components/button";
 import { Icon } from "@workspace/ui/composed/icon";
 import { oAuthLogin } from "@workspace/ui/services/common/oauth";
-import { useGlobalStore } from "@/stores/global";
+import { useTranslation } from "react-i18next";
+import { useCommon } from "@/stores/global";
 
 const icons = {
   apple: "uil:apple",
@@ -14,7 +15,8 @@ const icons = {
 };
 
 export function OAuthMethods() {
-  const { common } = useGlobalStore();
+  const { t } = useTranslation("auth");
+  const common = useCommon();
   const { oauth_methods } = common;
   const OAUTH_METHODS = oauth_methods?.filter(
     (method: string) => !["mobile", "email", "device"].includes(method)
@@ -24,7 +26,7 @@ export function OAuthMethods() {
       <>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-border after:border-t">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
-            Or continue with
+            {t("orContinueWith", "Or continue with")}
           </span>
         </div>
         <div className="mt-6 flex justify-center gap-4 *:size-12 *:p-2">

@@ -5,12 +5,17 @@ import {
   type MonacoEditorProps,
 } from "@workspace/ui/composed/editor/monaco-editor";
 import { Markdown } from "@workspace/ui/composed/markdown";
+import { useTranslation } from "react-i18next";
 
 export function MarkdownEditor(props: MonacoEditorProps) {
+  const { t } = useTranslation("components");
   return (
     <MonacoEditor
-      description="Support markdwon and html syntax"
-      title="Markdown Editor"
+      description={t(
+        "editor.markdown.description",
+        "Supports Markdown and HTML syntax"
+      )}
+      title={t("editor.markdown.title", "Markdown Editor")}
       {...props}
       language="markdown"
       render={(value) => <Markdown>{value || ""}</Markdown>}

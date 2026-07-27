@@ -28,14 +28,14 @@ export const useStatsStore = create<StatsState>((set) => ({
   loading: false,
   loaded:
     typeof window !== "undefined"
-      ? Boolean(window.localStorage.getItem(STATS_LOADED_KEY))
+      ? window.localStorage.getItem(STATS_LOADED_KEY) === "1"
       : false,
 
   stats: async () => {
-    // if already recorded, skip
+    // if already recorded, skip; "0" (failed) falls through so it retries later
     if (typeof window !== "undefined") {
       try {
-        if (window.localStorage.getItem(STATS_LOADED_KEY)) return;
+        if (window.localStorage.getItem(STATS_LOADED_KEY) === "1") return;
       } catch {
         /* empty */
       }
@@ -68,7 +68,7 @@ export const useStatsStore = create<StatsState>((set) => ({
         }
       }
     } catch (_error) {
-      // treat as completed to avoid repeated attempts
+      // mark as failed ("0") so a later visit can retry
       set({ loaded: false });
       if (typeof window !== "undefined") {
         try {

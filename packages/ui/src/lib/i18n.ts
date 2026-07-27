@@ -23,6 +23,7 @@ export function initializeI18n(i18nConfig?: InitOptions) {
       // Language configuration
       fallbackLng: "en-US", // Default language when detection fails
       supportedLngs: ["en-US", "zh-CN"], // Available locales
+      load: "currentOnly", // Load only the detected locale, not derived variants (e.g. "en" for "en-US")
       // Note: lng is not set to allow LanguageDetector to handle detection
 
       // Interpolation configuration
@@ -35,7 +36,6 @@ export function initializeI18n(i18nConfig?: InitOptions) {
         loadPath: "assets/locales/{{lng}}/{{ns}}.json", // Translation files path template (relative to base)
         crossDomain: false, // Disable cross-domain requests
         withCredentials: false, // Don't send credentials with requests
-        allowMultiLoading: true, // Load namespaces individually
         queryStringParams: {
           v: translationVersion,
         },
@@ -60,6 +60,18 @@ export function initializeI18n(i18nConfig?: InitOptions) {
       },
       ...i18nConfig,
     });
+
+  // Keep <html lang> in sync with the active language (initial detection + switches)
+  const syncDocumentLanguage = (lng: string) => {
+    if (typeof document !== "undefined" && lng) {
+      document.documentElement.lang = lng;
+    }
+  };
+  i18n.on("languageChanged", syncDocumentLanguage);
+  if (i18n.language) {
+    syncDocumentLanguage(i18n.language);
+  }
+
   window.i18n = i18n;
   return i18n;
 }

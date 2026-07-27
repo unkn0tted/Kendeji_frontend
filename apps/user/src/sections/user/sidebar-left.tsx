@@ -1,56 +1,49 @@
 "use client";
 import { Link, useLocation } from "@tanstack/react-router";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@workspace/ui/components/sidebar";
 import { Icon } from "@workspace/ui/composed/icon";
-import { useTranslation } from "react-i18next";
+import { cn } from "@workspace/ui/lib/utils";
 import { useNavs } from "@/layout/navs";
 
-export function SidebarLeft({
-  ...props
-}: React.ComponentProps<typeof Sidebar>) {
-  const { t } = useTranslation("components");
+/** Desktop navigation rail: a plain grouped link list on the aurora
+ *  background. Nav titles from useNavs() arrive already translated. */
+export function SidebarLeft({ className }: { className?: string }) {
   const location = useLocation();
   const navs = useNavs();
+
   return (
-    <Sidebar collapsible="none" side="left" {...props}>
-      <SidebarContent className="rounded-xl border border-primary/16 bg-card/88 p-3 shadow-primary/10 shadow-sm">
-        <SidebarMenu>
-          {navs.map((nav) => (
-            <SidebarGroup key={nav.title}>
-              {nav.items && (
-                <SidebarGroupLabel>{t(nav.title)}</SidebarGroupLabel>
-              )}
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {(nav.items || [nav]).map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={item.url === location.pathname}
-                        tooltip={t(item.title)}
-                      >
-                        <Link to={item.url || "/"}>
-                          {item.icon && <Icon icon={item.icon} />}
-                          <span>{t(item.title)}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
-    </Sidebar>
+    <aside className={className}>
+      <nav className="flex flex-col gap-5">
+        {navs.map((nav) => (
+          <div className="flex flex-col gap-0.5" key={nav.title}>
+            {nav.items && (
+              <p className="px-3 pb-1.5 font-semibold text-[0.68rem] text-muted-foreground uppercase tracking-[0.14em]">
+                {nav.title}
+              </p>
+            )}
+            {(nav.items || [nav]).map((item) => {
+              const isActive = item.url === location.pathname;
+              return (
+                <Link
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                    isActive
+                      ? "bg-primary/10 font-semibold text-primary before:absolute before:inset-y-2 before:start-0 before:w-0.5 before:rounded-full before:bg-primary"
+                      : "text-foreground/72 hover:bg-glass-strong hover:text-foreground"
+                  )}
+                  key={item.title}
+                  to={item.url || "/"}
+                >
+                  {item.icon && (
+                    <Icon className="size-4 shrink-0" icon={item.icon} />
+                  )}
+                  <span className="truncate">{item.title}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+    </aside>
   );
 }

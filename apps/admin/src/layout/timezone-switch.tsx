@@ -160,7 +160,7 @@ function getTimezoneOffset(timezone: string): string {
 }
 
 export default function TimezoneSwitch() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation("components");
   const locale = i18n.language;
   const [timezone, setTimezone] = useState<string>("UTC");
   const [open, setOpen] = useState(false);
@@ -183,20 +183,33 @@ export default function TimezoneSwitch() {
     }
   }, []);
 
+  const serverTimezoneSet = useMemo(() => new Set(getServerTimezones()), []);
+  const recommendedTimezoneSet = useMemo(
+    () => new Set(getRecommendedTimezones()),
+    []
+  );
+
+  const currentTimes = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!open) return map;
+    for (const option of timezoneOptions) {
+      map.set(option.value, getCurrentTime(option.value));
+    }
+    return map;
+  }, [open, timezoneOptions]);
+
   const handleTimezoneChange = (newTimezone: string) => {
     setTimezone(newTimezone);
     localStorage.setItem("timezone", newTimezone);
     setOpen(false);
 
-    window.dispatchEvent(
-      new CustomEvent("timezoneChanged", {
-        detail: { timezone: newTimezone },
-      })
-    );
+    // formatDate reads the persisted timezone from localStorage lazily and
+    // nothing subscribes to a change event, so reload to re-render every
+    // already-mounted date in the new timezone.
+    window.location.reload();
   };
   const serverTimezones = timezoneOptions.filter(
-    (option) =>
-      getServerTimezones().includes(option.value) && option.value !== timezone
+    (option) => serverTimezoneSet.has(option.value) && option.value !== timezone
   );
 
   return (
@@ -208,9 +221,11 @@ export default function TimezoneSwitch() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <Command>
-          <CommandInput placeholder="Search..." />
+          <CommandInput
+            placeholder={t("timezone.searchPlaceholder", "Search...")}
+          />
           <CommandList>
-            <CommandGroup heading="Current">
+            <CommandGroup heading={t("timezone.current", "Current")}>
               {timezoneOptions
                 .filter((option) => option.value === timezone)
                 .map((option) => (
@@ -224,7 +239,8 @@ export default function TimezoneSwitch() {
                       <div className="flex flex-1 flex-col">
                         <span className="font-medium">{option.value}</span>
                         <span className="text-muted-foreground text-xs">
-                          {option.timezone} • {getCurrentTime(option.value)}
+                          {option.timezone} •{" "}
+                          {currentTimes.get(option.value) ?? "--:--"}
                         </span>
                       </div>
                       <Icon className="h-4 w-4 opacity-100" icon="uil:check" />
@@ -233,7 +249,7 @@ export default function TimezoneSwitch() {
                 ))}
             </CommandGroup>
             {serverTimezones.length > 0 && (
-              <CommandGroup heading="Server">
+              <CommandGroup heading={t("timezone.server", "Server")}>
                 {serverTimezones.map((option) => (
                   <CommandItem
                     key={option.value}
@@ -244,7 +260,8 @@ export default function TimezoneSwitch() {
                       <div className="flex flex-1 flex-col">
                         <span className="font-medium">{option.value}</span>
                         <span className="text-muted-foreground text-xs">
-                          {option.timezone} • {getCurrentTime(option.value)}
+                          {option.timezone} •{" "}
+                          {currentTimes.get(option.value) ?? "--:--"}
                         </span>
                       </div>
                       <Icon className="h-4 w-4 opacity-0" icon="uil:check" />
@@ -254,11 +271,11 @@ export default function TimezoneSwitch() {
               </CommandGroup>
             )}
 
-            <CommandGroup heading="Recommended">
+            <CommandGroup heading={t("timezone.recommended", "Recommended")}>
               {timezoneOptions
                 .filter(
                   (option) =>
-                    getRecommendedTimezones().includes(option.value) &&
+                    recommendedTimezoneSet.has(option.value) &&
                     option.value !== timezone
                 )
                 .map((option) => (
@@ -271,7 +288,8 @@ export default function TimezoneSwitch() {
                       <div className="flex flex-1 flex-col">
                         <span className="font-medium">{option.value}</span>
                         <span className="text-muted-foreground text-xs">
-                          {option.timezone} • {getCurrentTime(option.value)}
+                          {option.timezone} •{" "}
+                          {currentTimes.get(option.value) ?? "--:--"}
                         </span>
                       </div>
                       <Icon className="h-4 w-4 opacity-0" icon="uil:check" />
@@ -280,13 +298,13 @@ export default function TimezoneSwitch() {
                 ))}
             </CommandGroup>
 
-            <CommandGroup heading="All">
+            <CommandGroup heading={t("timezone.all", "All")}>
               {timezoneOptions
                 .filter(
                   (option) =>
                     !(
-                      getServerTimezones().includes(option.value) ||
-                      getRecommendedTimezones().includes(option.value)
+                      serverTimezoneSet.has(option.value) ||
+                      recommendedTimezoneSet.has(option.value)
                     ) && option.value !== timezone
                 )
                 .map((option) => (
@@ -299,7 +317,8 @@ export default function TimezoneSwitch() {
                       <div className="flex flex-1 flex-col">
                         <span className="font-medium">{option.value}</span>
                         <span className="text-muted-foreground text-xs">
-                          {option.timezone} • {getCurrentTime(option.value)}
+                          {option.timezone} •{" "}
+                          {currentTimes.get(option.value) ?? "--:--"}
                         </span>
                       </div>
                       <Icon className="h-4 w-4 opacity-0" icon="uil:check" />

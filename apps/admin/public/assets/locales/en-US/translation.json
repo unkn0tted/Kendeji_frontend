@@ -1,4 +1,13 @@
 {
+  "address": "Address",
+  "alpn": "ALPN",
+  "cipher": "Cipher",
+  "congestion_controller": "Congestion Controller",
+  "encryption": "Encryption",
+  "encryption_client_padding": "Client Padding",
+  "encryption_mode": "Encryption Mode",
+  "encryption_password": "Encryption Password",
+  "encryption_rtt": "Encryption RTT",
   "errors": {
     "nameRequired": "Please enter a name",
     "portRange": "Port must be between 1 and 65535",
@@ -6,11 +15,46 @@
     "serverAddrRequired": "Please enter an entry address",
     "serverRequired": "Please select a server"
   },
+  "flow": "Flow",
   "form": {
     "validation": {
       "nameRequired": "Client name is required",
       "userAgentRequiredSuffix": "is required"
     }
   },
-  "tos": "tos"
+  "heartbeat": "Heartbeat",
+  "host": "Host",
+  "multiplex": "Multiplex",
+  "name": "Name",
+  "path": "Path",
+  "port": "Port",
+  "protocol": "Protocol",
+  "reduce_rtt": "Reduce RTT",
+  "security": "Security",
+  "security_allow_insecure": "Allow Insecure",
+  "security_fingerprint": "Fingerprint",
+  "security_public_key": "Reality Public Key",
+  "security_short_id": "Reality Short ID",
+  "security_sni": "SNI",
+  "server_config": {
+    "fields": {
+      "outbound_address_placeholder": "Server address",
+      "outbound_name_placeholder": "Configuration name",
+      "outbound_password_placeholder": "Password / secret",
+      "outbound_rules_placeholder": "One rule per line",
+      "outbound_user": "Username"
+    },
+    "tabs": {
+      "outbound": "Outbound Rules"
+    }
+  },
+  "service_name": "Service Name",
+  "settings": "Hysteria2 Settings",
+  "tos": "Terms of Service",
+  "transport": "Transport",
+  "udp_stream": "UDP Stream",
+  "uot": "UDP over TCP",
+  "uot_version": "UoT Version",
+  "xhttp_extra": "XHTTP Extra",
+  "xhttp_mode": "XHTTP Mode"
 }

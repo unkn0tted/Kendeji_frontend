@@ -16,7 +16,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Display } from "@/components/display";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon, useGetUserInfo } from "@/stores/global";
 
 interface UnsubscribeProps {
   id: number;
@@ -30,7 +30,8 @@ export default function Unsubscribe({
   onSuccess,
 }: Readonly<UnsubscribeProps>) {
   const { t } = useTranslation("subscribe");
-  const { common, getUserInfo } = useGlobalStore();
+  const common = useCommon();
+  const getUserInfo = useGetUserInfo();
   const single_model = common.subscribe.single_model;
 
   const [open, setOpen] = useState(false);

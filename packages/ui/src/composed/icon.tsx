@@ -1,18 +1,15 @@
 "use client";
 
-// import { icons as FlagPack } from '@iconify-json/flagpack';
-// import { icons as Logos } from '@iconify-json/logos';
-// import { icons as Mdi } from '@iconify-json/mdi';
-// import { icons as Simple } from '@iconify-json/simple-icons';
-// import { icons as Uil } from '@iconify-json/uil';
+import { addCollection, Icon as Iconify, type IconProps } from "@iconify/react";
+import { collections } from "./icon-collections.js";
 
-import { Icon as Iconify, type IconProps } from "@iconify/react";
-
-// addCollection(FlagPack);
-// addCollection(Mdi);
-// addCollection(Uil);
-// addCollection(Simple);
-// addCollection(Logos);
+// Register offline subsets of every icon collection referenced by the apps
+// (generated via `bun run icons:generate` in packages/ui) so icons render
+// without runtime requests to api.iconify.design. The full flagpack
+// collection is registered by area-code-select, its only consumer.
+for (const collection of collections) {
+  addCollection(collection);
+}
 
 export function Icon(props: IconProps) {
   return <Iconify {...props} />;

@@ -1,5 +1,4 @@
 {
-  "cancel": "Cancel",
   "bulkClose": {
     "all": "Close all tickets",
     "allConfirm": "Close all tickets?",
@@ -12,8 +11,11 @@
     "replied": "Close all replied tickets",
     "repliedConfirm": "Close all replied tickets?",
     "repliedWarning": "This closes every ticket currently waiting for the user to reply. This action cannot be undone.",
-    "success": "Closed {{count}} tickets"
+    "success": "Closed {{count}} tickets",
+    "success_one": "Closed {{count}} ticket",
+    "success_other": "Closed {{count}} tickets"
   },
+  "cancel": "Cancel",
   "check": "Check",
   "close": "Close",
   "closeSuccess": "Closed successfully",

@@ -366,7 +366,7 @@ export default function User() {
         },
         {
           key: "search",
-          placeholder: "Search",
+          placeholder: t("searchPlaceholder", "Search"),
         },
         {
           key: "invite_code",

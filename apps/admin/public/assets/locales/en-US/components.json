@@ -1,4 +1,46 @@
 {
+  "areaCode": {
+    "placeholder": "Select Area Code",
+    "search": "Search area code..."
+  },
+  "carousel": {
+    "next": "Next slide",
+    "previous": "Previous slide"
+  },
+  "close": "Close",
+  "combobox": {
+    "search": "Search...",
+    "select": "Select...",
+    "noResults": "No results found"
+  },
+  "command": {
+    "description": "Search for a command to run...",
+    "title": "Command Palette"
+  },
+  "confirm": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "editor": {
+    "goTemplate": {
+      "description": "Go text/template syntax",
+      "descriptionSprig": "Go text/template syntax with Sprig functions",
+      "placeholder": "Enter your Go template here...",
+      "title": "Go Template Editor"
+    },
+    "html": {
+      "description": "Supports HTML",
+      "preview": "HTML Preview",
+      "title": "HTML Editor"
+    },
+    "json": {
+      "title": "Edit JSON"
+    },
+    "markdown": {
+      "description": "Supports Markdown and HTML syntax",
+      "title": "Markdown Editor"
+    }
+  },
   "empty": {
     "tips": {
       "0": "Imagine this space filled with exciting content! For now, you'll have to use your imagination...",
@@ -54,10 +96,46 @@
     "timeout": "The request timed out. Please try again later.",
     "unknown": "An error occurred in the system, please try again later."
   },
+  "filter": {
+    "choose": "Choose...",
+    "search": "Search..."
+  },
   "language": "Language",
+  "loading": "Loading...",
+  "markdown": {
+    "copyFailed": "Failed to copy text. Please try again."
+  },
   "pagination": {
+    "firstPage": "Go to first page",
+    "lastPage": "Go to last page",
+    "next": "Next",
+    "nextPage": "Go to next page",
     "pageInfo": "Page {{page}} of {{total}}",
-    "rowsPerPage": "Rows per page"
+    "previous": "Previous",
+    "previousPage": "Go to previous page",
+    "rowsPerPage": "Rows per page",
+    "selectPage": "Select page number"
+  },
+  "select": {
+    "placeholder": "Select"
+  },
+  "sidebar": {
+    "description": "Displays the mobile sidebar.",
+    "title": "Sidebar",
+    "toggle": "Toggle Sidebar"
+  },
+  "spinner": {
+    "loading": "Loading"
+  },
+  "table": {
+    "hideColumn": "Hide",
+    "selectAll": "Select all",
+    "selectedRows_one": "Selected {{count}} row",
+    "selectedRows_other": "Selected {{count}} rows",
+    "selectRow": "Select row",
+    "sortAsc": "ASC",
+    "sortDesc": "DESC",
+    "loadFailed": "Failed to load data"
   },
   "theme": {
     "dark": "Dark",
@@ -65,5 +143,15 @@
     "system": "System",
     "toggle": "Toggle theme"
   },
-  "unlimited": "Unlimited"
+  "timezone": {
+    "all": "All",
+    "current": "Current",
+    "recommended": "Recommended",
+    "searchPlaceholder": "Search...",
+    "server": "Server"
+  },
+  "unlimited": "Unlimited",
+  "upload": {
+    "sizeExceeded": "File size exceeds the limit ({{maxSize}}MB)"
+  }
 }

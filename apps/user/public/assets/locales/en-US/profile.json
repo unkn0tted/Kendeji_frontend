@@ -17,15 +17,40 @@
     "updateSuccess": "Notification settings updated successfully"
   },
   "thirdParty": {
-    "bind": "thirdParty.bind",
+    "bind": "Bind",
     "bindFailed": "Bind failed",
     "bindMobile": "Bind Mobile",
     "bindSuccess": "Bind successfully",
     "confirm": "Confirm",
-    "save": "thirdParty.save",
+    "save": "Save",
     "title": "Third-party Accounts",
-    "unbind": "thirdParty.unbind",
-    "update": "thirdParty.update",
-    "updateSuccess": "Update successfully"
-  }
+    "unbind": "Unbind",
+    "update": "Update",
+    "updateSuccess": "Update successfully",
+    "email": {
+      "description": "Link your email address"
+    },
+    "mobile": {
+      "description": "Link your mobile number"
+    },
+    "telegram": {
+      "description": "Sign in with Telegram"
+    },
+    "apple": {
+      "description": "Sign in with Apple"
+    },
+    "google": {
+      "description": "Sign in with Google"
+    },
+    "facebook": {
+      "description": "Sign in with Facebook"
+    },
+    "github": {
+      "description": "Sign in with GitHub"
+    },
+    "device": {
+      "description": "Sign in with Device ID"
+    }
+  },
+  "pageDescription": "Manage your linked accounts, notifications and password"
 }

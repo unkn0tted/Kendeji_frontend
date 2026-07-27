@@ -24,7 +24,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Display } from "@/components/display";
-import { useGlobalStore } from "@/stores/global";
+import { useGetUserSubscribe } from "@/stores/global";
 import { formatDate } from "@/utils/common";
 import { SubscriptionDetail } from "./subscription-detail";
 import { SubscriptionForm } from "./subscription-form";
@@ -114,7 +114,7 @@ export default function UserSubscription({ userId }: { userId: number }) {
               },
             };
             const statusInfo = statusMap[displayStatus] || {
-              label: "Unknown",
+              label: t("statusUnknown", "Unknown"),
               variant: "outline",
             };
             return (
@@ -238,7 +238,7 @@ function RowMoreActions({
   const toggleStatusRef = useRef<HTMLButtonElement>(null);
   const deleteRef = useRef<HTMLButtonElement>(null);
   const { t } = useTranslation("user");
-  const { getUserSubscribe: getUserSubscribeUrls } = useGlobalStore();
+  const getUserSubscribeUrls = useGetUserSubscribe();
 
   return (
     <div className="inline-flex">

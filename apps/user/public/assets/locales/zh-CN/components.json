@@ -57,30 +57,47 @@
   "footer": {
     "copyright": "版权所有",
     "privacyPolicy": "隐私政策",
-    "tos": "服务条款"
+    "tos": "服务条款",
+    "social": {
+      "email": "通过电子邮件联系我们",
+      "telegram": "访问我们的 Telegram",
+      "twitter": "访问我们的 Twitter",
+      "discord": "访问我们的 Discord",
+      "instagram": "访问我们的 Instagram",
+      "linkedin": "访问我们的 LinkedIn",
+      "github": "访问我们的 GitHub",
+      "facebook": "访问我们的 Facebook"
+    }
   },
   "language": "语言",
   "loginRegister": "登录 / 注册",
   "pricing": "套餐",
   "menu": {
     "affiliate": "推广佣金",
-    "announcement": "公告管理",
+    "announcement": "公告",
     "dashboard": "仪表盘",
-    "document": "文档管理",
+    "document": "文档",
     "finance": "财务管理",
     "help": "用户支持",
     "logout": "退出登录",
-    "order": "订单管理",
+    "order": "订单",
     "personal": "个人中心",
     "profile": "用户详情",
     "server": "服务器管理",
     "subscribe": "订阅管理",
-    "ticket": "工单管理",
+    "ticket": "工单",
     "wallet": "余额管理"
   },
   "pagination": {
     "pageInfo": "第 {{page}} 页，共 {{total}} 页",
-    "rowsPerPage": "每页行数"
+    "rowsPerPage": "每页行数",
+    "firstPage": "跳转到第一页",
+    "previousPage": "跳转到上一页",
+    "selectPage": "选择页码",
+    "nextPage": "跳转到下一页",
+    "lastPage": "跳转到最后一页",
+    "previous": "上一页",
+    "next": "下一页"
   },
   "theme": {
     "dark": "深色",
@@ -88,5 +105,79 @@
     "system": "系统",
     "toggle": "切换主题"
   },
-  "unlimited": "无限制"
+  "unlimited": "无限制",
+  "filter": {
+    "choose": "请选择...",
+    "search": "搜索..."
+  },
+  "table": {
+    "sortAsc": "升序",
+    "sortDesc": "降序",
+    "hideColumn": "隐藏",
+    "selectedRows": "已选择 {{count}} 行",
+    "selectAll": "全选",
+    "selectRow": "选择此行",
+    "selectedRows_other": "已选择 {{count}} 行",
+    "loadFailed": "数据加载失败"
+  },
+  "combobox": {
+    "select": "请选择...",
+    "search": "搜索...",
+    "noResults": "未找到结果"
+  },
+  "confirm": {
+    "cancel": "取消",
+    "confirm": "确认"
+  },
+  "areaCode": {
+    "placeholder": "选择区号",
+    "search": "搜索区号..."
+  },
+  "upload": {
+    "sizeExceeded": "文件大小超出限制（{{maxSize}}MB）"
+  },
+  "markdown": {
+    "copyFailed": "复制失败，请重试。"
+  },
+  "select": {
+    "placeholder": "请选择"
+  },
+  "loading": "加载中...",
+  "editor": {
+    "goTemplate": {
+      "title": "Go 模板编辑器",
+      "description": "Go text/template 语法",
+      "descriptionSprig": "Go text/template 语法（支持 Sprig 函数）",
+      "placeholder": "在此输入 Go 模板..."
+    },
+    "html": {
+      "title": "HTML 编辑器",
+      "description": "支持 HTML",
+      "preview": "HTML 预览"
+    },
+    "json": {
+      "title": "编辑 JSON"
+    },
+    "markdown": {
+      "title": "Markdown 编辑器",
+      "description": "支持 Markdown 和 HTML 语法"
+    }
+  },
+  "sidebar": {
+    "title": "侧边栏",
+    "description": "显示移动端侧边栏。",
+    "toggle": "切换侧边栏"
+  },
+  "carousel": {
+    "previous": "上一张",
+    "next": "下一张"
+  },
+  "close": "关闭",
+  "command": {
+    "title": "命令面板",
+    "description": "搜索要执行的命令..."
+  },
+  "spinner": {
+    "loading": "加载中"
+  }
 }

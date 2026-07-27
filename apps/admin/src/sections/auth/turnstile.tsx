@@ -1,9 +1,9 @@
-import { useTheme } from "next-themes";
+import { useTheme } from "@workspace/ui/integrations/theme";
 import { type RefObject, useEffect, useImperativeHandle } from "react";
 import { useTranslation } from "react-i18next";
 import Turnstile, { useTurnstile } from "react-turnstile";
 
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 
 export type TurnstileRef = {
   reset: () => void;
@@ -20,7 +20,7 @@ const CloudFlareTurnstile = function CloudFlareTurnstile({
   onChange: (value?: string) => void;
   ref?: RefObject<TurnstileRef | null>;
 }) {
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { verify } = common;
   const { resolvedTheme } = useTheme();
   const { i18n } = useTranslation();

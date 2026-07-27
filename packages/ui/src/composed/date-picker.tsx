@@ -10,7 +10,7 @@ import {
 import { cn } from "@workspace/ui/lib/utils";
 import { intlFormat } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
-import * as React from "react";
+import type * as React from "react";
 import type { DayPicker } from "react-day-picker";
 
 export function DatePicker({
@@ -23,12 +23,11 @@ export function DatePicker({
   value?: number;
   onChange?: (value?: number) => void;
 }) {
-  const [date, setDate] = React.useState<Date | undefined>(
-    value ? new Date(value) : undefined
-  );
+  // Controlled: the highlighted day always derives from the value prop so
+  // parent resets stay in sync with the calendar.
+  const date = value ? new Date(value) : undefined;
 
   const handleSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
     if (onChange) {
       onChange(selectedDate?.getTime() || 0);
     }
@@ -37,7 +36,6 @@ export function DatePicker({
   const handleClear = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDate(undefined);
     if (onChange) {
       onChange(0);
     }

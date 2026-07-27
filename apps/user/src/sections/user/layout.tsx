@@ -1,47 +1,49 @@
 "use client";
 import { Outlet, useLocation } from "@tanstack/react-router";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@workspace/ui/components/sidebar";
 import { cn } from "@workspace/ui/lib/utils";
+import type { CSSProperties } from "react";
+import { MobileTabbar } from "@/components/mobile-tabbar";
+import { HEADER_HEIGHT } from "@/layout/header";
 import Announcement from "@/sections/user/announcement";
 import { SidebarLeft } from "./sidebar-left";
 import { SidebarRight } from "./sidebar-right";
+
+/* Re-declared here (same constant) because the inline --header-h on <header>
+   does not cascade to this sibling subtree. */
+const shellStyle = { "--header-h": HEADER_HEIGHT } as CSSProperties;
+
+const STICKY_RAIL =
+  "sticky top-[calc(var(--header-h)+1rem)] hidden max-h-[calc(100vh-var(--header-h)-2rem)] self-start overflow-y-auto";
 
 export default function UserLayout() {
   const location = useLocation();
   const isSubscribePage = location.pathname === "/subscribe";
 
   return (
-    <SidebarProvider
-      className={cn("container relative py-5 sm:py-8", {
-        "gap-4": !isSubscribePage,
-        "gap-6 2xl:gap-8": isSubscribePage,
-      })}
+    <div
+      className={cn(
+        // Wider than .container (max-w-7xl) on purpose: the three-column app
+        // shell needs the room; marketing pages keep the narrower container.
+        "relative mx-auto grid w-full max-w-[96rem] grid-cols-1 px-4 pt-5 sm:px-6 sm:pt-8 lg:px-8",
+        "pb-5 sm:pb-8",
+        "lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_auto]",
+        isSubscribePage ? "gap-6 2xl:gap-8" : "gap-5"
+      )}
+      style={shellStyle}
     >
-      <SidebarLeft className="sticky top-[92px] hidden w-56 border-r-0 bg-transparent lg:flex" />
-      <SidebarInset
-        className={cn(
-          "relative min-h-[calc(100vh-92px)] rounded-xl border border-primary/14 bg-card/75 p-5 shadow-[0_24px_70px_-50px_oklch(0.675_0.165_10.4)] backdrop-blur-sm sm:p-7",
-          {
-            "user-layout__inset--subscribe p-4 sm:p-6 xl:p-7": isSubscribePage,
-          }
-        )}
-      >
+      <SidebarLeft className={cn(STICKY_RAIL, "w-56 lg:block")} />
+      <main className="flex min-w-0 flex-col gap-5">
         <Outlet />
-      </SidebarInset>
+      </main>
       <SidebarRight
-        className={cn(
-          "sticky top-[92px] hidden border-r-0 bg-transparent 2xl:flex",
-          {
-            "w-56": !isSubscribePage,
-            "user-layout__aside--subscribe w-52": isSubscribePage,
-          }
-        )}
+        className={cn(STICKY_RAIL, "xl:block", {
+          "w-56": !isSubscribePage,
+          "user-layout__aside--subscribe w-52": isSubscribePage,
+        })}
         isSubscribePage={isSubscribePage}
       />
       <Announcement type="popup" />
-    </SidebarProvider>
+      <MobileTabbar />
+    </div>
   );
 }

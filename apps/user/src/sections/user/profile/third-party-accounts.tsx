@@ -3,12 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@workspace/ui/components/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -37,7 +31,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 import SendCode from "@/sections/auth/send-code";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon, useGetUserInfo, useUser } from "@/stores/global";
 
 function MobileBindDialog({
   onSuccess,
@@ -47,7 +41,7 @@ function MobileBindDialog({
   children: React.ReactNode;
 }) {
   const { t } = useTranslation("profile");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { enable_whitelist, whitelist } = common.auth.mobile;
   const [open, setOpen] = useState(false);
 
@@ -172,7 +166,9 @@ function MobileBindDialog({
 
 export default function ThirdPartyAccounts() {
   const { t } = useTranslation("profile");
-  const { user, getUserInfo, common } = useGlobalStore();
+  const user = useUser();
+  const getUserInfo = useGetUserInfo();
+  const common = useCommon();
   const { oauth_methods } = common;
 
   const accounts = [
@@ -266,11 +262,11 @@ export default function ThirdPartyAccounts() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("thirdParty.title", "Connected Accounts")}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <section className="rose-panel flex flex-col gap-6 p-5 sm:p-6">
+      <h2 className="font-semibold">
+        {t("thirdParty.title", "Connected Accounts")}
+      </h2>
+      <div>
         <div className="space-y-4">
           {accounts.map((account) => {
             const method = user?.auth_methods?.find(
@@ -278,7 +274,7 @@ export default function ThirdPartyAccounts() {
             );
             const isEditing = account.id === "email";
             const currentValue =
-              method?.auth_identifier || editValues[account.id];
+              editValues[account.id] ?? method?.auth_identifier ?? "";
             let displayValue = "";
 
             switch (account.id) {
@@ -365,7 +361,7 @@ export default function ThirdPartyAccounts() {
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

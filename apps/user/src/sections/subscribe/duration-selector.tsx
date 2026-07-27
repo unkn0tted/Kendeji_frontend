@@ -19,6 +19,21 @@ interface DurationSelectorProps {
   minimumQuantity?: number;
 }
 
+const DurationOption: React.FC<{ value: string; label: string }> = ({
+  value,
+  label,
+}) => (
+  <div className="relative">
+    <RadioGroupItem className="peer sr-only" id={value} value={value} />
+    <Label
+      className="relative flex h-full flex-col items-center justify-center gap-2 rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
+      htmlFor={value}
+    >
+      {label}
+    </Label>
+  </div>
+);
+
 const DurationSelector: React.FC<DurationSelectorProps> = ({
   quantity,
   unitTime = "Month",
@@ -33,21 +48,6 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
       onChange(Number(value));
     },
     [onChange]
-  );
-
-  const DurationOption: React.FC<{ value: string; label: string }> = ({
-    value,
-    label,
-  }) => (
-    <div className="relative">
-      <RadioGroupItem className="peer sr-only" id={value} value={value} />
-      <Label
-        className="relative flex h-full flex-col items-center justify-center gap-2 rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary"
-        htmlFor={value}
-      >
-        {label}
-      </Label>
-    </div>
   );
 
   const currentDiscount = discounts?.find(

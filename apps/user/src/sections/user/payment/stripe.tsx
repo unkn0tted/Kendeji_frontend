@@ -28,6 +28,17 @@ interface StripePaymentProps {
   publishable_key: string;
 }
 
+/**
+ * Stripe Elements render inside iframes, so they cannot read our CSS custom
+ * properties. These are the hex equivalents of the Aurora Glass tokens
+ * (foreground / muted-foreground / destructive) for each resolved theme —
+ * keep them in sync with packages/ui/src/styles/rose-theme.css.
+ */
+const ELEMENT_COLORS = {
+  light: { text: "#25151c", placeholder: "#725e67", invalid: "#de3a46" },
+  dark: { text: "#f5eef1", placeholder: "#c0b1b7", invalid: "#ef6567" },
+} as const;
+
 interface CardPaymentFormProps {
   clientSecret: string;
   onError: (message: string) => void;
@@ -51,25 +62,27 @@ const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
   const [cardholderName, setCardholderName] = useState("");
   const { t } = useTranslation("payment");
 
-  const currentTheme = resolvedTheme;
-  const elementStyle: StripeElementStyle = {
-    base: {
-      fontSize: "16px",
-      color: currentTheme === "dark" ? "#fff" : "#000",
-      "::placeholder": {
-        color: "#aab7c4",
+  const { elementStyle, elementOptions } = useMemo(() => {
+    const colors = ELEMENT_COLORS[resolvedTheme];
+    const style: StripeElementStyle = {
+      base: {
+        fontSize: "16px",
+        color: colors.text,
+        "::placeholder": {
+          color: colors.placeholder,
+        },
       },
-    },
-    invalid: {
-      color: "#EF4444",
-      iconColor: "#EF4444",
-    },
-  };
-
-  const elementOptions: StripeCardNumberElementOptions = {
-    style: elementStyle,
-    showIcon: true,
-  };
+      invalid: {
+        color: colors.invalid,
+        iconColor: colors.invalid,
+      },
+    };
+    const options: StripeCardNumberElementOptions = {
+      style,
+      showIcon: true,
+    };
+    return { elementStyle: style, elementOptions: options };
+  }, [resolvedTheme]);
 
   const handleChange = (event: any, field: keyof typeof errors) => {
     if (event.error) {
@@ -136,7 +149,7 @@ const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
       {succeeded ? (
         <div className="py-6 text-center">
           <div className="mb-4 flex justify-center">
-            <CheckCircle className="h-12 w-12 text-green-500" />
+            <CheckCircle className="h-12 w-12 text-chart-2" />
           </div>
           <p className="font-medium text-xl">
             {t("stripe.success_title", "Payment Successful")}
@@ -176,7 +189,7 @@ const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
               </Label>
               <div className="relative">
                 <div
-                  className={`rounded-md border p-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary ${errors.cardNumber ? "border-red-500" : ""}`}
+                  className={`rounded-md border p-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary ${errors.cardNumber ? "border-destructive" : ""}`}
                 >
                   <CardNumberElement
                     id="cardNumber"
@@ -197,7 +210,7 @@ const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
                   {t("stripe.expiry_date", "Expiry Date")}
                 </Label>
                 <div
-                  className={`rounded-md border p-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary ${errors.cardExpiry ? "border-red-500" : ""}`}
+                  className={`rounded-md border p-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary ${errors.cardExpiry ? "border-destructive" : ""}`}
                 >
                   <CardExpiryElement
                     id="cardExpiry"
@@ -218,7 +231,7 @@ const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
                   {t("stripe.security_code", "CVC")}
                 </Label>
                 <div
-                  className={`rounded-md border p-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary ${errors.cardCvc ? "border-red-500" : ""}`}
+                  className={`rounded-md border p-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary ${errors.cardCvc ? "border-destructive" : ""}`}
                 >
                   <CardCvcElement
                     id="cardCvc"
@@ -365,7 +378,8 @@ const CheckoutForm: React.FC<Omit<StripePaymentProps, "publishable_key">> = ({
       {qrCodeImageDataUrl ? (
         <img
           alt={
-            qrCodeMap[method] || t(`qrcode.${method}`, `Scan with ${method}`)
+            qrCodeMap[method] ||
+            t(`stripe.qrcode.${method}`, `Scan with ${method}`)
           }
           className="mx-auto h-[208px] w-[208px]"
           height={208}
@@ -385,7 +399,8 @@ const CheckoutForm: React.FC<Omit<StripePaymentProps, "publishable_key">> = ({
         />
       )}
       <p className="mt-4 text-center text-muted-foreground">
-        {qrCodeMap[method] || t(`qrcode.${method}`, `Scan with ${method}`)}
+        {qrCodeMap[method] ||
+          t(`stripe.qrcode.${method}`, `Scan with ${method}`)}
       </p>
     </>
   ) : (

@@ -132,5 +132,8 @@
     "seconds": "seconds",
     "times": "time(s)",
     "title": "Verification Code Settings"
-  }
+  },
+  "basicSettingsDescription": "Site information, currency, terms of service and privacy policy",
+  "userSecuritySettingsDescription": "Registration, invitation and verification settings",
+  "logSettingsDescription": "Log retention and automatic cleanup rules"
 }

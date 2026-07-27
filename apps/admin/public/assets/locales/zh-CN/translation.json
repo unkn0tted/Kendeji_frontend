@@ -1,4 +1,13 @@
 {
+  "address": "地址",
+  "alpn": "ALPN",
+  "cipher": "加密算法",
+  "congestion_controller": "拥塞控制",
+  "encryption": "加密",
+  "encryption_client_padding": "客户端填充",
+  "encryption_mode": "加密模式",
+  "encryption_password": "加密密码",
+  "encryption_rtt": "加密 RTT",
   "errors": {
     "nameRequired": "请输入名称",
     "portRange": "端口必须在 1 到 65535 之间",
@@ -6,11 +15,46 @@
     "serverAddrRequired": "请输入入口地址",
     "serverRequired": "请选择服务器"
   },
+  "flow": "流控",
   "form": {
     "validation": {
       "nameRequired": "客户端名称必填",
       "userAgentRequiredSuffix": "是必填项"
     }
   },
-  "tos": "服务条款"
+  "heartbeat": "心跳",
+  "host": "主机",
+  "multiplex": "多路复用",
+  "name": "名称",
+  "path": "路径",
+  "port": "端口",
+  "protocol": "协议",
+  "reduce_rtt": "降低 RTT (0-RTT)",
+  "security": "安全",
+  "security_allow_insecure": "允许不安全",
+  "security_fingerprint": "指纹",
+  "security_public_key": "Reality 公钥",
+  "security_short_id": "Reality Short ID",
+  "security_sni": "SNI",
+  "server_config": {
+    "fields": {
+      "outbound_address_placeholder": "服务器地址",
+      "outbound_name_placeholder": "配置名称",
+      "outbound_password_placeholder": "密码 / 密钥",
+      "outbound_rules_placeholder": "每行一条规则",
+      "outbound_user": "用户名"
+    },
+    "tabs": {
+      "outbound": "出站规则"
+    }
+  },
+  "service_name": "服务名称",
+  "settings": "Hysteria2 设置",
+  "tos": "服务条款",
+  "transport": "传输方式",
+  "udp_stream": "UDP 流模式",
+  "uot": "UDP over TCP",
+  "uot_version": "UoT 版本",
+  "xhttp_extra": "XHTTP 额外配置",
+  "xhttp_mode": "XHTTP 模式"
 }

@@ -12,7 +12,7 @@ import { Icon } from "@workspace/ui/composed/icon";
 import { LanguageSwitch } from "@workspace/ui/composed/language-switch";
 import { ThemeSwitch } from "@workspace/ui/composed/theme-switch";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import EmailAuthForm from "./email/auth-form";
 import { OAuthMethods } from "./oauth-methods";
 import PhoneAuthForm from "./phone/auth-form";
@@ -27,7 +27,7 @@ function stripSiteName(value: string, siteName: string) {
 export default function Main() {
   const { t } = useTranslation("auth");
   const { t: tMain } = useTranslation("main");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const { site, auth } = common;
   const sanitizedSiteDescription = site.site_name
     ? stripSiteName(site.site_desc || "", site.site_name)
@@ -71,7 +71,7 @@ export default function Main() {
             {site.site_logo && (
               <Link className="group inline-flex items-center gap-3" to="/">
                 <img
-                  alt="logo"
+                  alt={site.site_name || "logo"}
                   className="rounded-md ring-1 ring-primary/18 transition-all duration-200 group-hover:ring-primary/35"
                   height={44}
                   src={site.site_logo}
@@ -119,7 +119,7 @@ export default function Main() {
               >
                 {site.site_logo && (
                   <img
-                    alt="logo"
+                    alt={site.site_name || "logo"}
                     className="rounded-md ring-1 ring-primary/18 transition-all duration-200 group-hover:ring-primary/35"
                     height={40}
                     src={site.site_logo}

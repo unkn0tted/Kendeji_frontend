@@ -17,14 +17,14 @@ import { LoaderCircle } from "lucide-react";
 import type React from "react";
 import { useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
-import { useGlobalStore } from "@/stores/global";
+import { useCommon } from "@/stores/global";
 import PaymentMethods from "./payment-methods";
 
 export default function Recharge(
   props: Readonly<React.ComponentProps<typeof Button>>
 ) {
   const { t } = useTranslation("subscribe");
-  const { common } = useGlobalStore();
+  const common = useCommon();
   const navigate = useNavigate();
   const { currency } = common;
 
@@ -32,13 +32,22 @@ export default function Recharge(
   const [loading, startTransition] = useTransition();
   const [availableMethodsCount, setAvailableMethodsCount] = useState<number>(0);
 
-  const [params, setParams] = useState<API.RechargeOrderRequest>({
-    amount: 0,
-    payment: 1,
+  const [params, setParams] = useState<
+    Omit<API.RechargeOrderRequest, "amount" | "payment"> & {
+      amount?: number;
+      payment?: number;
+    }
+  >({
+    amount: undefined,
+    payment: undefined,
   });
 
   const hasNoPaymentMethods = availableMethodsCount === 0;
-  const isButtonDisabled = loading || !params.amount || hasNoPaymentMethods;
+  const isButtonDisabled =
+    loading ||
+    !params.amount ||
+    hasNoPaymentMethods ||
+    params.payment === undefined;
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -96,9 +105,13 @@ export default function Recharge(
             className="fixed bottom-0 left-0 w-full rounded-none md:relative md:mt-6"
             disabled={isButtonDisabled}
             onClick={() => {
+              if (params.payment === undefined) return;
+
               startTransition(async () => {
                 try {
-                  const response = await recharge(params);
+                  const response = await recharge(
+                    params as API.RechargeOrderRequest
+                  );
                   const orderNo = response.data.data?.order_no;
                   if (orderNo) {
                     navigate({

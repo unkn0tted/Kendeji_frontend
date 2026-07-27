@@ -16,7 +16,7 @@ import {
   trustProxyHeadersEnabled,
 } from "./proxy-ip";
 import { rewriteSubscription } from "./rewrite";
-import { ruleMatchesSubscriber } from "./rules";
+import { moveRule, ruleMatchesSubscriber } from "./rules";
 import type { InspectionResult, RewriteRule, RewriterConfig } from "./types";
 
 type ApiResponse<T = unknown> = {
@@ -417,6 +417,29 @@ async function handleAdminApi(
         data: config.rules.find((item) => item.id === rule.id),
       });
     }
+  }
+
+  if (
+    url.pathname === "/subscription-rewriter/rules/order" &&
+    request.method === "PUT"
+  ) {
+    const input = (await readJson(request)) as {
+      source_id?: unknown;
+      target_id?: unknown;
+    };
+    const config = await store.update((current) => ({
+      ...current,
+      rules: moveRule(
+        current.rules,
+        String(input?.source_id || ""),
+        String(input?.target_id || "")
+      ),
+    }));
+    return sendJson(response, {
+      code: 200,
+      message: "ok",
+      data: config.rules,
+    });
   }
 
   const ruleMatch = url.pathname.match(

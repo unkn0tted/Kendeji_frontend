@@ -7,7 +7,7 @@
 生产镜像：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.4.1
+unkn0tted/ppanel-subscription-rewriter:1.4.2
 ```
 
 本文以以下实际部署关系为例：
@@ -244,7 +244,7 @@ name: ppanel-subscription-rewriter
 
 services:
   subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.1}
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.2}
     container_name: ppanel-subscription-rewriter
     restart: unless-stopped
 
@@ -302,7 +302,7 @@ volumes:
 `.env` 示例：
 
 ```dotenv
-REWRITER_IMAGE_TAG=1.4.1
+REWRITER_IMAGE_TAG=1.4.2
 REWRITER_PORT=3003
 
 DATABASE_DOCKER_NETWORK=1panel-network
@@ -485,7 +485,7 @@ x-subscription-rewriter: 1
 
 ### 保留订阅用户的真实 IP
 
-`1.4.1` 可以把入口 Nginx 提供的真实客户端 IP 继续传给原 PPanel 后端。需要同时
+`1.4.1` 及以上版本可以把入口 Nginx 提供的真实客户端 IP 继续传给原 PPanel 后端。需要同时
 满足以下条件：
 
 1. Compose 中设置 `TRUST_PROXY_HEADERS=true`。
@@ -936,7 +936,7 @@ docker inspect ppanel-subscription-rewriter \
 应为：
 
 ```text
-unkn0tted/ppanel-subscription-rewriter:1.4.1
+unkn0tted/ppanel-subscription-rewriter:1.4.2
 ```
 
 ## 十五、升级、回滚和数据
@@ -1027,6 +1027,7 @@ docker compose down -v
 | `GET`        | `/subscription-rewriter/public-config` | 公开   | 用户端读取展示地址        |
 | `GET/PUT`    | `/subscription-rewriter/config`        | 管理员 | 读取/保存原系统和展示地址 |
 | `GET/POST`   | `/subscription-rewriter/rules`         | 管理员 | 查询/新增改写规则         |
+| `PUT`        | `/subscription-rewriter/rules/order`   | 管理员 | 调整管理端规则显示顺序    |
 | `PUT/DELETE` | `/subscription-rewriter/rules/:id`     | 管理员 | 修改/删除规则             |
 | `POST`       | `/subscription-rewriter/inspect`       | 管理员 | 按订阅 ID 检测入口域名    |
 

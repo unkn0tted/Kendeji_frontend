@@ -8,13 +8,21 @@ interface SortableRowProps {
   id: string;
   children: React.ReactNode;
   isSortable: boolean;
+  disabled?: boolean;
+  handleLabel?: string;
 }
 
-export function SortableRow({ id, children, isSortable }: SortableRowProps) {
+export function SortableRow({
+  id,
+  children,
+  isSortable,
+  disabled = false,
+  handleLabel,
+}: SortableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id,
-      disabled: !isSortable,
+      disabled: !isSortable || disabled,
     });
 
   const style = {
@@ -30,8 +38,22 @@ export function SortableRow({ id, children, isSortable }: SortableRowProps) {
   return (
     <TableRow ref={setNodeRef} style={style}>
       {isSortable ? (
-        <TableCell className="cursor-move" {...listeners} {...attributes}>
-          <GripVertical className="h-4 w-4 cursor-move text-gray-500 hover:text-gray-700" />
+        <TableCell
+          {...attributes}
+          {...(disabled ? {} : listeners)}
+          aria-disabled={disabled || undefined}
+          aria-label={handleLabel}
+          className={disabled ? "cursor-wait" : "cursor-move"}
+          title={handleLabel}
+        >
+          <GripVertical
+            aria-hidden="true"
+            className={
+              disabled
+                ? "h-4 w-4 cursor-wait text-gray-400"
+                : "h-4 w-4 cursor-move text-gray-500 hover:text-gray-700"
+            }
+          />
         </TableCell>
       ) : null}
       {children}

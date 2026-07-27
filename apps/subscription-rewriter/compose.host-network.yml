@@ -2,7 +2,7 @@ name: ppanel-subscription-rewriter
 
 services:
   subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.1}
+    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.2}
     container_name: ppanel-subscription-rewriter
     restart: unless-stopped
     network_mode: host

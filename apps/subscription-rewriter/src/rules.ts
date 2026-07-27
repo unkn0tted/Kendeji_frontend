@@ -32,3 +32,27 @@ export function compareMatchingRules(
 
   return left.start_id - right.start_id || left.id.localeCompare(right.id);
 }
+
+export function moveRule(
+  rules: RewriteRule[],
+  sourceRuleId: string,
+  targetRuleId: string
+): RewriteRule[] {
+  if (sourceRuleId === targetRuleId) {
+    return rules;
+  }
+
+  const sourceIndex = rules.findIndex((rule) => rule.id === sourceRuleId);
+  const targetIndex = rules.findIndex((rule) => rule.id === targetRuleId);
+  if (sourceIndex < 0 || targetIndex < 0) {
+    return rules;
+  }
+
+  const nextRules = [...rules];
+  const [sourceRule] = nextRules.splice(sourceIndex, 1);
+  if (!sourceRule) {
+    return rules;
+  }
+  nextRules.splice(targetIndex, 0, sourceRule);
+  return nextRules;
+}

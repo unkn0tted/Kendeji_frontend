@@ -36,17 +36,20 @@ import {
 import { Textarea } from "@workspace/ui/components/textarea";
 import { ConfirmButton } from "@workspace/ui/composed/confirm-button";
 import { Icon } from "@workspace/ui/composed/icon";
+import { SortableRow } from "@workspace/ui/composed/pro-table/sortable-row";
+import { ProTableWrapper } from "@workspace/ui/composed/pro-table/wrapper";
 import {
   createSubscriptionRewriteRule,
   deleteSubscriptionRewriteRule,
   getSubscriptionRewriteRules,
   getSubscriptionRewriterConfig,
   inspectSubscriptionRewrite,
+  moveSubscriptionRewriteRule,
   type SubscriptionInspection,
   type SubscriptionRewriteRule,
   updateSubscriptionRewriteRule,
 } from "@workspace/ui/services/subscription-rewriter";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { parseSubscriberIds } from "./subscriber-ids";
@@ -78,6 +81,9 @@ export function RewriterPanel() {
   const [userAgent, setUserAgent] = useState("");
   const [inspection, setInspection] = useState<SubscriptionInspection>();
   const [inspecting, setInspecting] = useState(false);
+  const [rules, setRules] = useState<SubscriptionRewriteRule[]>([]);
+  const [sortingRules, setSortingRules] = useState(false);
+  const sortingRulesRef = useRef(false);
 
   const query = useQuery({
     queryKey: ["subscription-rewriter"],
@@ -97,6 +103,10 @@ export function RewriterPanel() {
     () => inspection?.source_hosts.map((item) => item.host) || [],
     [inspection]
   );
+
+  useEffect(() => {
+    setRules(query.data?.rules || []);
+  }, [query.data?.rules]);
 
   async function inspect() {
     const id = Number(subscriberId);
@@ -176,6 +186,39 @@ export function RewriterPanel() {
       toast.error(
         t("rewriter.ruleDeleteFailed", "Failed to delete rewrite rule")
       );
+    }
+  }
+
+  async function moveRule(
+    sourceId: string | number,
+    targetId: string | number | null,
+    currentRules: SubscriptionRewriteRule[]
+  ) {
+    if (sortingRulesRef.current || targetId === null) {
+      return currentRules;
+    }
+
+    sortingRulesRef.current = true;
+    setSortingRules(true);
+    try {
+      const response = await moveSubscriptionRewriteRule(
+        String(sourceId),
+        String(targetId)
+      );
+      const nextRules = response.data.data;
+      if (!Array.isArray(nextRules)) {
+        throw new Error("The subscription rewriter did not return rule order");
+      }
+      toast.success(t("rewriter.ruleOrderSaved", "Display order saved"));
+      return nextRules;
+    } catch {
+      toast.error(
+        t("rewriter.ruleOrderFailed", "Failed to save the display order")
+      );
+      return currentRules;
+    } finally {
+      sortingRulesRef.current = false;
+      setSortingRules(false);
     }
   }
 
@@ -267,98 +310,124 @@ export function RewriterPanel() {
                   )}
                 </p>
               </div>
-              <Button onClick={openCreateRule} type="button">
+              <Button
+                disabled={sortingRules}
+                onClick={openCreateRule}
+                type="button"
+              >
                 <Icon icon="mdi:plus" />
                 {t("rewriter.addRule", "Add rule")}
               </Button>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("rewriter.ruleName", "Name")}</TableHead>
-                  <TableHead>
-                    {t("rewriter.matchSubscribers", "Matching subscribers")}
-                  </TableHead>
-                  <TableHead>
-                    {t("rewriter.sourceHost", "Source hostname")}
-                  </TableHead>
-                  <TableHead>
-                    {t("rewriter.targetHost", "Target hostname")}
-                  </TableHead>
-                  <TableHead>{t("rewriter.priority", "Priority")}</TableHead>
-                  <TableHead>{t("rewriter.status", "Status")}</TableHead>
-                  <TableHead className="text-right">
-                    {t("rewriter.actions", "Actions")}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {query.data?.rules.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell>{rule.name || "—"}</TableCell>
-                    <TableCell>
-                      <RuleMatchValue rule={rule} />
-                    </TableCell>
-                    <TableCell className="max-w-56 truncate font-mono text-xs">
-                      {rule.source_host}
-                    </TableCell>
-                    <TableCell className="max-w-56 truncate font-mono text-xs">
-                      {rule.target_host}
-                    </TableCell>
-                    <TableCell>{rule.priority}</TableCell>
-                    <TableCell>
-                      <Badge variant={rule.enabled ? "default" : "outline"}>
-                        {rule.enabled
-                          ? t("rewriter.enabled", "Enabled")
-                          : t("rewriter.disabled", "Disabled")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          onClick={() => openEditRule(rule)}
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          {t("actions.edit", "Edit")}
-                        </Button>
-                        <ConfirmButton
-                          description={t(
-                            "rewriter.deleteRuleDescription",
-                            "This rule will stop applying immediately."
-                          )}
-                          onConfirm={() => deleteRule(rule.id)}
-                          title={t(
-                            "rewriter.deleteRule",
-                            "Delete rewrite rule?"
-                          )}
-                          trigger={
-                            <Button size="sm" type="button" variant="ghost">
-                              {t("actions.delete", "Delete")}
-                            </Button>
-                          }
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!query.isLoading && (query.data?.rules.length || 0) === 0 && (
+            <ProTableWrapper data={rules} onSort={moveRule} setData={setRules}>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      className="h-24 text-center text-muted-foreground"
-                      colSpan={7}
-                    >
-                      {t(
-                        "rewriter.noRules",
-                        "No rewrite rules. All subscriptions pass through unchanged."
-                      )}
-                    </TableCell>
+                    <TableHead className="w-10">
+                      <span className="sr-only">
+                        {t("rewriter.displayOrder", "Display order")}
+                      </span>
+                    </TableHead>
+                    <TableHead>{t("rewriter.ruleName", "Name")}</TableHead>
+                    <TableHead>
+                      {t("rewriter.matchSubscribers", "Matching subscribers")}
+                    </TableHead>
+                    <TableHead>
+                      {t("rewriter.sourceHost", "Source hostname")}
+                    </TableHead>
+                    <TableHead>
+                      {t("rewriter.targetHost", "Target hostname")}
+                    </TableHead>
+                    <TableHead>{t("rewriter.priority", "Priority")}</TableHead>
+                    <TableHead>{t("rewriter.status", "Status")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("rewriter.actions", "Actions")}
+                    </TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rules.map((rule) => (
+                    <SortableRow
+                      disabled={sortingRules}
+                      handleLabel={t(
+                        "rewriter.moveRule",
+                        "Move rule to change display order without changing priority"
+                      )}
+                      id={rule.id}
+                      isSortable
+                      key={rule.id}
+                    >
+                      <TableCell>{rule.name || "—"}</TableCell>
+                      <TableCell>
+                        <RuleMatchValue rule={rule} />
+                      </TableCell>
+                      <TableCell className="max-w-56 truncate font-mono text-xs">
+                        {rule.source_host}
+                      </TableCell>
+                      <TableCell className="max-w-56 truncate font-mono text-xs">
+                        {rule.target_host}
+                      </TableCell>
+                      <TableCell>{rule.priority}</TableCell>
+                      <TableCell>
+                        <Badge variant={rule.enabled ? "default" : "outline"}>
+                          {rule.enabled
+                            ? t("rewriter.enabled", "Enabled")
+                            : t("rewriter.disabled", "Disabled")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            disabled={sortingRules}
+                            onClick={() => openEditRule(rule)}
+                            size="sm"
+                            type="button"
+                            variant="ghost"
+                          >
+                            {t("actions.edit", "Edit")}
+                          </Button>
+                          <ConfirmButton
+                            description={t(
+                              "rewriter.deleteRuleDescription",
+                              "This rule will stop applying immediately."
+                            )}
+                            onConfirm={() => deleteRule(rule.id)}
+                            title={t(
+                              "rewriter.deleteRule",
+                              "Delete rewrite rule?"
+                            )}
+                            trigger={
+                              <Button
+                                disabled={sortingRules}
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                {t("actions.delete", "Delete")}
+                              </Button>
+                            }
+                          />
+                        </div>
+                      </TableCell>
+                    </SortableRow>
+                  ))}
+                  {!query.isLoading && rules.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        className="h-24 text-center text-muted-foreground"
+                        colSpan={8}
+                      >
+                        {t(
+                          "rewriter.noRules",
+                          "No rewrite rules. All subscriptions pass through unchanged."
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ProTableWrapper>
           </div>
         </CardContent>
       </Card>

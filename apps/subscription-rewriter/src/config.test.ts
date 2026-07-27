@@ -169,6 +169,44 @@ describe("subscription rewriter config", () => {
     ).toThrow("match mode");
   });
 
+  test("persists display order independently of rule priority", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "rewriter-order-test-"));
+    const configFile = join(directory, "config.json");
+
+    try {
+      const store = new ConfigStore(configFile);
+      await store.write(
+        normalizeConfig({
+          rules: [
+            {
+              id: "low-priority-first",
+              start_id: 1,
+              end_id: 100,
+              source_host: "old.example.com",
+              target_host: "low.example.com",
+              priority: 1,
+            },
+            {
+              id: "high-priority-second",
+              start_id: 1,
+              end_id: 100,
+              source_host: "old.example.com",
+              target_host: "high.example.com",
+              priority: 999,
+            },
+          ],
+        })
+      );
+
+      expect((await store.read()).rules.map((rule) => rule.id)).toEqual([
+        "low-priority-first",
+        "high-priority-second",
+      ]);
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
   test("returns defaults only when the config file does not exist", async () => {
     const directory = await mkdtemp(join(tmpdir(), "rewriter-config-test-"));
     const configFile = join(directory, "config.json");

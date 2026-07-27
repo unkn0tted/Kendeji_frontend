@@ -110,6 +110,9 @@ describe("rewriteSubscription", () => {
     expect(rewriteSubscription(body, [rule, explicitRule], 37).body).toContain(
       "@new.example.com:443"
     );
+    expect(rewriteSubscription(body, [explicitRule, rule], 37).body).toContain(
+      "@new.example.com:443"
+    );
   });
 
   test("does not apply disabled explicit-ID rules", () => {

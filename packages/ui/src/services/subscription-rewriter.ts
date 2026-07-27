@@ -121,6 +121,25 @@ export async function getSubscriptionRewriteRules(options?: RequestOptions) {
   );
 }
 
+export async function moveSubscriptionRewriteRule(
+  sourceId: string,
+  targetId: string,
+  options?: RequestOptions
+) {
+  return request<API.Response & { data?: SubscriptionRewriteRule[] }>(
+    url("/rules/order"),
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: {
+        source_id: sourceId,
+        target_id: targetId,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
 export async function createSubscriptionRewriteRule(
   body: Omit<SubscriptionRewriteRule, "id">,
   options?: RequestOptions

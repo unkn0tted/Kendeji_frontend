@@ -7,22 +7,20 @@ import {
   HoverCardTrigger,
 } from "@workspace/ui/components/hover-card";
 import { Separator } from "@workspace/ui/components/separator";
-import { Combobox } from "@workspace/ui/composed/combobox";
 import {
   ProTable,
   type ProTableActions,
 } from "@workspace/ui/composed/pro-table/pro-table";
 import { cn } from "@workspace/ui/lib/utils";
-import {
-  getOrderList,
-  updateOrderStatus,
-} from "@workspace/ui/services/admin/order";
+import { getOrderList } from "@workspace/ui/services/admin/order";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
 import { useSubscribe } from "@/stores/subscribe";
 import { formatDate } from "@/utils/common";
 import { UserDetail } from "../user/user-detail";
+import { OrderStatusControl } from "./order-status-control";
+import { isOrderStatusEditable } from "./status-update";
 
 export default function Order() {
   const { t } = useTranslation("order");
@@ -210,20 +208,12 @@ export default function Order() {
             const option = statusOptions.find(
               (opt) => opt.value === order.status
             );
-            if ([1, 3, 4].includes(row.getValue("status"))) {
+            if (isOrderStatusEditable(order.status)) {
               return (
-                <Combobox<number, false>
+                <OrderStatusControl
                   className={cn(option?.className)}
-                  onChange={async (value) => {
-                    await updateOrderStatus({
-                      id: order.id,
-                      status: value,
-                    });
-                    ref.current?.refresh();
-                  }}
-                  options={statusOptions}
-                  placeholder={t("status.0", "Status")}
-                  value={order.status}
+                  onUpdated={() => ref.current?.refresh()}
+                  order={order}
                 />
               );
             }

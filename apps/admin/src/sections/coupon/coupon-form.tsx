@@ -318,6 +318,9 @@ export default function CouponForm<T extends Record<string, any>>({
                     <FormLabel>{t("form.expireTime", "Expire Time")}</FormLabel>
                     <FormControl>
                       <DatePicker
+                        disabled={(date: Date) =>
+                          date < new Date(Date.now() - 24 * 60 * 60 * 1000)
+                        }
                         onChange={(value: number | undefined) => {
                           form.setValue(field.name, value);
                         }}

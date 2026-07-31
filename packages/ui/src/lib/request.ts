@@ -122,6 +122,13 @@ function handleError(response: ErrorResponse) {
       "components:error.50002",
       "The coupon has been used, cannot be used again."
     ),
+    50003: t(
+      "components:error.50003",
+      "The coupon is not applicable to this order."
+    ),
+    50004: t("components:error.50004", "The coupon has no remaining uses."),
+    50005: t("components:error.50005", "The coupon has expired."),
+    50006: t("components:error.50006", "The coupon is disabled."),
     60001: t(
       "components:error.60001",
       "Subscription has expired, please renew before using."

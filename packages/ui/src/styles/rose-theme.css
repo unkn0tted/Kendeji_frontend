@@ -718,7 +718,7 @@ h4,
     min-height: min(74vh, 52rem);
   }
 
-  /* A slow conic wash behind the hero, above the page aurora. */
+  /* A slow drifting conic wash behind the hero, above the page aurora. */
   .main-hero__aura {
     position: absolute;
     z-index: -1;
@@ -733,7 +733,7 @@ h4,
       color-mix(in oklab, var(--aurora-coral) 18%, transparent) 330deg,
       transparent 360deg
     );
-    animation: aurora-spin 26s linear infinite;
+    animation: aurora-drift 30s ease-in-out infinite alternate;
     opacity: 0.75;
     pointer-events: none;
     will-change: transform;

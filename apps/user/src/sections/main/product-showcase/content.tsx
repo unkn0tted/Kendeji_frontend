@@ -10,8 +10,13 @@ import { SubscribeDetail } from "@/sections/subscribe/detail";
 import { useUser } from "@/stores/global";
 import { isSubscribeSellable, isSubscribeVisible } from "@/utils/subscribe";
 import { cardReveal, sectionReveal, sectionViewport } from "../motion";
+import {
+  getProductShowcasePresentation,
+  type ProductShowcaseMode,
+} from "./presentation";
 
 interface ProductShowcaseProps {
+  mode: ProductShowcaseMode;
   subscriptionData: API.Subscribe[];
 }
 
@@ -46,9 +51,10 @@ function parseSubscriptionDescription(value: unknown): ParsedDescription {
   }
 }
 
-export function Content({ subscriptionData }: ProductShowcaseProps) {
+export function Content({ mode, subscriptionData }: ProductShowcaseProps) {
   const { t } = useTranslation("main");
   const user = useUser();
+  const { hideBelowSm, revealOnScroll } = getProductShowcasePresentation(mode);
   const visibleSubscriptionData = subscriptionData.filter(isSubscribeVisible);
   const highlightedIndex = (() => {
     const discountedIndex = visibleSubscriptionData.findIndex(
@@ -73,11 +79,14 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
 
   return (
     <motion.section
-      className="rose-shell isolate hidden px-6 py-7 sm:block sm:px-8 lg:px-10 lg:py-9"
-      initial="hidden"
-      variants={sectionReveal}
-      viewport={sectionViewport}
-      whileInView="visible"
+      className={cn(
+        "rose-shell isolate px-6 py-7 sm:px-8 lg:px-10 lg:py-9",
+        hideBelowSm && "hidden sm:block"
+      )}
+      initial={revealOnScroll ? "hidden" : undefined}
+      variants={revealOnScroll ? sectionReveal : undefined}
+      viewport={revealOnScroll ? sectionViewport : undefined}
+      whileInView={revealOnScroll ? "visible" : undefined}
     >
       <div className="rose-grid" />
       <div className="mb-9 grid gap-5 xl:grid-cols-[0.68fr_0.32fr] xl:items-end">
@@ -107,7 +116,7 @@ export function Content({ subscriptionData }: ProductShowcaseProps) {
             className="w-full"
             custom={index}
             key={item.id}
-            variants={cardReveal}
+            variants={revealOnScroll ? cardReveal : undefined}
           >
             {(() => {
               const parsedDescription = parseSubscriptionDescription(

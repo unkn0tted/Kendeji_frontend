@@ -10,9 +10,9 @@ export function ProductShowcase() {
   const { i18n } = useTranslation();
   const [subscriptionList, setSubscriptionList] = useState<API.Subscribe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // Content renders `hidden sm:block`, so below the sm breakpoint the
-  // showcase can never appear — skip the request until the viewport crosses
-  // the breakpoint (a phone rotated to landscape still gets the data).
+  // Landing mode hides Content below the sm breakpoint, so skip the request
+  // until the viewport crosses it (a phone rotated to landscape still gets
+  // the data).
   const [isVisible, setIsVisible] = useState(
     () => window.matchMedia(SHOWCASE_MEDIA_QUERY).matches
   );
@@ -64,5 +64,5 @@ export function ProductShowcase() {
 
   if (isLoading || subscriptionList.length === 0) return null;
 
-  return <Content subscriptionData={subscriptionList} />;
+  return <Content mode="landing" subscriptionData={subscriptionList} />;
 }

@@ -48,7 +48,10 @@ export default function Purchasing() {
                 {t("subscribe:subscriptionNotFound", "Subscription not found")}
               </div>
             )}
-            <ProductShowcaseContent subscriptionData={subscriptionList} />
+            <ProductShowcaseContent
+              mode="purchasing"
+              subscriptionData={subscriptionList}
+            />
           </div>
         ) : (
           <Empty

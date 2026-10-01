@@ -117,11 +117,6 @@ export function useNavs() {
             icon: "uil:exchange",
           },
           {
-            title: t("Plugin Management", "Plugin Management"),
-            url: "/dashboard/plugin",
-            icon: "uil:puzzle-piece",
-          },
-          {
             title: t("ADS Config", "ADS Config"),
             url: "/dashboard/ads",
             icon: "uil:presentation-play",

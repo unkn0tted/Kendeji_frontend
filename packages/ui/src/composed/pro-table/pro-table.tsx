@@ -91,6 +91,8 @@ export interface ProTableProps<TData, TValue> {
     items: TData[]
   ) => Promise<TData[]>;
   initialFilters?: Record<string, unknown>;
+  /** Do not issue the first request until the user presses refresh. */
+  autoLoad?: boolean;
   requestDebounceMs?: number;
   requestErrorMessage?: (error: unknown) => string | undefined;
   getRowId?: (originalRow: TData, index: number) => string;
@@ -120,6 +122,7 @@ export function ProTable<
   empty,
   onSort,
   initialFilters,
+  autoLoad = true,
   requestDebounceMs = 300,
   requestErrorMessage,
   getRowId,
@@ -282,6 +285,8 @@ export function ProTable<
   }));
 
   useEffect(() => {
+    if (!autoLoad) return;
+
     // The first fetch fires immediately; the debounce only smooths later
     // page/filter/sort churn (e.g. typing into a column filter).
     if (requestDebounceMs <= 0 || !hasFetchedRef.current) {
@@ -298,6 +303,7 @@ export function ProTable<
     pagination.pageSize,
     JSON.stringify(columnFilters),
     JSON.stringify(sorting),
+    autoLoad,
     requestDebounceMs,
   ]);
 

@@ -3,6 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@workspace/ui/components/alert";
+import { Button } from "@workspace/ui/components/button";
+import {
   Card,
   CardContent,
   CardHeader,
@@ -19,6 +25,7 @@ import {
 } from "@workspace/ui/services/admin/console";
 import { getLogSetting } from "@workspace/ui/services/admin/log";
 import { formatBytes } from "@workspace/ui/utils/formatting";
+import { RefreshCw } from "lucide-react";
 import { lazy, memo, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RevenueStatisticsCard } from "./revenue-statistics-card";
@@ -29,6 +36,14 @@ import { UserStatisticsCard } from "./user-statistics-card";
 // Chart rendering is split into a lazy leaf so recharts stays out of the
 // dashboard landing chunk; stat numbers/headers paint first.
 const TrafficRankChart = lazy(() => import("./traffic-rank-chart"));
+
+function formatOptionalBytes(value: number | undefined) {
+  return value === undefined || value === null ? "-" : formatBytes(value);
+}
+
+function formatOptionalNumber(value: number | undefined) {
+  return value === undefined || value === null ? "-" : value;
+}
 
 const TrafficRankCard = memo(function TrafficRankCard({
   type,
@@ -81,21 +96,37 @@ const TrafficRankCard = memo(function TrafficRankCard({
 export default function Statistics() {
   const { t } = useTranslation("dashboard");
 
-  const { data: TicketTotal } = useQuery({
+  const {
+    data: TicketTotal,
+    error: ticketError,
+    isFetched: hasFetchedTickets,
+  } = useQuery({
     queryKey: ["queryTicketWaitReply"],
     queryFn: async () => {
       const { data } = await queryTicketWaitReply();
       return data.data?.count;
     },
   });
-  const { data: ServerTotal } = useQuery({
+  const {
+    data: ServerTotal,
+    error: serverStatsError,
+    isFetching: isLoadingServerStats,
+    isFetched: hasFetchedServerStats,
+    refetch: refetchServerStats,
+  } = useQuery({
     queryKey: ["queryServerTotalData"],
     queryFn: async () => {
-      const { data } = await queryServerTotalData();
+      const { data } = await queryServerTotalData({
+        timeout: 10_000,
+        skipErrorHandler: true,
+      });
       return data.data;
     },
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: true,
+    enabled: false,
+    retry: false,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const today = new Date();
@@ -149,11 +180,47 @@ export default function Statistics() {
 
   return (
     <>
+      <Alert className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <AlertTitle>
+            {serverStatsError
+              ? t("serverStatsUnavailable", "Server statistics unavailable")
+              : hasFetchedServerStats
+                ? t("serverStatsLoaded", "Server statistics loaded")
+                : t(
+                    "serverStatsManual",
+                    "Server statistics are loaded on demand"
+                  )}
+          </AlertTitle>
+          <AlertDescription>
+            {serverStatsError
+              ? t(
+                  "serverStatsUnavailableDescription",
+                  "The heavy traffic query timed out or failed. Other admin functions remain available."
+                )
+              : t(
+                  "serverStatsManualDescription",
+                  "Traffic rankings and online counts are not refreshed in the background to protect the database."
+                )}
+          </AlertDescription>
+        </div>
+        <Button
+          disabled={isLoadingServerStats}
+          onClick={() => refetchServerStats()}
+          type="button"
+          variant="outline"
+        >
+          <RefreshCw className={isLoadingServerStats ? "animate-spin" : ""} />
+          {isLoadingServerStats
+            ? t("loadingServerStats", "Loading")
+            : t("loadServerStats", "Load statistics")}
+        </Button>
+      </Alert>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {[
           {
             title: t("onlineUsersCount", "Online Users"),
-            value: ServerTotal?.online_users || 0,
+            value: formatOptionalNumber(ServerTotal?.online_users),
             subtitle: t("currentlyOnline", "Currently Online"),
             icon: "uil:users-alt",
             href: "/dashboard/servers",
@@ -162,11 +229,14 @@ export default function Statistics() {
 
           {
             title: t("todayTraffic", "Today Traffic"),
-            value: formatBytes(
-              (ServerTotal?.today_upload || 0) +
-                (ServerTotal?.today_download || 0)
+            value: formatOptionalBytes(
+              ServerTotal
+                ? ServerTotal.today_upload + ServerTotal.today_download
+                : undefined
             ),
-            subtitle: `↑${formatBytes(ServerTotal?.today_upload || 0)} ↓${formatBytes(ServerTotal?.today_download || 0)}`,
+            subtitle: ServerTotal
+              ? `Up ${formatBytes(ServerTotal.today_upload)} / Down ${formatBytes(ServerTotal.today_download)}`
+              : t("notLoaded", "Not loaded"),
             icon: "uil:exchange-alt",
             href: "/dashboard/log/server-traffic",
             search: { date: todayDate },
@@ -176,9 +246,10 @@ export default function Statistics() {
             title: isMonthlyDataIncomplete
               ? t("retainedTraffic", "Available Traffic")
               : t("monthTraffic", "Month Traffic"),
-            value: formatBytes(
-              (ServerTotal?.monthly_upload || 0) +
-                (ServerTotal?.monthly_download || 0)
+            value: formatOptionalBytes(
+              ServerTotal
+                ? ServerTotal.monthly_upload + ServerTotal.monthly_download
+                : undefined
             ),
             subtitle: isMonthlyDataIncomplete
               ? t(
@@ -188,7 +259,9 @@ export default function Statistics() {
                     days: logSetting?.clear_days,
                   }
                 )
-              : `↑${formatBytes(ServerTotal?.monthly_upload || 0)} ↓${formatBytes(ServerTotal?.monthly_download || 0)}`,
+              : ServerTotal
+                ? `Up ${formatBytes(ServerTotal.monthly_upload)} / Down ${formatBytes(ServerTotal.monthly_download)}`
+                : t("notLoaded", "Not loaded"),
             icon: "uil:cloud-data-connection",
             href: "/dashboard/log/server-traffic",
             search: { month: currentMonth },
@@ -196,18 +269,24 @@ export default function Statistics() {
           },
           {
             title: t("totalServers", "Total Servers"),
-            value:
-              (ServerTotal?.online_servers || 0) +
-              (ServerTotal?.offline_servers || 0),
-            subtitle: `${t("online", "Online")} ${ServerTotal?.online_servers || 0} ${t("offline", "Offline")} ${ServerTotal?.offline_servers || 0}`,
+            value: formatOptionalNumber(
+              ServerTotal
+                ? ServerTotal.online_servers + ServerTotal.offline_servers
+                : undefined
+            ),
+            subtitle: ServerTotal
+              ? `${t("online", "Online")} ${ServerTotal.online_servers} ${t("offline", "Offline")} ${ServerTotal.offline_servers}`
+              : t("notLoaded", "Not loaded"),
             icon: "uil:server-network",
             href: "/dashboard/servers",
             chip: "bg-chart-4/10 text-chart-4",
           },
           {
             title: t("pendingTickets", "Pending Tickets"),
-            value: TicketTotal || 0,
-            subtitle: t("pending", "Pending"),
+            value: ticketError || !hasFetchedTickets ? "-" : TicketTotal || 0,
+            subtitle: ticketError
+              ? t("unavailable", "Unavailable")
+              : t("pending", "Pending"),
             icon: "uil:clipboard-notes",
             href: "/dashboard/ticket",
             chip: "bg-chart-5/10 text-chart-5",

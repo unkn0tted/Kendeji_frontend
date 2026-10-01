@@ -43,6 +43,7 @@ export default function ServerTrafficLogPage() {
             </Button>,
           ],
         }}
+        autoLoad={false}
         columns={[
           {
             accessorKey: "server_id",
@@ -78,12 +79,18 @@ export default function ServerTrafficLogPage() {
           { key: "server_id", placeholder: t("column.serverId", "Server ID") },
         ]}
         request={async (pagination, filter) => {
-          const { data } = await filterServerTrafficLog({
-            page: pagination.page,
-            size: pagination.size,
-            date: (filter as any)?.date,
-            server_id: (filter as any)?.server_id,
-          });
+          const { data } = await filterServerTrafficLog(
+            {
+              page: pagination.page,
+              size: pagination.size,
+              date: (filter as any)?.date,
+              server_id: (filter as any)?.server_id,
+            },
+            {
+              timeout: 10_000,
+              skipErrorHandler: true,
+            }
+          );
           const list = (data?.data?.list || []) as any[];
           const total = Number(data?.data?.total || list.length);
           return { list, total };

@@ -13,7 +13,6 @@ import { LanguageSwitch } from "@workspace/ui/composed/language-switch";
 import { ThemeSwitch } from "@workspace/ui/composed/theme-switch";
 import { Fragment, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useCommon } from "@/stores/global";
 import { findNavByUrl, useNavs } from "./navs";
 import TimezoneSwitch from "./timezone-switch";
 import { UserNav } from "./user-nav";
@@ -22,31 +21,13 @@ export function Header() {
   const { t } = useTranslation("menu");
   const pathname = useLocation({ select: (location) => location.pathname });
   const navs = useNavs();
-  const common = useCommon();
-  const { site } = common;
   const items = useMemo(() => findNavByUrl(navs, pathname), [navs, pathname]);
   return (
-    <header className="sticky top-0 z-50 shrink-0 bg-background/90 px-3 pt-3 pb-3 backdrop-blur-md sm:px-5">
-      <div className="rose-nav-shell px-3 py-2 sm:px-4">
-        <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <SidebarTrigger className="border border-border bg-transparent shadow-none hover:bg-primary/10 hover:text-primary" />
-            <Link
-              className="hidden min-w-0 items-center gap-2.5 font-semibold text-sm tracking-tight sm:flex"
-              to="/dashboard"
-            >
-              <img
-                alt="logo"
-                className="size-8 rounded-md ring-1 ring-primary/18"
-                height={32}
-                src={site.site_logo || "/favicon.svg"}
-                width={32}
-              />
-              <span className="truncate font-display text-foreground">
-                {site.site_name}
-              </span>
-            </Link>
-            <div className="hidden h-8 w-px bg-border md:block" />
+    <header className="relative z-50 shrink-0 px-3 pt-3 pb-2 sm:px-5 sm:pt-4">
+      <div className="flex min-h-12 items-center gap-3 border-border/60 border-b px-1 pb-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <SidebarTrigger className="size-9 shrink-0 border border-border/70 bg-background/50 shadow-none hover:bg-primary/10 hover:text-primary" />
+          <div className="min-w-0 border-border/60 border-l pl-3">
             <Breadcrumb className="min-w-0">
               <BreadcrumbList className="flex-nowrap overflow-hidden">
                 {items.length ? (
@@ -83,13 +64,13 @@ export function Header() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="app-quick-actions">
-            <LanguageSwitch />
-            <TimezoneSwitch />
-            <ThemeSwitch />
-          </div>
-          <UserNav />
         </div>
+        <div className="app-quick-actions shrink-0">
+          <LanguageSwitch />
+          <TimezoneSwitch />
+          <ThemeSwitch />
+        </div>
+        <UserNav />
       </div>
     </header>
   );

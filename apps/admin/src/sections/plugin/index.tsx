@@ -271,6 +271,43 @@ export default function PluginManagement() {
           </div>
         ),
       }}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <h3 className="break-all font-semibold text-base">{row.name}</h3>
+            <Badge
+              className="shrink-0"
+              variant={statusVariant[row.status] || "outline"}
+            >
+              {getStatusLabel(row.status)}
+            </Badge>
+          </div>
+          {row.description && (
+            <p className="break-words text-muted-foreground text-sm">
+              {row.description}
+            </p>
+          )}
+          <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+            <dt className="text-muted-foreground">{t("version", "Version")}</dt>
+            <dd>{row.version || "--"}</dd>
+            <dt className="text-muted-foreground">{t("author", "Author")}</dt>
+            <dd className="break-words">{row.author || "--"}</dd>
+            <dt className="text-muted-foreground">{t("routes", "Routes")}</dt>
+            <dd>{row.routes?.length || 0}</dd>
+            {row.error && (
+              <>
+                <dt className="text-destructive">{t("error", "Error")}</dt>
+                <dd className="min-w-0 break-all text-destructive">
+                  {row.error}
+                </dd>
+              </>
+            )}
+          </dl>
+          <div className="flex justify-end border-t pt-3">
+            <PluginDetailDialog plugin={row} />
+          </div>
+        </article>
+      )}
       params={[
         {
           key: "status",

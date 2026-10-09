@@ -30,6 +30,7 @@
   },
   "detail": "详情",
   "failed": "失败",
+  "historicalDateRequired": "仅可查询已结束的历史日期；今日和未来的流量统计暂不开放。",
   "filter": {
     "endDate": "结束",
     "invalidSubscribeIdSelector": "订阅 ID 表达式无效：{{value}}",
@@ -38,6 +39,7 @@
   },
   "sent": "已发送",
   "success": "成功",
+  "trafficScopeRequired": "查询流量明细时，请先填写服务器、用户或订阅 ID。",
   "title": {
     "balance": "余额日志",
     "commission": "佣金日志",

@@ -131,11 +131,15 @@ export default function Content({
     startTransition(async () => {
       try {
         const { data } = await purchase(params as API.PortalPurchaseRequest);
-        const { order_no } = data.data!;
+        const { order_no, checkout_token } = data.data!;
         if (order_no) {
           localStorage.setItem(
             order_no,
             JSON.stringify({
+              // v1.20.x protects guest order status with a short-lived
+              // checkout token. Keep the legacy identity fields as a
+              // fallback for older backends.
+              ...(checkout_token ? { checkout_token } : {}),
               auth_type: params.auth_type,
               identifier: params.identifier,
             })

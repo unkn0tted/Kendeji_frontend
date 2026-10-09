@@ -66,6 +66,7 @@
     "wildcardResolutionDescription": "Enable wildcard domain resolution for subscriptions"
   },
   "fallbackName": "Subscribe {{id}}",
+  "mobileDesktopOnly": "Manage subscription settings on a desktop device.",
   "form": {
     "addTitle": "Add Client",
     "descriptions": {

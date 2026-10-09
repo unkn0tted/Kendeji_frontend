@@ -273,6 +273,53 @@ export default function SubscribeTable() {
           />
         ),
       }}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="break-words font-semibold text-base">
+                {row.name || `#${row.id}`}
+              </h3>
+              <p className="mt-1 text-muted-foreground text-xs">
+                #{row.id} · {row.language || "--"}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <Badge variant={row.show ? "default" : "secondary"}>
+                {t("show")}: {row.show ? t("yes", "Yes") : t("no", "No")}
+              </Badge>
+              <Badge variant={row.sell ? "default" : "secondary"}>
+                {t("sell")}: {row.sell ? t("yes", "Yes") : t("no", "No")}
+              </Badge>
+            </div>
+          </div>
+          <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+            <dt className="text-muted-foreground">{t("unitPrice")}</dt>
+            <dd>
+              <Display type="currency" value={row.unit_price} /> /{" "}
+              {t(row.unit_time ? `form.${row.unit_time}` : "form.Month")}
+            </dd>
+            <dt className="text-muted-foreground">{t("traffic")}</dt>
+            <dd>
+              <Display type="traffic" unlimited value={row.traffic} />
+            </dd>
+            <dt className="text-muted-foreground">{t("deviceLimit")}</dt>
+            <dd>
+              <Display type="number" unlimited value={row.device_limit} />
+            </dd>
+            <dt className="text-muted-foreground">{t("inventory")}</dt>
+            <dd>
+              <Display
+                type="number"
+                unlimited
+                value={row.inventory === -1 ? 0 : row.inventory}
+              />
+            </dd>
+            <dt className="text-muted-foreground">{t("sold")}</dt>
+            <dd>{row.sold}</dd>
+          </dl>
+        </article>
+      )}
       onSort={async (source, target, items) => {
         const sourceIndex = items.findIndex(
           (item) => String(item.id) === source

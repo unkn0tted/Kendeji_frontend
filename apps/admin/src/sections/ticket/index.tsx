@@ -306,6 +306,41 @@ export default function Page() {
             </div>
           ),
         }}
+        mobileRowRender={(row) => (
+          <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <h3 className="break-words font-semibold text-base leading-snug">
+                {row.title}
+              </h3>
+              <span className="shrink-0 text-muted-foreground text-xs">
+                #{row.id}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded bg-muted px-2 py-1">
+                {t(`status.${row.status}`)}
+              </span>
+              <span className="text-muted-foreground">
+                {t("user", "User")} #{row.user_id}
+              </span>
+            </div>
+            <p className="line-clamp-3 whitespace-pre-wrap break-words text-muted-foreground text-sm">
+              {row.description}
+            </p>
+            <div className="flex items-center justify-between gap-3 border-t pt-3">
+              <time className="text-muted-foreground text-xs">
+                {formatDate(row.updated_at)}
+              </time>
+              <Button
+                onClick={() => setTicketId(row.id)}
+                size="sm"
+                variant="outline"
+              >
+                {t("check", "Check")}
+              </Button>
+            </div>
+          </article>
+        )}
         params={[
           {
             key: "status",
@@ -434,7 +469,7 @@ export default function Page() {
             </div>
           </ScrollArea>
           {ticket?.status !== 4 && (
-            <DrawerFooter>
+            <DrawerFooter className="hidden md:flex">
               <form
                 className="flex w-full flex-row items-center gap-2"
                 onSubmit={async (event) => {

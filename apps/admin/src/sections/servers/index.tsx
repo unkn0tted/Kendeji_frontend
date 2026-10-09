@@ -66,6 +66,91 @@ function RegionIpCell({
   );
 }
 
+function MobileServerCard({ server }: { server: API.Server }) {
+  const { t } = useTranslation("servers");
+  const offline = server.status?.status === "offline";
+  const protocols =
+    server.protocols?.filter((protocol) => protocol.enable) || [];
+  const metrics = [
+    { label: t("cpu", "CPU"), value: Number(server.status?.cpu ?? 0) },
+    { label: t("memory", "Memory"), value: Number(server.status?.mem ?? 0) },
+    { label: t("disk", "Disk"), value: Number(server.status?.disk ?? 0) },
+  ];
+
+  return (
+    <article className="min-w-0 space-y-4 rounded-md border bg-card p-4">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "size-2.5 shrink-0 rounded-full",
+                offline ? "bg-zinc-400" : "bg-emerald-500"
+              )}
+            />
+            <span className="text-muted-foreground text-xs">
+              {offline ? t("offline", "Offline") : t("online", "Online")}
+            </span>
+          </div>
+          <h3 className="mt-1 break-words font-semibold text-base leading-snug">
+            {server.name}
+          </h3>
+        </div>
+        <Badge variant="outline">#{server.id}</Badge>
+      </div>
+
+      <dl className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">{t("address", "Address")}</dt>
+        <dd className="min-w-0 break-all">
+          {[server.country, server.city].filter(Boolean).join(" / ") ||
+            t("notAvailable", "Not Available")}
+          <span className="block font-mono text-xs">
+            {server.address || t("notAvailable", "Not Available")}
+          </span>
+        </dd>
+        <dt className="text-muted-foreground">
+          {t("onlineUsers", "Online Users")}
+        </dt>
+        <dd className="tabular-nums">{server.status?.online?.length ?? 0}</dd>
+        <dt className="text-muted-foreground">{t("protocols", "Protocols")}</dt>
+        <dd className="flex min-w-0 flex-wrap gap-1.5">
+          {protocols.length ? (
+            protocols.map((protocol, index) => (
+              <Badge
+                className="max-w-full whitespace-normal break-all text-left"
+                key={`${protocol.type}-${protocol.port}-${index}`}
+                variant="secondary"
+              >
+                {protocol.type}:{protocol.port} /{" "}
+                {Number(protocol.ratio ?? 1).toFixed(2)}x
+              </Badge>
+            ))
+          ) : (
+            <span>—</span>
+          )}
+        </dd>
+      </dl>
+
+      <div className="grid grid-cols-3 gap-3 border-t pt-3">
+        {metrics.map(({ label, value }) => (
+          <div className="min-w-0" key={label}>
+            <div className="flex flex-col gap-0.5 text-xs sm:flex-row sm:items-baseline sm:justify-between sm:gap-1">
+              <span className="text-muted-foreground">{label}</span>
+              <span className="tabular-nums">{value.toFixed(0)}%</span>
+            </div>
+            <div className="mt-1 h-1.5 rounded bg-muted">
+              <div
+                className="h-1.5 rounded bg-primary"
+                style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 export default function Servers() {
   const { t } = useTranslation("servers");
   const { isServerReferencedByNodes } = useNode();
@@ -76,7 +161,7 @@ export default function Servers() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="hidden gap-4 md:grid md:grid-cols-2">
         <DynamicMultiplier />
         <ServerConfig />
       </div>
@@ -326,7 +411,7 @@ export default function Servers() {
         header={{
           title: t("pageTitle", "Servers"),
           toolbar: (
-            <div className="flex gap-2">
+            <div className="hidden gap-2 md:flex">
               <ServerForm
                 loading={loading}
                 onSubmit={async (values) => {
@@ -351,6 +436,7 @@ export default function Servers() {
             </div>
           ),
         }}
+        mobileRowRender={(server) => <MobileServerCard server={server} />}
         onSort={async (source, target, items) => {
           const sourceIndex = items.findIndex(
             (item) => String(item.id) === source

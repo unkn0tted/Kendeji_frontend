@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type Cell,
   type ColumnDef,
   type ColumnFiltersState,
   flexRender,
@@ -17,6 +18,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert";
+import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Skeleton } from "@workspace/ui/components/skeleton";
@@ -56,6 +58,7 @@ import { toast } from "sonner";
 
 export interface ProTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
+  mobileRowRender?: (row: TData) => React.ReactNode;
   request: (
     pagination: {
       page: number;
@@ -113,6 +116,7 @@ export function ProTable<
   TValue extends Record<string, unknown>,
 >({
   columns,
+  mobileRowRender,
   request,
   params,
   header,
@@ -148,6 +152,7 @@ export function ProTable<
   });
   const [isLoading, setIsLoading] = useState(false);
   const requestSequence = useRef(0);
+  const manualRequestInFlight = useRef(false);
   const hasFetchedRef = useRef(false);
 
   const tableColumns = useMemo(
@@ -236,6 +241,8 @@ export function ProTable<
   });
 
   const fetchData = async (force = false) => {
+    if (!autoLoad && manualRequestInFlight.current) return;
+    if (!autoLoad) manualRequestInFlight.current = true;
     const sequence = requestSequence.current + 1;
     requestSequence.current = sequence;
     setIsLoading(true);
@@ -263,7 +270,10 @@ export function ProTable<
         );
       }
     } finally {
-      if (sequence === requestSequence.current) {
+      if (!autoLoad) {
+        manualRequestInFlight.current = false;
+        setIsLoading(false);
+      } else if (sequence === requestSequence.current) {
         setIsLoading(false);
       }
     }
@@ -307,6 +317,19 @@ export function ProTable<
     requestDebounceMs,
   ]);
 
+  useEffect(() => {
+    if (autoLoad) return;
+    requestSequence.current += 1;
+    setData([]);
+    setRowCount(0);
+  }, [
+    autoLoad,
+    pagination.pageIndex,
+    pagination.pageSize,
+    JSON.stringify(columnFilters),
+    JSON.stringify(sorting),
+  ]);
+
   const selectedRows = table
     .getSelectedRowModel()
     .flatRows.map((row) => row.original);
@@ -331,25 +354,33 @@ export function ProTable<
           </div>
           <div className="flex flex-1 items-center justify-end gap-2">
             <Button
+              disabled={isLoading}
               onClick={() => {
                 fetchData(true);
               }}
               size="icon"
               variant="outline"
             >
-              <RefreshCcw />
+              <RefreshCcw className={isLoading ? "animate-spin" : ""} />
             </Button>
-            <ColumnToggle table={table} />
-            <Button onClick={reset} size="icon" variant="outline">
+            <div className="hidden md:block">
+              <ColumnToggle table={table} />
+            </div>
+            <Button
+              className="hidden md:inline-flex"
+              onClick={reset}
+              size="icon"
+              variant="outline"
+            >
               <ListRestart />
             </Button>
-            {header?.toolbar}
+            <div className="hidden md:contents">{header?.toolbar}</div>
           </div>
         </div>
       )}
 
       {selectedCount > 0 && actions?.batchRender && (
-        <Alert className="flex items-center justify-between">
+        <Alert className="hidden items-center justify-between md:flex">
           <AlertTitle className="m-0 tabular-nums">
             {texts?.selectedRowsText?.(selectedCount) ||
               t("table.selectedRows", "Selected {{count}} rows", {
@@ -362,7 +393,36 @@ export function ProTable<
         </Alert>
       )}
 
-      <div className="relative w-full min-w-0 overflow-x-auto rounded-md border">
+      <div aria-busy={isLoading} className="space-y-3 md:hidden">
+        {isLoading && data.length === 0 ? (
+          Array.from({ length: 3 }, (_, index) => (
+            <Skeleton className="h-44 w-full rounded-md" key={index} />
+          ))
+        ) : table.getRowModel().rows.length ? (
+          table
+            .getRowModel()
+            .rows.map((row) => (
+              <Fragment key={row.id}>
+                {mobileRowRender ? (
+                  mobileRowRender(row.original)
+                ) : (
+                  <DefaultMobileCard cells={row.getVisibleCells()} />
+                )}
+              </Fragment>
+            ))
+        ) : (
+          <div className="flex min-h-44 items-center justify-center rounded-md border">
+            {empty || <Empty />}
+          </div>
+        )}
+      </div>
+
+      <div
+        className={cn(
+          "relative w-full min-w-0 overflow-x-auto rounded-md border",
+          "hidden md:block"
+        )}
+      >
         <ProTableWrapper data={data} onSort={onSort} setData={setData}>
           <Table className="w-full">
             <TableHeader>
@@ -482,6 +542,115 @@ export function ProTable<
       </div>
       {rowCount > 0 && <Pagination table={table} />}
     </div>
+  );
+}
+
+const MOBILE_TITLE_COLUMNS = [
+  "name",
+  "title",
+  "subject",
+  "to",
+  "order_no",
+  "code",
+  "email",
+  "username",
+  "ip",
+  "date",
+  "id",
+];
+
+function DefaultMobileCard<
+  TData extends Record<string, unknown> & { id?: string | number },
+  TValue,
+>({ cells }: { cells: Cell<TData, TValue>[] }) {
+  const { t } = useTranslation("components");
+  const fields = cells.filter(
+    (cell) => !["actions", "selected", "sortable"].includes(cell.column.id)
+  );
+  const titleCell = MOBILE_TITLE_COLUMNS.map((id) =>
+    fields.find((cell) => cell.column.id === id)
+  ).find((cell) => {
+    const value = cell?.getValue();
+    return typeof value === "string" || typeof value === "number";
+  });
+  const rawTitle = titleCell?.getValue();
+  const original = cells[0]?.row.original;
+  const fallback = [
+    ["user_id", "user"],
+    ["server_id", "server_id"],
+    ["user_subscribe_id", "user_subscribe_id"],
+    ["subscribe_id", "subscribe_id"],
+  ] as const;
+  const fallbackField = fallback.find(([key]) => {
+    const value = original?.[key];
+    return typeof value === "string" || typeof value === "number";
+  });
+  const fallbackLabel = fallbackField
+    ? fields.find((cell) => cell.column.id === fallbackField[1])?.column
+        .columnDef.header
+    : undefined;
+  const title =
+    typeof rawTitle === "string" || typeof rawTitle === "number"
+      ? rawTitle
+      : fallbackField
+        ? `${typeof fallbackLabel === "string" ? fallbackLabel : fallbackField[1]} #${original?.[fallbackField[0]]}`
+        : original?.id != null
+          ? `#${original.id}`
+          : t("table.record", "Record");
+  const id = original?.id;
+
+  return (
+    <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <h3 className="min-w-0 break-words font-semibold text-base leading-snug">
+          {title}
+        </h3>
+        {id !== undefined &&
+          id !== null &&
+          titleCell?.column.id !== "id" &&
+          title !== `#${id}` && (
+            <Badge className="shrink-0" variant="outline">
+              #{id}
+            </Badge>
+          )}
+      </div>
+      <dl className="grid min-w-0 grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+        {fields
+          .filter((cell) => cell !== titleCell)
+          .map((cell) => {
+            const header = cell.column.columnDef.header;
+            const value = cell.getValue();
+            const label =
+              typeof header === "string" || typeof header === "number"
+                ? header
+                : cell.column.id;
+            return (
+              <Fragment key={cell.id}>
+                <dt className="min-w-0 break-words text-muted-foreground">
+                  {label}
+                </dt>
+                <dd className="min-w-0 break-words [overflow-wrap:anywhere] [&_pre]:max-w-full [&_pre]:whitespace-pre-wrap">
+                  {typeof value === "boolean" ? (
+                    <Badge variant={value ? "default" : "secondary"}>
+                      {value ? t("yes", "Yes") : t("no", "No")}
+                    </Badge>
+                  ) : (
+                    <div
+                      className="min-w-0 [&_[role=switch]]:pointer-events-none [&_button]:pointer-events-none"
+                      inert
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      ) ?? "—"}
+                    </div>
+                  )}
+                </dd>
+              </Fragment>
+            );
+          })}
+      </dl>
+    </article>
   );
 }
 

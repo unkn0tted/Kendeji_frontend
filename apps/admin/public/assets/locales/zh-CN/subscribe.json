@@ -66,6 +66,7 @@
     "wildcardResolutionDescription": "为订阅启用泛域名解析"
   },
   "fallbackName": "订阅 {{id}}",
+  "mobileDesktopOnly": "请在电脑端管理订阅配置。",
   "form": {
     "addTitle": "添加客户端",
     "descriptions": {

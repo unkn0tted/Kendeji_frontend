@@ -42,7 +42,7 @@ export default function RevenueChart({
 
   if (variant === "today") {
     return (
-      <ChartContainer className="mx-auto max-h-80" config={config}>
+      <ChartContainer className="!aspect-auto h-full w-full" config={config}>
         <PieChart>
           <ChartLegend content={<ChartLegendContent />} />
           <ChartTooltip
@@ -81,7 +81,7 @@ export default function RevenueChart({
                       y={viewBox.cy}
                     >
                       <tspan
-                        className="fill-foreground font-bold text-2xl"
+                        className="fill-foreground font-bold text-base sm:text-2xl"
                         x={viewBox.cx}
                         y={viewBox.cy}
                       >
@@ -145,7 +145,7 @@ export default function RevenueChart({
 
   if (variant === "month") {
     return (
-      <ChartContainer className="max-h-80 w-full" config={config}>
+      <ChartContainer className="!aspect-auto h-full w-full" config={config}>
         <BarChart accessibilityLayer data={list}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -181,7 +181,7 @@ export default function RevenueChart({
   }
 
   return (
-    <ChartContainer className="max-h-80 w-full" config={config}>
+    <ChartContainer className="!aspect-auto h-full w-full" config={config}>
       <AreaChart
         accessibilityLayer
         data={list}

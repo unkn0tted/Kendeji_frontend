@@ -143,6 +143,42 @@ export default function Ads() {
           />
         ),
       }}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="break-words font-semibold text-base">
+                {row.title}
+              </h3>
+              <p className="mt-1 text-muted-foreground text-xs">
+                #{row.id} · {row.type}
+              </p>
+            </div>
+            <Badge variant={row.status === 1 ? "default" : "secondary"}>
+              {row.status === 1
+                ? t("enabled", "Enabled")
+                : t("disabled", "Disabled")}
+            </Badge>
+          </div>
+          {row.description && (
+            <p className="whitespace-pre-wrap break-words text-muted-foreground text-sm">
+              {row.description}
+            </p>
+          )}
+          <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+            <dt className="text-muted-foreground">
+              {t("targetUrl", "Target URL")}
+            </dt>
+            <dd className="min-w-0 break-all">{row.target_url || "--"}</dd>
+            <dt className="text-muted-foreground">
+              {t("validityPeriod", "Validity Period")}
+            </dt>
+            <dd>
+              {formatDate(row.start_time)} - {formatDate(row.end_time)}
+            </dd>
+          </dl>
+        </article>
+      )}
       params={[
         {
           key: "status",

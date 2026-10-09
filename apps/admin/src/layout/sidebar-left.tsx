@@ -244,7 +244,14 @@ export function SidebarLeft({
                         <SidebarGroupContent className="px-2">
                           <SidebarMenu>
                             {nav.items?.map((item: any) => (
-                              <SidebarMenuItem key={item.title}>
+                              <SidebarMenuItem
+                                className={
+                                  item.url === "/dashboard/subscribe"
+                                    ? "hidden md:block"
+                                    : undefined
+                                }
+                                key={item.title}
+                              >
                                 <SidebarMenuButton
                                   asChild
                                   className={navButtonClass}

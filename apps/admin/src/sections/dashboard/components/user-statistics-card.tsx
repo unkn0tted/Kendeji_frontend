@@ -47,17 +47,24 @@ export function UserStatisticsCard() {
   const { data: UserStatistics } = useQuery({
     queryKey: ["queryUserStatistics"],
     queryFn: async () => {
-      const { data } = await queryUserStatistics();
+      const { data } = await queryUserStatistics({
+        timeout: 10_000,
+        skipErrorHandler: true,
+      });
       return data.data;
     },
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 60_000,
   });
 
   return (
     <Tabs defaultValue="today">
-      <Card className="h-full pb-0">
-        <CardHeader className="!flex-row flex items-center justify-between">
+      <Card className="h-full min-w-0 pb-0">
+        <CardHeader className="!flex-col sm:!flex-row flex items-start justify-between gap-3 sm:items-center">
           <CardTitle>{t("userTitle", "User Statistics")}</CardTitle>
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3 sm:flex sm:w-auto">
             <TabsTrigger value="today">{t("today", "Today")}</TabsTrigger>
             <TabsTrigger value="month">{t("month", "Month")}</TabsTrigger>
             <TabsTrigger value="total">{t("total", "Total")}</TabsTrigger>
@@ -65,7 +72,7 @@ export function UserStatisticsCard() {
         </CardHeader>
 
         <TabsContent className="h-full" value="today">
-          <CardContent className="h-80">
+          <CardContent className="h-60 min-w-0 sm:h-80">
             {UserStatistics?.today.register ||
             UserStatistics?.today.new_order_users ||
             UserStatistics?.today.renewal_order_users ? (
@@ -84,30 +91,36 @@ export function UserStatisticsCard() {
             )}
           </CardContent>
           <CardFooter className="!py-5 flex flex-row border-t">
-            <div className="flex w-full items-center gap-2">
+            <div className="grid w-full gap-3 sm:flex sm:items-center sm:gap-2">
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.register.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.today.register}
                 </div>
               </div>
-              <Separator className="!h-10 mx-2 w-px" orientation="vertical" />
+              <Separator
+                className="!h-10 mx-2 hidden w-px sm:block"
+                orientation="vertical"
+              />
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.new_purchase.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.today.new_order_users}
                 </div>
               </div>
-              <Separator className="!h-10 mx-2 w-px" orientation="vertical" />
+              <Separator
+                className="!h-10 mx-2 hidden w-px sm:block"
+                orientation="vertical"
+              />
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.repurchase.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.today.renewal_order_users}
                 </div>
               </div>
@@ -116,7 +129,7 @@ export function UserStatisticsCard() {
         </TabsContent>
 
         <TabsContent className="h-full" value="month">
-          <CardContent className="h-80">
+          <CardContent className="h-60 min-w-0 sm:h-80">
             {UserStatistics?.monthly.list &&
             UserStatistics?.monthly.list.length > 0 ? (
               <Suspense fallback={<Skeleton className="h-full w-full" />}>
@@ -134,30 +147,36 @@ export function UserStatisticsCard() {
             )}
           </CardContent>
           <CardFooter className="!py-5 flex flex-row border-t">
-            <div className="flex w-full items-center gap-2">
+            <div className="grid w-full gap-3 sm:flex sm:items-center sm:gap-2">
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.register.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.monthly.register}
                 </div>
               </div>
-              <Separator className="!h-10 mx-2 w-px" orientation="vertical" />
+              <Separator
+                className="!h-10 mx-2 hidden w-px sm:block"
+                orientation="vertical"
+              />
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.new_purchase.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.monthly.new_order_users}
                 </div>
               </div>
-              <Separator className="!h-10 mx-2 w-px" orientation="vertical" />
+              <Separator
+                className="!h-10 mx-2 hidden w-px sm:block"
+                orientation="vertical"
+              />
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.repurchase.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.monthly.renewal_order_users}
                 </div>
               </div>
@@ -166,7 +185,7 @@ export function UserStatisticsCard() {
         </TabsContent>
 
         <TabsContent className="h-full" value="total">
-          <CardContent className="h-80">
+          <CardContent className="h-60 min-w-0 sm:h-80">
             {UserStatistics?.all.list && UserStatistics?.all.list.length > 0 ? (
               <Suspense fallback={<Skeleton className="h-full w-full" />}>
                 <UserGrowthChart
@@ -183,12 +202,12 @@ export function UserStatisticsCard() {
             )}
           </CardContent>
           <CardFooter className="!py-5 flex flex-row border-t">
-            <div className="flex w-full items-center gap-2">
+            <div className="grid w-full gap-3 sm:flex sm:items-center sm:gap-2">
               <div className="grid flex-1 auto-rows-min gap-0.5">
                 <div className="text-muted-foreground text-xs">
                   {UserStatisticsConfig.register.label}
                 </div>
-                <div className="font-bold text-xl tabular-nums leading-none">
+                <div className="break-all font-bold text-lg tabular-nums leading-tight sm:text-xl">
                   {UserStatistics?.all.register}
                 </div>
               </div>

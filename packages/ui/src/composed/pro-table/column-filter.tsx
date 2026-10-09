@@ -10,6 +10,7 @@ export interface IParams {
   inputClassName?: string;
   key: string;
   label?: string;
+  max?: string;
   placeholder?: string;
   options?: { label: string; value: string }[];
   type?: "text" | "select" | "date";
@@ -80,6 +81,7 @@ export function ColumnFilter<TData>({
                   : "block min-w-32"
               }
               key={param.key}
+              max={param.max}
               onChange={(event) => {
                 const v = event.target.value;
                 updateFilter(param.key, v || "");

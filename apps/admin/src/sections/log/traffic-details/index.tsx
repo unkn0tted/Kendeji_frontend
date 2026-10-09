@@ -7,23 +7,36 @@ import { formatBytes } from "@workspace/ui/utils/formatting";
 import { useTranslation } from "react-i18next";
 import { UserDetail, UserSubscribeDetail } from "@/sections/user/user-detail";
 import { useServer } from "@/stores/server";
-import { formatDate, todayInTimezone } from "@/utils/common";
+import { formatDate } from "@/utils/common";
+import {
+  isCompletedTrafficDate,
+  latestCompletedTrafficDate,
+} from "@/utils/traffic-date";
 
 export default function TrafficDetailsPage() {
   const { t } = useTranslation("log");
   const sp = useSearch({ strict: false }) as Record<string, string | undefined>;
   const { getServerName } = useServer();
 
-  const today = todayInTimezone();
+  const latestDate = latestCompletedTrafficDate();
 
   const initialFilters = {
-    date: sp.date || today,
+    date: isCompletedTrafficDate(sp.date) ? sp.date : latestDate,
     server_id: sp.server_id ? Number(sp.server_id) : undefined,
     user_id: sp.user_id ? Number(sp.user_id) : undefined,
     subscribe_id: sp.subscribe_id ? Number(sp.subscribe_id) : undefined,
   };
   return (
-    <ProTable<API.TrafficLogDetails, { search?: string }>
+    <ProTable<
+      API.TrafficLogDetails,
+      {
+        date?: string;
+        server_id?: string | number;
+        user_id?: string | number;
+        subscribe_id?: string | number;
+      }
+    >
+      autoLoad={false}
       columns={[
         {
           accessorKey: "server_id",
@@ -69,7 +82,7 @@ export default function TrafficDetailsPage() {
       header={{ title: t("title.trafficDetails", "Traffic Details") }}
       initialFilters={initialFilters}
       params={[
-        { key: "date", type: "date" },
+        { key: "date", type: "date", max: latestDate },
         { key: "server_id", placeholder: t("column.serverId", "Server ID") },
         { key: "user_id", placeholder: t("column.userId", "User ID") },
         {
@@ -78,17 +91,42 @@ export default function TrafficDetailsPage() {
         },
       ]}
       request={async (pagination, filter) => {
-        const { data } = await filterTrafficLogDetails({
-          page: pagination.page,
-          size: pagination.size,
-          date: (filter as any)?.date,
-          server_id: (filter as any)?.server_id,
-          user_id: (filter as any)?.user_id,
-          subscribe_id: (filter as any)?.subscribe_id,
-        });
+        if (!isCompletedTrafficDate(filter.date)) {
+          throw new Error("TRAFFIC_DATE_REQUIRED");
+        }
+        const serverId = Number(filter.server_id || 0);
+        const userId = Number(filter.user_id || 0);
+        const subscribeId = Number(filter.subscribe_id || 0);
+        if (
+          ![serverId, userId, subscribeId].some(
+            (id) => Number.isSafeInteger(id) && id > 0
+          )
+        ) {
+          throw new Error("TRAFFIC_SCOPE_REQUIRED");
+        }
+        const { data } = await filterTrafficLogDetails(
+          {
+            page: pagination.page,
+            size: pagination.size,
+            date: filter.date,
+            server_id: serverId || undefined,
+            user_id: userId || undefined,
+            subscribe_id: subscribeId || undefined,
+          },
+          { timeout: 10_000, skipErrorHandler: true }
+        );
         const list = (data?.data?.list || []) as any[];
         const total = Number(data?.data?.total || list.length);
         return { list, total };
+      }}
+      requestErrorMessage={(error) => {
+        if (!(error instanceof Error)) return;
+        if (error.message === "TRAFFIC_DATE_REQUIRED") {
+          return t("historicalDateRequired");
+        }
+        if (error.message === "TRAFFIC_SCOPE_REQUIRED") {
+          return t("trafficScopeRequired");
+        }
       }}
     />
   );

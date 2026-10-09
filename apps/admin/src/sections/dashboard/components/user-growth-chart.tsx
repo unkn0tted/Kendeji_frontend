@@ -38,7 +38,7 @@ export default function UserGrowthChart({
 }) {
   if (variant === "today") {
     return (
-      <ChartContainer className="mx-auto max-h-80" config={config}>
+      <ChartContainer className="!aspect-auto h-full w-full" config={config}>
         <PieChart>
           <ChartLegend content={<ChartLegendContent />} />
           <ChartTooltip
@@ -83,7 +83,7 @@ export default function UserGrowthChart({
                       y={viewBox.cy}
                     >
                       <tspan
-                        className="fill-foreground font-bold text-3xl"
+                        className="fill-foreground font-bold text-base sm:text-3xl"
                         x={viewBox.cx}
                         y={viewBox.cy}
                       >
@@ -110,7 +110,7 @@ export default function UserGrowthChart({
 
   if (variant === "month") {
     return (
-      <ChartContainer className="max-h-80 w-full" config={config}>
+      <ChartContainer className="!aspect-auto h-full w-full" config={config}>
         <BarChart accessibilityLayer data={list}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -152,7 +152,7 @@ export default function UserGrowthChart({
   }
 
   return (
-    <ChartContainer className="max-h-80 w-full" config={config}>
+    <ChartContainer className="!aspect-auto h-full w-full" config={config}>
       <AreaChart
         accessibilityLayer
         data={list}

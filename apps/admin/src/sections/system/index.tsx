@@ -57,34 +57,68 @@ export default function System() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {formSections.map((section) => (
-        <section className="rose-panel p-6" key={section.id}>
-          <header className="flex items-start gap-3 border-b pb-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Icon className="size-5" icon={section.icon} />
+    <>
+      <div className="space-y-3 md:hidden">
+        {formSections.map((section) => (
+          <section className="rounded-md border bg-card p-4" key={section.id}>
+            <div className="flex items-center gap-3 border-b pb-3">
+              <Icon
+                className="size-5 shrink-0 text-primary"
+                icon={section.icon}
+              />
+              <div className="min-w-0">
+                <h2 className="font-semibold text-base">{section.title}</h2>
+                <p className="text-muted-foreground text-sm">
+                  {section.description}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="font-semibold text-base leading-tight">
-                {section.title}
-              </h2>
-              <p className="mt-1 text-muted-foreground text-sm">
-                {section.description}
-              </p>
+            <div className="divide-y divide-border/60">
+              {section.forms.map((form) => {
+                const FormComponent = form.component;
+                return (
+                  <div
+                    className="py-3 last:pb-0 [&_[data-slot=sheet-trigger]>svg:last-child]:hidden [&_[data-slot=sheet-trigger]]:cursor-default"
+                    inert
+                    key={form.id}
+                  >
+                    <FormComponent />
+                  </div>
+                );
+              })}
             </div>
-          </header>
-          <div className="divide-y divide-border/60">
-            {section.forms.map((form) => {
-              const FormComponent = form.component;
-              return (
-                <div className="py-4 last:pb-0" key={form.id}>
-                  <FormComponent />
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-    </div>
+          </section>
+        ))}
+      </div>
+      <div className="hidden gap-4 md:grid md:grid-cols-2">
+        {formSections.map((section) => (
+          <section className="rose-panel p-6" key={section.id}>
+            <header className="flex items-start gap-3 border-b pb-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="size-5" icon={section.icon} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-semibold text-base leading-tight">
+                  {section.title}
+                </h2>
+                <p className="mt-1 text-muted-foreground text-sm">
+                  {section.description}
+                </p>
+              </div>
+            </header>
+            <div className="divide-y divide-border/60">
+              {section.forms.map((form) => {
+                const FormComponent = form.component;
+                return (
+                  <div className="py-4 last:pb-0" key={form.id}>
+                    <FormComponent />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    </>
   );
 }

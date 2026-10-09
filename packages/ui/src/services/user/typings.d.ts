@@ -150,6 +150,7 @@ declare namespace API {
   type CheckoutOrderRequest = {
     orderNo: string;
     returnUrl?: string;
+    checkout_token?: string;
   };
 
   type CheckoutOrderResponse = {
@@ -570,6 +571,7 @@ declare namespace API {
 
   type PortalPurchaseResponse = {
     order_no: string;
+    checkout_token?: string;
   };
 
   type PreOrderResponse = {
@@ -781,15 +783,17 @@ declare namespace API {
   };
 
   type QueryPurchaseOrderParams = {
-    auth_type: string;
-    identifier: string;
+    auth_type?: string;
+    identifier?: string;
     order_no: string;
+    checkout_token?: string;
   };
 
   type QueryPurchaseOrderRequest = {
-    auth_type: string;
-    identifier: string;
+    auth_type?: string;
+    identifier?: string;
     order_no: string;
+    checkout_token?: string;
   };
 
   type QueryPurchaseOrderResponse = {

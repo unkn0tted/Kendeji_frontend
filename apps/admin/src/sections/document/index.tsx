@@ -1,3 +1,4 @@
+import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Switch } from "@workspace/ui/components/switch";
 import { ConfirmButton } from "@workspace/ui/composed/confirm-button";
@@ -158,6 +159,26 @@ export default function Page() {
           />
         ),
       }}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <h3 className="break-words font-semibold text-base">{row.title}</h3>
+            <Badge variant={row.show ? "default" : "secondary"}>
+              {row.show ? t("show", "Show") : t("hidden", "Hidden")}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {row.tags.map((tag) => (
+              <Badge key={tag} variant="outline">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+          <p className="border-t pt-3 text-muted-foreground text-xs">
+            {t("updatedAt", "Updated At")}: {formatDate(row.updated_at)}
+          </p>
+        </article>
+      )}
       params={[
         {
           key: "search",

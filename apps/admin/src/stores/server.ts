@@ -9,6 +9,7 @@ interface ServerState {
   // Loading states
   loading: boolean;
   loaded: boolean;
+  error: boolean;
 
   // Actions
   fetchServers: () => Promise<void>;
@@ -29,21 +30,28 @@ export const useServerStore = create<ServerState>((set, get) => ({
   servers: [],
   loading: false,
   loaded: false,
+  error: false,
 
   // Actions
   fetchServers: async () => {
     if (get().loading) return;
 
-    set({ loading: true });
+    set({ error: false, loading: true });
     try {
-      const servers = await fetchAllPaginated(filterServerList);
+      const servers = await fetchAllPaginated((params) =>
+        filterServerList(params, {
+          timeout: 10_000,
+          skipErrorHandler: true,
+        })
+      );
       set({
+        error: false,
         servers,
         loaded: true,
       });
     } catch (_error) {
       // Handle error silently
-      set({ loaded: true });
+      set({ error: true, loaded: true });
     } finally {
       set({ loading: false });
     }
@@ -100,6 +108,7 @@ export const useServer = () => {
     servers: store.servers,
     loading: store.loading,
     loaded: store.loaded,
+    error: store.error,
     fetchServers: store.fetchServers,
     getServerById: store.getServerById,
     getServerName: store.getServerName,

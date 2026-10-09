@@ -227,6 +227,58 @@ export default function Order() {
       ]}
       initialFilters={initialFilters}
       key={JSON.stringify(initialFilters)}
+      mobileRowRender={(row) => {
+        const status = statusOptions.find((item) => item.value === row.status);
+        const type = typeOptions.find((item) => item.value === row.type);
+        return (
+          <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="break-all font-semibold text-base leading-snug">
+                  {row.order_no}
+                </h3>
+                <p className="mt-1 text-muted-foreground text-xs">
+                  {type?.label || t(`type.${row.type}`)}
+                </p>
+              </div>
+              <Badge
+                className="shrink-0"
+                variant={
+                  row.status === 2 || row.status === 5 ? "default" : "secondary"
+                }
+              >
+                {status?.label || t(`status.${row.status}`)}
+              </Badge>
+            </div>
+            <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+              <dt className="text-muted-foreground">{t("amount", "Amount")}</dt>
+              <dd className="font-semibold">
+                <Display type="currency" value={row.amount} />
+              </dd>
+              <dt className="text-muted-foreground">{t("user", "User")}</dt>
+              <dd>#{row.user_id}</dd>
+              <dt className="text-muted-foreground">
+                {t("subscribe", "Subscribe")}
+              </dt>
+              <dd className="min-w-0 break-words">
+                {row.type === 4
+                  ? "--"
+                  : `${getSubscribeName(row.subscribe_id) || `#${row.subscribe_id}`} × ${row.quantity}`}
+              </dd>
+              <dt className="text-muted-foreground">
+                {t("method", "Payment Method")}
+              </dt>
+              <dd className="min-w-0 break-words">
+                {row.payment?.name || row.payment?.platform || "--"}
+              </dd>
+              <dt className="text-muted-foreground">
+                {t("updateTime", "Update Time")}
+              </dt>
+              <dd>{formatDate(row.updated_at)}</dd>
+            </dl>
+          </article>
+        );
+      }}
       params={[
         {
           key: "status",

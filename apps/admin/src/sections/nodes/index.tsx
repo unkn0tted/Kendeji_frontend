@@ -23,6 +23,68 @@ import { useNode } from "@/stores/node";
 import { useServer } from "@/stores/server";
 import NodeForm from "./node-form";
 
+function MobileNodeCard({
+  node,
+  serverName,
+  serverAddress,
+  protocolPort,
+}: {
+  node: API.Node;
+  serverName: string;
+  serverAddress: string;
+  protocolPort: number | string;
+}) {
+  const { t } = useTranslation("nodes");
+
+  return (
+    <article className="min-w-0 space-y-4 rounded-md border bg-card p-4">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="break-words font-semibold text-base leading-snug">
+            {node.name}
+          </h3>
+          <span className="text-muted-foreground text-xs">#{node.id}</span>
+        </div>
+        <Badge variant={node.enabled ? "default" : "secondary"}>
+          {node.enabled
+            ? t("enabled_on", "Enabled")
+            : t("enabled_off", "Disabled")}
+        </Badge>
+      </div>
+
+      <dl className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">{t("address", "Address")}</dt>
+        <dd className="min-w-0 break-all font-mono text-xs">
+          {node.address || "—"}:{node.port || "—"}
+        </dd>
+        <dt className="text-muted-foreground">{t("server", "Server")}</dt>
+        <dd className="min-w-0 break-words">
+          {serverName}
+          <span className="block break-all font-mono text-muted-foreground text-xs">
+            {serverAddress}
+          </span>
+        </dd>
+        <dt className="text-muted-foreground">{t("protocol", "Protocol")}</dt>
+        <dd className="min-w-0 break-all font-mono text-xs">
+          {node.protocol}:{protocolPort}
+        </dd>
+        <dt className="text-muted-foreground">{t("tags", "Tags")}</dt>
+        <dd className="flex min-w-0 flex-wrap gap-1.5">
+          {node.tags?.length ? (
+            node.tags.map((tag) => (
+              <Badge key={tag} variant="outline">
+                {tag}
+              </Badge>
+            ))
+          ) : (
+            <span>—</span>
+          )}
+        </dd>
+      </dl>
+    </article>
+  );
+}
+
 export default function Nodes() {
   const { t } = useTranslation("nodes");
   const ref = useRef<ProTableActions>(null);
@@ -194,37 +256,47 @@ export default function Nodes() {
       header={{
         title: t("pageTitle", "Nodes"),
         toolbar: (
-          <NodeForm
-            loading={loading}
-            onSubmit={async (values) => {
-              setLoading(true);
-              try {
-                const body: API.CreateNodeRequest = {
-                  name: values.name,
-                  server_id: Number(values.server_id!),
-                  protocol: values.protocol,
-                  address: values.address,
-                  port: Number(values.port!),
-                  tags: values.tags || [],
-                  enabled: false,
-                };
-                await createNode(body);
-                toast.success(t("created", "Created"));
-                ref.current?.refresh();
-                fetchNodes();
-                fetchTags();
-                setLoading(false);
-                return true;
-              } catch {
-                setLoading(false);
-                return false;
-              }
-            }}
-            title={t("drawerCreateTitle", "Create Node")}
-            trigger={t("create", "Create")}
-          />
+          <div className="hidden md:block">
+            <NodeForm
+              loading={loading}
+              onSubmit={async (values) => {
+                setLoading(true);
+                try {
+                  const body: API.CreateNodeRequest = {
+                    name: values.name,
+                    server_id: Number(values.server_id!),
+                    protocol: values.protocol,
+                    address: values.address,
+                    port: Number(values.port!),
+                    tags: values.tags || [],
+                    enabled: false,
+                  };
+                  await createNode(body);
+                  toast.success(t("created", "Created"));
+                  ref.current?.refresh();
+                  fetchNodes();
+                  fetchTags();
+                  setLoading(false);
+                  return true;
+                } catch {
+                  setLoading(false);
+                  return false;
+                }
+              }}
+              title={t("drawerCreateTitle", "Create Node")}
+              trigger={t("create", "Create")}
+            />
+          </div>
         ),
       }}
+      mobileRowRender={(node) => (
+        <MobileNodeCard
+          node={node}
+          protocolPort={getProtocolPort(node.server_id, node.protocol)}
+          serverAddress={getServerAddress(node.server_id)}
+          serverName={getServerName(node.server_id)}
+        />
+      )}
       onSort={async (source, target, items) => {
         // NOTE: `items` is the current page's items from ProTable.
         // Avoid mutating it in-place, and persist sort changes reliably.

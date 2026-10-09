@@ -355,6 +355,63 @@ export default function User() {
       }}
       initialFilters={initialFilters}
       key={JSON.stringify(initialFilters)}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="break-all font-semibold text-base leading-snug">
+                {row.auth_methods?.[0]?.auth_identifier || `#${row.id}`}
+              </h3>
+              <p className="mt-1 text-muted-foreground text-xs">
+                {row.auth_methods?.[0]?.auth_type || t("userName", "Username")}
+                {" · ID "}
+                {row.id}
+              </p>
+            </div>
+            <Badge
+              variant={
+                row.deleted_at
+                  ? "destructive"
+                  : row.enable
+                    ? "default"
+                    : "secondary"
+              }
+            >
+              {row.deleted_at
+                ? t("deleted", "Deleted")
+                : row.enable
+                  ? t("normal", "Normal")
+                  : t("disabled", "Disabled")}
+            </Badge>
+          </div>
+          <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+            <dt className="text-muted-foreground">{t("balance", "Balance")}</dt>
+            <dd>
+              <Display type="currency" value={row.balance} />
+            </dd>
+            <dt className="text-muted-foreground">
+              {t("giftAmount", "Gift Amount")}
+            </dt>
+            <dd>
+              <Display type="currency" value={row.gift_amount} />
+            </dd>
+            <dt className="text-muted-foreground">
+              {t("commission", "Commission")}
+            </dt>
+            <dd>
+              <Display type="currency" value={row.commission} />
+            </dd>
+            <dt className="text-muted-foreground">
+              {t("inviteCode", "Invite Code")}
+            </dt>
+            <dd className="min-w-0 break-all">{row.refer_code || "--"}</dd>
+            <dt className="text-muted-foreground">
+              {t("createdAt", "Created At")}
+            </dt>
+            <dd className="min-w-0">{formatDate(row.created_at)}</dd>
+          </dl>
+        </article>
+      )}
       params={[
         {
           key: "subscribe_id",

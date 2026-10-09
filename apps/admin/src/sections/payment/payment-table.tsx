@@ -220,6 +220,42 @@ export default function PaymentTable() {
           />
         ),
       }}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="break-words font-semibold text-base">
+                {row.name}
+              </h3>
+              <p className="mt-1 text-muted-foreground text-xs">
+                {row.platform} · ID {row.id}
+              </p>
+            </div>
+            <Badge variant={row.enable ? "default" : "secondary"}>
+              {row.enable ? t("enable", "Enable") : t("disabled", "Disabled")}
+            </Badge>
+          </div>
+          {row.description && (
+            <p className="break-words text-muted-foreground text-sm">
+              {row.description}
+            </p>
+          )}
+          <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+            <dt className="text-muted-foreground">
+              {t("handlingFee", "Handling Fee")}
+            </dt>
+            <dd>
+              {row.fee_mode === 1 ? (
+                `${row.fee_percent || 0}%`
+              ) : row.fee_mode === 2 ? (
+                <Display type="currency" value={row.fee_amount} />
+              ) : (
+                "--"
+              )}
+            </dd>
+          </dl>
+        </article>
+      )}
       params={[
         {
           key: "search",

@@ -260,6 +260,41 @@ export default function EmailTaskManager() {
                   },
                 },
               ]}
+              mobileRowRender={(row) => (
+                <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <h3 className="break-words font-semibold text-base">
+                      {row.subject}
+                    </h3>
+                    {getStatusBadge(row.status)}
+                  </div>
+                  <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+                    <dt className="text-muted-foreground">
+                      {t("progress", "Progress")}
+                    </dt>
+                    <dd>
+                      {row.current} / {row.total}
+                    </dd>
+                    <dt className="text-muted-foreground">
+                      {t("sendTime", "Send Time")}
+                    </dt>
+                    <dd>{row.scheduled ? formatDate(row.scheduled) : "--"}</dd>
+                    <dt className="text-muted-foreground">
+                      {t("createdAt", "Created At")}
+                    </dt>
+                    <dd>{formatDate(row.created_at)}</dd>
+                  </dl>
+                  <details className="border-t pt-3 text-sm">
+                    <summary className="cursor-pointer font-medium">
+                      {t("content", "Email Content")}
+                    </summary>
+                    <div
+                      className="mt-3 min-w-0 break-words"
+                      dangerouslySetInnerHTML={{ __html: row.content }}
+                    />
+                  </details>
+                </article>
+              )}
               params={[
                 {
                   key: "status",

@@ -30,6 +30,7 @@
   },
   "detail": "Detail",
   "failed": "Failed",
+  "historicalDateRequired": "Only completed historical dates are available; today's and future traffic statistics are disabled.",
   "filter": {
     "endDate": "To",
     "invalidSubscribeIdSelector": "Invalid subscription ID expression: {{value}}",
@@ -38,6 +39,7 @@
   },
   "sent": "Sent",
   "success": "Success",
+  "trafficScopeRequired": "Enter a server, user, or subscription ID before loading traffic details.",
   "title": {
     "balance": "Balance Log",
     "commission": "Commission Log",

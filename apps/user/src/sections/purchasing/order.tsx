@@ -61,9 +61,16 @@ export default function Order() {
     enabled: !!orderNo && data?.status === 1,
     queryKey: ["purchaseCheckout", orderNo],
     queryFn: async () => {
+      const params = localStorage.getItem(orderNo || "");
+      const authParams = params ? JSON.parse(params) : {};
       const { data } = await purchaseCheckout({
         orderNo: orderNo || "",
         returnUrl: window.location.href,
+        // v1.20.x requires the guest checkout capability for both status
+        // and checkout requests. Older backends ignore this extra field.
+        ...(authParams.checkout_token
+          ? { checkout_token: authParams.checkout_token }
+          : {}),
       });
       if (data.data?.type === "url" && data.data?.checkout_url) {
         window.open(data.data.checkout_url, "_blank");

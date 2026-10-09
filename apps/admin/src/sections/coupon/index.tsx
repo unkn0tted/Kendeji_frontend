@@ -238,6 +238,58 @@ export default function Coupon() {
           />
         ),
       }}
+      mobileRowRender={(row) => (
+        <article className="min-w-0 space-y-3 rounded-md border bg-card p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="break-words font-semibold text-base">
+                {row.name}
+              </h3>
+              <p className="mt-1 break-all font-mono text-muted-foreground text-xs">
+                {row.code}
+              </p>
+            </div>
+            <Badge variant={row.enable ? "default" : "secondary"}>
+              {row.enable ? t("enable", "Enable") : t("disabled", "Disabled")}
+            </Badge>
+          </div>
+          <dl className="grid grid-cols-[minmax(5rem,34%)_minmax(0,1fr)] gap-x-3 gap-y-2 border-t pt-3 text-sm">
+            <dt className="text-muted-foreground">
+              {t("discount", "Discount")}
+            </dt>
+            <dd className="font-semibold">
+              {row.type === 1 ? (
+                `${row.discount}%`
+              ) : (
+                <Display type="currency" value={row.discount} />
+              )}
+            </dd>
+            <dt className="text-muted-foreground">
+              {t("remainingTimes", "Remaining")}
+            </dt>
+            <dd>
+              {row.count === 0
+                ? t("unlimited", "Unlimited")
+                : row.count - row.used_count}
+            </dd>
+            <dt className="text-muted-foreground">
+              {t("usedTimes", "Usage Times")}
+            </dt>
+            <dd>{row.used_count}</dd>
+            <dt className="text-muted-foreground">
+              {t("validityPeriod", "Validity Period")}
+            </dt>
+            <dd className="break-words">
+              {row.start_time
+                ? formatDate(couponTimestampToMilliseconds(row.start_time))
+                : "--"}
+              {row.expire_time
+                ? ` - ${formatDate(couponTimestampToMilliseconds(row.expire_time))}`
+                : ""}
+            </dd>
+          </dl>
+        </article>
+      )}
       params={[
         {
           key: "subscribe",

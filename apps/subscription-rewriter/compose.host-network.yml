@@ -10,6 +10,7 @@ services:
       HOST: ${REWRITER_HOST:-127.0.0.1}
       PORT: ${REWRITER_PORT:-3003}
       CONFIG_FILE: /data/subscription-rewriter.json
+      PUBLIC_PATH: ${PUBLIC_PATH:-/api/linkon}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set in .env}
       SUBSCRIPTION_TABLE: ${SUBSCRIPTION_TABLE:-user_subscribe}
       SUBSCRIPTION_ID_COLUMN: ${SUBSCRIPTION_ID_COLUMN:-id}

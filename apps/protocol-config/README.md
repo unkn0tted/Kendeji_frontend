@@ -1,324 +1,130 @@
-# PPanel Protocol Config Service
+# 协议配置服务
 
-这是一个独立于现有 PPanel 后端的小后端，用来保存用户端“订阅协议选择器”的配置。它适合部署成单独容器，然后通过 Nginx 反代到前端同域名下。
+保存用户端的协议列表、默认协议、推荐协议和选择器样式。
+管理端保存时使用现有登录 `Authorization`，通过原 PPanel 的
+`/v1/admin/user/current` 验证管理员。不修改原后端或数据库。
 
-它不会修改现有后端代码，只会在管理端保存配置时，拿当前管理端登录态去现有后端校验一次管理员身份。
+已发布镜像：[unkn0tted/ppanel-protocol-config:1.0.4](https://hub.docker.com/r/unkn0tted/ppanel-protocol-config)，Linux amd64。
 
-## 功能
+## 使用 Docker Hub 镜像
 
-保存并返回下面这些字段：
-
-| 字段 | 可选值 | 说明 |
-| --- | --- | --- |
-| `default_protocol` | 任意启用的 `protocol_options[].value` | 用户端默认选中的协议 |
-| `recommended_protocol` | 任意启用的 `protocol_options[].value` | 用户端标记为推荐的协议 |
-| `selector_style` | `cards`, `compact` | 用户端协议选择器展示样式 |
-| `protocol_options` | 数组 | 用户端可选择的协议列表 |
-
-`protocol_options` 每一项支持：
-
-| 字段 | 说明 |
-| --- | --- |
-| `value` | 写入订阅链接的协议参数，例如最终生成 `protocol=tuic` |
-| `label` | 用户端按钮显示名称 |
-| `description` | 用户端按钮下方说明文字 |
-| `icon` | Iconify 图标名，例如 `mdi:connection` |
-| `enabled` | 是否在用户端显示 |
-
-接口：
-
-| 方法 | 路径 | 权限 | 说明 |
-| --- | --- | --- | --- |
-| `GET` | `/protocol-config` | 公开 | 用户端和管理端读取配置 |
-| `PUT` | `/protocol-config` | 需要管理端 `Authorization` | 管理端保存配置 |
-| `GET` | `/health` | 公开 | 健康检查 |
-
-## 环境变量
-
-| 变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `PORT` | `3002` | 服务监听端口 |
-| `CONFIG_FILE` | `/data/protocol-config.json` | 配置文件保存位置 |
-| `PPANEL_API_BASE` | 空 | 现有 PPanel 后端地址，用来校验管理员 token |
-| `PPANEL_ADMIN_CURRENT_PATH` | `/v1/admin/user/current` | 管理员校验接口路径 |
-| `CORS_ORIGIN` | `*` | 跨域来源；同域反代时通常不用改 |
-
-`PPANEL_API_BASE` 示例：
-
-- 同一个 Docker 网络：`http://ppanel-server:8080`
-- 后端只暴露在宿主机端口：`http://host.docker.internal:8080`
-- 独立后端域名：`https://api.example.com`
-
-## 本地开发
-
-在仓库根目录安装依赖：
-
-```bash
-bun install
-```
-
-启动小后端：
+从仓库根目录执行：
 
 ```bash
 cd apps/protocol-config
-PORT=3002 \
-CONFIG_FILE=/tmp/ppanel-protocol-config.json \
-PPANEL_API_BASE=http://localhost:8080 \
-bun run dev
+cp .env.example .env
+# 编辑 .env，设置容器能访问的原 PPanel 后端地址
+docker compose pull
+docker compose up -d
+curl --fail http://127.0.0.1:3002/health
+curl --fail http://127.0.0.1:3002/protocol-config
 ```
 
-读取配置：
+`PPANEL_API_BASE` 示例为 `https://api.example.com`，
+或宿主机可达的 `http://host.docker.internal:8080`。
+原后端仅监听宿主机 loopback 时，普通 bridge 容器无法访问它，
+应使用可达的后端域名，或配置同网络内的后端服务。
+服务名 `ppanel-server` 只有在容器处于相同 Docker 网络时才能解析。
+
+Compose 将服务端口绑定到宿主机 `127.0.0.1`，由宿主机 Nginx 反代。
+配置文件保存在命名 volume `ppanel-protocol-config-data` 的
+`/data/protocol-config.json`，重建容器不会丢失。
+
+## 前端反代
+
+在管理端和用户端站点的 Nginx `server {}` 中都添加：
+
+```nginx
+location = /protocol-config {
+    proxy_pass http://127.0.0.1:3002;
+    proxy_set_header Host $host;
+    proxy_set_header Authorization $http_authorization;
+}
+```
+
+保留原 PPanel API 反代，执行 `nginx -t` 后重载。
+前端默认访问同源 `/protocol-config`；独立域名部署时，在两个前端构建前设置
+`VITE_PROTOCOL_CONFIG_BASE_URL=https://config.example.com`，并配置服务的 `CORS_ORIGIN`。
+容器化 Nginx 请改为能访问此服务的地址。
+
+## 环境变量
+
+| 变量 | 默认值 / 用途 |
+| --- | --- |
+| `PORT` | `3002`，容器内端口 |
+| `CONFIG_FILE` | `/data/protocol-config.json` |
+| `PPANEL_API_BASE` | 必填，原后端地址，用于验证管理员 |
+| `PPANEL_ADMIN_CURRENT_PATH` | `/v1/admin/user/current` |
+| `CORS_ORIGIN` | `*`，允许的跨域来源 |
+| `PROTOCOL_CONFIG_IMAGE_TAG` | Compose 使用的镜像版本，默认 `1.0.4` |
+| `PROTOCOL_CONFIG_PORT` | Compose 使用的宿主机端口，默认 `3002` |
+
+## 接口与配置
+
+| 方法 | 路径 | 权限 |
+| --- | --- | --- |
+| GET | `/health` | 公开，服务存活检查 |
+| GET | `/protocol-config` | 公开，读取配置 |
+| PUT | `/protocol-config` | 管理员，保存配置 |
+
+返回数据包含 `default_protocol`、`recommended_protocol`、
+`selector_style`（`cards` 或 `compact`）和 `protocol_options`。
+每个协议选项包含 `value`、`label`、`description`、`icon`、`enabled`。
+`value` 写入订阅链接的 `protocol` 参数，例如 `tuic`。
+公开 GET 允许缓存 30 秒；保存请求和错误响应不缓存。
+
+## 从源码构建
+
+从仓库根目录执行，无需本机 Node/Bun，也无需已有编译产物：
 
 ```bash
-curl http://localhost:3002/protocol-config
+docker build -f apps/protocol-config/Dockerfile -t ppanel-protocol-config:local .
 ```
 
-保存配置需要带管理端 `Authorization`：
+或者 `docker compose -f apps/protocol-config/docker-compose.example.yml build`。
+使用本地镜像运行时，沿用生产 Compose 的环境变量和 volume，
+将 `image` 替换为 `ppanel-protocol-config:local`。
 
-```bash
-curl -X PUT http://localhost:3002/protocol-config \
-  -H "Content-Type: application/json" \
-  -H "Authorization: YOUR_ADMIN_TOKEN" \
-  -d '{
-    "default_protocol": "tuic",
-    "recommended_protocol": "tuic",
-    "selector_style": "compact",
-    "protocol_options": [
-      {
-        "value": "tuic",
-        "label": "TUIC",
-        "description": "获取 TUIC 节点",
-        "icon": "mdi:rocket-launch-outline",
-        "enabled": true
-      },
-      {
-        "value": "anytls",
-        "label": "AnyTLS",
-        "description": "获取 AnyTLS 节点",
-        "icon": "mdi:shield-lock-outline",
-        "enabled": true
-      }
-    ]
-  }'
-```
-
-## 修改代码后的检查
-
-改完小后端代码后建议跑：
-
-```bash
-bun --filter ppanel-protocol-config-service check
-bunx tsc -p apps/protocol-config/tsconfig.json --noEmit
-bun --filter ppanel-protocol-config-service build
-```
-
-如果前端也改了，再跑：
-
-```bash
-bun --filter ppanel-admin-web check
-bun --filter ppanel-user-web check
-bun --filter ppanel-admin-web build
-bun --filter ppanel-user-web build
-```
-
-## 构建 Docker 镜像
-
-在仓库根目录执行：
-
-```bash
-bun --filter ppanel-protocol-config-service build:binary
-docker build -f apps/protocol-config/Dockerfile -t ppanel-protocol-config .
-```
-
-当前 Dockerfile 使用 `debian:bookworm-slim` 基础镜像，镜像内只包含一个 Bun 编译出来的单文件可执行程序和它需要的 glibc 运行环境。不要改成 `scratch`，Bun 编译产物仍依赖动态链接器和 glibc，`scratch` 容器会启动失败。
-
-运行：
-
-```bash
-docker run -d \
-  --name ppanel-protocol-config \
-  --restart unless-stopped \
-  -p 3002:3002 \
-  -e PPANEL_API_BASE=http://ppanel-server:8080 \
-  -v ppanel-protocol-config-data:/data \
-  ppanel-protocol-config
-```
-
-如果原后端在宿主机端口，例如 `8080`：
-
-```bash
-docker run -d \
-  --name ppanel-protocol-config \
-  --restart unless-stopped \
-  --add-host=host.docker.internal:host-gateway \
-  -p 3002:3002 \
-  -e PPANEL_API_BASE=http://host.docker.internal:8080 \
-  -v ppanel-protocol-config-data:/data \
-  ppanel-protocol-config
-```
-
-## 推送到 Docker Hub
-
-先登录：
+发布新版本到自己的 Docker Hub 仓库：
 
 ```bash
 docker login
-```
-
-使用仓库提供的脚本发布：
-
-```bash
-DOCKERHUB_REPO=unkn0tted/ppanel-protocol-config \
-VERSION=1.0.4 \
-PLATFORMS=linux/amd64 \
+DOCKERHUB_REPO=yourname/ppanel-protocol-config \
+VERSION=1.0.5 \
 ./scripts/publish-protocol-config-image.sh
 ```
 
-脚本会推送：
+默认仅推送指定版本，`PUSH_LATEST=true` 可额外更新 `latest`。
+不要覆盖已发布的固定版本。使用已配置 QEMU/native builders 的 Buildx，
+可设置 `PLATFORMS=linux/amd64,linux/arm64` 在容器内分别编译。
+目前仓库已发布的 `1.0.4` 仍只支持 amd64。
 
-- `unkn0tted/ppanel-protocol-config:1.0.4`
-- `unkn0tted/ppanel-protocol-config:latest`
+## 开发、升级与备份
 
-不推送 `latest`：
-
-```bash
-DOCKERHUB_REPO=unkn0tted/ppanel-protocol-config \
-VERSION=1.0.4 \
-PLATFORMS=linux/amd64 \
-PUSH_LATEST=false \
-./scripts/publish-protocol-config-image.sh
-```
-
-多架构镜像：
+本地源码运行：
 
 ```bash
-docker buildx create --use
-
-DOCKERHUB_REPO=unkn0tted/ppanel-protocol-config \
-VERSION=1.0.4 \
-PLATFORMS=linux/amd64 \
-./scripts/publish-protocol-config-image.sh
+bun install --frozen-lockfile
+CONFIG_FILE=/tmp/protocol-config.json \
+PPANEL_API_BASE=http://localhost:8080 \
+bun --filter ppanel-protocol-config-service dev
 ```
 
-注意：当前镜像使用宿主机 Bun 编译出来的二进制文件，默认适合你当前机器架构。要同时发布 `linux/amd64,linux/arm64`，需要分别在对应架构机器上编译，或者改成多阶段基础镜像构建。
+升级或回滚：修改 `.env` 的 `PROTOCOL_CONFIG_IMAGE_TAG`，
+执行 `docker compose pull && docker compose up -d`，然后检查健康接口和日志。
+`/health` 只检查服务存活，不代表原后端管理员验证成功，需实际登录管理端保存一次验证。
 
-## 线上部署 Docker Hub 镜像
+备份配置（文件首次保存后才存在）：
 
 ```bash
-docker pull unkn0tted/ppanel-protocol-config:1.0.4
-
-docker rm -f ppanel-protocol-config
-
-docker run -d \
-  --name ppanel-protocol-config \
-  --restart unless-stopped \
-  -p 3002:3002 \
-  -e PPANEL_API_BASE=http://ppanel-server:8080 \
-  -v ppanel-protocol-config-data:/data \
-  unkn0tted/ppanel-protocol-config:1.0.4
+docker compose cp protocol-config:/data/protocol-config.json ./protocol-config.backup.json
 ```
 
-如果使用 compose，把 `image` 换成你的 Docker Hub 镜像即可：
-
-```yaml
-services:
-  protocol-config:
-    image: unkn0tted/ppanel-protocol-config:1.0.4
-    restart: unless-stopped
-    ports:
-      - "3002:3002"
-    environment:
-      PPANEL_API_BASE: http://ppanel-server:8080
-    volumes:
-      - ppanel-protocol-config-data:/data
-
-volumes:
-  ppanel-protocol-config-data:
-```
-
-## Nginx 反代
-
-建议挂到前端同域名，避免跨域。服务的公开 GET 响应允许缓存 30 秒；PUT、健康
-检查和错误响应仍是 `no-store`。
-
-先在 Nginx 的 `http {}` 中定义缓存区和可复用上游连接：
-
-```nginx
-proxy_cache_path /var/cache/nginx/protocol-config
-    levels=1:2
-    keys_zone=protocol_config_cache:10m
-    max_size=50m
-    inactive=10m
-    use_temp_path=off;
-
-upstream protocol_config_backend {
-    server 127.0.0.1:3002;
-    keepalive 16;
-}
-```
-
-再在管理端和用户端站点的 `server {}` 中添加：
-
-```nginx
-location ~ ^/(?:api/)?protocol-config$ {
-    proxy_pass http://protocol_config_backend;
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header Authorization $http_authorization;
-
-    proxy_connect_timeout 3s;
-    proxy_send_timeout 15s;
-    proxy_read_timeout 15s;
-
-    proxy_cache protocol_config_cache;
-    proxy_cache_methods GET HEAD;
-    proxy_cache_valid 200 30s;
-    proxy_cache_bypass $http_authorization;
-    proxy_no_cache $http_authorization;
-    proxy_cache_lock on;
-    proxy_cache_background_update on;
-    proxy_cache_use_stale error timeout invalid_header updating
-        http_500 http_502 http_503 http_504;
-    add_header X-Cache-Status $upstream_cache_status always;
-}
-```
-
-不要让通用的 `limit_req` 或 `limit_conn` 对这两个配置路径使用过低阈值。已有全局
-限流时，应给它们单独的宽松规则或排除规则。修改后先执行 `nginx -t`，再平滑
-加载配置。
-
-前端默认访问当前域名的 `/protocol-config`。如果你把小后端部署到单独域名，构建前端时设置：
+恢复时把备份复制回容器，再重启服务：
 
 ```bash
-VITE_PROTOCOL_CONFIG_BASE_URL=https://config.example.com
+docker compose cp ./protocol-config.backup.json protocol-config:/data/protocol-config.json
+docker compose restart
 ```
 
-## 数据备份
-
-默认数据在 Docker volume `ppanel-protocol-config-data` 里，容器内路径是：
-
-```text
-/data/protocol-config.json
-```
-
-备份：
-
-```bash
-docker run --rm \
-  -v ppanel-protocol-config-data:/data \
-  -v "$PWD":/backup \
-  alpine cp /data/protocol-config.json /backup/protocol-config.json
-```
-
-恢复：
-
-```bash
-docker run --rm \
-  -v ppanel-protocol-config-data:/data \
-  -v "$PWD":/backup \
-  alpine cp /backup/protocol-config.json /data/protocol-config.json
-```
+不要删除数据 volume 或执行 `docker compose down -v`。

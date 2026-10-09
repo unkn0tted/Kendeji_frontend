@@ -1,0 +1,22 @@
+name: ppanel-protocol-config
+
+services:
+  protocol-config:
+    image: unkn0tted/ppanel-protocol-config:${PROTOCOL_CONFIG_IMAGE_TAG:-1.0.4}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PROTOCOL_CONFIG_PORT:-3002}:3002"
+    environment:
+      PORT: 3002
+      CONFIG_FILE: /data/protocol-config.json
+      PPANEL_API_BASE: ${PPANEL_API_BASE:?Set PPANEL_API_BASE in .env}
+      PPANEL_ADMIN_CURRENT_PATH: ${PPANEL_ADMIN_CURRENT_PATH:-/v1/admin/user/current}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - protocol-config-data:/data
+
+volumes:
+  protocol-config-data:
+    name: ppanel-protocol-config-data

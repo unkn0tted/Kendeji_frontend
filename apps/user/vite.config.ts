@@ -87,13 +87,25 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
+        "/protocol-config": {
+          target: env.VITE_PROTOCOL_CONFIG_BASE_URL || "http://localhost:3002",
+          changeOrigin: true,
+        },
+        "/subscription-rewriter": {
+          target: env.VITE_SUBSCRIPTION_REWRITER_BASE_URL || "http://localhost:3003",
+          changeOrigin: true,
+        },
+        "/v1": {
+          target: env.VITE_API_BASE_URL || "http://localhost:8080",
+          changeOrigin: true,
+        },
         "/api/protocol-config": {
           target: env.VITE_PROTOCOL_CONFIG_BASE_URL || "http://localhost:3002",
           changeOrigin: true,
           secure: false,
         },
         "/api": {
-          target: env.VITE_API_BASE_URL || "https://api.ppanel.dev",
+          target: env.VITE_API_BASE_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
         },

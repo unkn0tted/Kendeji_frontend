@@ -1,235 +1,119 @@
-<a name="readme-top"></a>
+# Kendeji Frontend
 
-<div align="center">
+基于 [PPanel frontend](https://github.com/perfect-panel/frontend) 的管理端、用户端和两个可选扩展服务。
+正式代码统一在 `main`；项目不包含原 PPanel 后端、数据库或生产配置。
 
-<img width="160" src="https://raw.githubusercontent.com/perfect-panel/ppanel-assets/refs/heads/main/logo.svg">
+[English](./docs/deployment.en.md) · [部署说明](./README.zh-CN.md) · [问题反馈](https://github.com/unkn0tted/Kendeji_frontend/issues)
 
-<h1>PPanel web</h1>
+## 从源码构建
 
-This is a PPanel web powered by PPanel
-
-English
-·
-[Chinese](./README.zh-CN.md)
-·
-[Changelog](../../CHANGELOG.md)
-·
-[Report Bug][issues-link]
-·
-[Request Feature][issues-link]
-
-<!-- SHIELD GROUP -->
-
-[![][github-release-shield]][github-release-link]
-[![][github-releasedate-shield]][github-releasedate-link]
-[![][github-action-test-shield]][github-action-test-link]
-[![][github-action-release-shield]][github-action-release-link]<br/>
-[![][github-contributors-shield]][github-contributors-link]
-[![][github-forks-shield]][github-forks-link]
-[![][github-stars-shield]][github-stars-link]
-[![][github-issues-shield]][github-issues-link]
-[![][github-license-shield]][github-license-link]
-
-![][split]
-
-</div>
-
-> **Article 1.**
-> All human beings are born free and equal in dignity and rights.
-> They are endowed with reason and conscience and should act towards one another in a spirit of brotherhood.
->
-> **Article 12.**
-> No one shall be subjected to arbitrary interference with his privacy, family, home or correspondence, nor to attacks upon his honour and reputation.
-> Everyone has the right to the protection of the law against such interference or attacks.
->
-> **Article 19.**
-> Everyone has the right to freedom of opinion and expression; this right includes freedom to hold opinions without interference and to seek, receive and impart information and ideas through any media and regardless of frontiers.
->
-> _Source: [United Nations – Universal Declaration of Human Rights (UN.org)](https://www.un.org/sites/un2.un.org/files/2021/03/udhr.pdf)_
-
-## 📦 Application List
-
-| 📦 Application                                                                                                                                                                                                                                                                                                                                | 🖼️ Preview                                                     |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------- |
-| [**PPanel User Web**][ppanel-user-web-github]<br/>Developed with modern frontend technologies (Next.js, TypeScript, TailwindCSS), providing basic user features with support for multiple languages and themes.<br/>[![One-Click Deploy](https://img.shields.io/badge/Deploy%20with-Vercel-blue?style=for-the-badge)][ppanel-user-web-deploy] | [![Preview][ppanel-user-web-cover]][ppanel-user-web-github]    |
-| [**PPanel Admin Web**][ppanel-admin-web-github]<br/>Developed with modern frontend technologies, this admin web provides basic data management features with support for multiple languages and themes.<br/>[![One-Click Deploy](https://img.shields.io/badge/Deploy%20with-Vercel-blue?style=for-the-badge)][ppanel-admin-web-deploy]        | [![Preview][ppanel-admin-web-cover]][ppanel-admin-web-preview] |
-
-## ⌨️ Local Development
-
-You can use Github Codespaces for online development:
-
-[![][codespaces-shield]][codespaces-link]
-
-You can use Gitpod for online development:
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)][gitpod-link]
-
-or clone it for local development:
+需要 **Node.js 24.18.0、Bun 1.3.14** 和 `tar`（Linux/macOS）。
+已安装 [mise](https://mise.jdx.dev/) 时，可以用 `mise install` 安装仓库指定的工具版本。
+Windows 建议通过 WSL2 使用下面的命令。
 
 ```bash
-git clone https://github.com/perfect-panel/frontend.git
-cd frontend
-
-# Install the Node.js LTS and Bun 1.3 toolchains declared in mise.toml
-mise install
-
-# Install the exact dependency graph from bun.lock
-mise run setup
-
-# Build every workspace package
-mise run build
+git clone https://github.com/unkn0tted/Kendeji_frontend.git
+cd Kendeji_frontend
+mise install                        # 已有指定 Node/Bun 时可跳过
+bun install --frozen-lockfile
+bun run test
+bun run package
 ```
 
-This repository uses [mise](https://mise.jdx.dev/) to keep Node.js and Bun
-isolated from system packages. The version selectors follow the maintained
-Node.js LTS channel and Bun 1.3 release line. To refresh installed toolchains:
+`bun run package` 会先构建并检查 TypeScript，再生成：
+
+| 产物 | 用途 |
+| --- | --- |
+| `apps/admin/dist/` | 管理端静态网站 |
+| `apps/user/dist/` | 用户端静态网站 |
+| `release/kendeji-admin.tar.gz` | 管理端部署包，解压后直接是站点文件 |
+| `release/kendeji-user.tar.gz` | 用户端部署包 |
+| `release/SHA256SUMS` | 两个部署包的 SHA-256 校验值 |
+| `apps/protocol-config/dist/index.js` | 协议配置服务的 Bun 产物 |
+| `apps/subscription-rewriter/dist/index.js` | 订阅改写服务的 Bun 产物 |
+
+只需要目录产物时执行 `bun run build`。只构建某个前端时执行：
 
 ```bash
-mise upgrade
-mise run setup
+bun --filter ppanel-admin-web build
+bun --filter ppanel-user-web build
 ```
 
-Toolchain and application dependency upgrades are intentionally separate:
+## 前端配置与部署
+
+默认使用同源接口：原后端 `/v1/`、协议配置 `/protocol-config`、订阅改写 `/subscription-rewriter/`。
+构建默认值可以直接用于同源反代部署。
+
+需要独立 API 域名等配置时，构建前创建配置文件：
 
 ```bash
-mise self-update   # update mise itself
-mise upgrade       # update Node.js LTS and Bun 1.3.x
-mise run outdated  # inspect available package updates
-mise run update    # update packages and bun.lock when ready
-mise run build     # verify the result
+cp apps/admin/.env.example apps/admin/.env.local
+cp apps/user/.env.example apps/user/.env.local
+# 修改两个 .env.local 后重新执行 bun run package
 ```
 
-## Protocol Config Sidecar
+| 构建变量 | 说明 |
+| --- | --- |
+| `VITE_API_BASE_URL` | 原 PPanel API 地址；留空表示当前站点 |
+| `VITE_API_PREFIX` | 后端额外路径前缀；留空为 `/v1/...`，填 `/api` 为 `/api/v1/...` |
+| `VITE_PROTOCOL_CONFIG_BASE_URL` | 协议配置服务地址；留空为同源 |
+| `VITE_SUBSCRIPTION_REWRITER_BASE_URL` | 订阅改写服务地址；留空为同源 |
+| `VITE_SHOW_LANDING_PAGE` | 仅用户端，`false` 时首页转到登录页 |
 
-This repository includes a standalone sidecar service at `apps/protocol-config`.
-It stores user-facing subscription protocol selector settings without changing
-the existing PPanel backend:
+`VITE_*` 会进入浏览器代码，不能填写密码或其他秘密；改动后必须重新构建。
+原后端需兼容当前前端接口；本版本在 PPanel Server `1.20.3` 上做过生产验证。
+上传各自 `dist` 的内容到管理端、用户端站点根目录，不要混放。
+配置 Nginx 的 SPA 路由回退，以及原后端和所启用扩展服务的反代：
+[前端部署示例](./README.zh-CN.md#nginx-静态站点)。
 
-- `default_protocol`
-- `recommended_protocol`
-- `selector_style`, currently `cards` or `compact`
+## Docker Hub 镜像
 
-When admin web saves the config, the sidecar receives the existing
-`Authorization` header and verifies it against the current backend
-`/v1/admin/user/current` endpoint before writing the local config file.
+| 镜像 | 用途 | 文档 |
+| --- | --- | --- |
+| [`unkn0tted/ppanel-protocol-config:1.0.4`](https://hub.docker.com/r/unkn0tted/ppanel-protocol-config) | 保存协议选项、默认协议及展示样式 | [启动、反代、备份](./apps/protocol-config/README.md) |
+| [`unkn0tted/ppanel-subscription-rewriter:1.4.2`](https://hub.docker.com/r/unkn0tted/ppanel-subscription-rewriter) | 按订阅 ID 规则改写节点入口 hostname | [数据库、启动、反代、升级](./apps/subscription-rewriter/README.md) |
 
-### Docker
+已发布的这两个版本是 **Linux amd64** 镜像，前端静态文件不在其中。
+部署这些镜像只需要 Docker 和 Compose，无需 Node/Bun。
+服务均依赖现有 PPanel 后端验证管理员；订阅改写额外需要 MySQL 只读账号。
+两项扩展按需启用，不替代原后端。
 
-Build the image from the repository root:
+克隆后，也能直接从源码构建镜像，无需预先生成二进制：
 
 ```bash
-bun --filter ppanel-protocol-config-service build:binary
-docker build -f apps/protocol-config/Dockerfile -t ppanel-protocol-config .
+docker build -f apps/protocol-config/Dockerfile -t ppanel-protocol-config:local .
+docker build -f apps/subscription-rewriter/Dockerfile -t ppanel-subscription-rewriter:local .
 ```
 
-If the existing backend container is in the same Docker network, point
-`PPANEL_API_BASE` to that container and port:
+Docker 构建固定使用 Bun 1.3.14，运行镜像包含 glibc 和 HTTPS CA 证书。
+本地构建不会修改 Docker Hub 上已有版本；镜像发布步骤见各服务文档。
+
+## 本地开发
 
 ```bash
-docker run -d \
-  --name ppanel-protocol-config \
-  --restart unless-stopped \
-  -p 3002:3002 \
-  -e PPANEL_API_BASE=http://ppanel-server:8080 \
-  -v ppanel-protocol-config-data:/data \
-  ppanel-protocol-config
+# 原 PPanel 后端默认应运行在 localhost:8080
+bun --filter ppanel-admin-web dev     # http://localhost:3001
+bun --filter ppanel-user-web dev      # http://localhost:3000
 ```
 
-If the existing backend is only exposed on the host, for example host port
-`8080`, add `--add-host=host.docker.internal:host-gateway` on Linux Docker and
-use `PPANEL_API_BASE=http://host.docker.internal:8080`.
+开发服务器代理 `/v1` 和 `/api` 到原后端，两个扩展服务分别代理到
+`localhost:3002`、`localhost:3003`。通过各应用 `.env.local` 可以修改目标地址。
+这两个命令分别在终端运行；扩展服务启动方式见各自文档。
 
-You can also start from the example compose file:
+## 仓库与发布
 
-```bash
-docker compose -f apps/protocol-config/docker-compose.example.yml up -d
-```
+- `apps/admin`、`apps/user`：前端源码。
+- `apps/protocol-config`、`apps/subscription-rewriter`：扩展服务源码与部署示例。
+- `packages`：共享组件、接口与 TypeScript 配置。
+- `tests`：前端回归测试；服务测试位于对应 `src`。
+- `docs`：保留的 PPanel 功能参考文档；本仓库的构建部署以此 README 和服务文档为准。
+- 本机试验目录、数据库备份、`.env`、打包产物不提交；`bun.lock` 必须提交。
 
-For Docker Hub publishing and upgrade instructions, see
-[`apps/protocol-config/README.md`](./apps/protocol-config/README.md).
+每次向 `main` 提交时，GitHub Actions 从干净环境运行测试、打包，并构建和启动两个
+服务镜像。前端部署包可在该次 Actions 的 **Artifacts** 下载，默认保留 90 天。
+工作流无需配置发布密钥，不会自动合并分支或推送 Docker Hub。
+自定义的 `triage-automation` 仅保留手动触发，使用前需配置它所需的 webhook secrets。
 
-### Nginx Reverse Proxy
+## 许可证
 
-Expose the sidecar under the same frontend domain:
-
-```nginx
-location ^~ /protocol-config {
-    proxy_pass http://127.0.0.1:3002;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header Authorization $http_authorization;
-}
-```
-
-Keep your existing `/api` or `/v1` proxy to the original backend. The frontend
-uses `/protocol-config` on the current origin by default. For a separate
-config-service domain, set this before building the frontend:
-
-```bash
-VITE_PROTOCOL_CONFIG_BASE_URL=https://config.example.com
-```
-
-## 🤝 Contributing
-
-Contributions of all types are more than welcome,
-if you're interested in contributing code, feel free to check out our GitHub
-[Issues][github-issues-link] to get stuck in to show us what you’re made of.
-
-[![][pr-welcome-shield]][pr-welcome-link]
-
-[![][contributors-contrib]][contributors-url]
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
----
-
-## 📝 License
-
-Copyright © 2024 [PPanel][profile-link]. <br />
-This project is [GNU](../../LICENSE) licensed.
-
-<!-- LINK GROUP -->
-
-[back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
-[codespaces-link]: https://codespaces.new/perfect-panel/ppanel-web
-[codespaces-shield]: https://github.com/codespaces/badge.svg
-[contributors-contrib]: https://contrib.rocks/image?repo=perfect-panel/ppanel-web
-[contributors-url]: https://github.com/perfect-panel/frontend/graphs/contributors
-[github-action-release-link]: https://github.com/perfect-panel/frontend/actions/workflows/release.yml
-[github-action-release-shield]: https://img.shields.io/github/actions/workflow/status/perfect-panel/ppanel-web/release.yml?label=release&labelColor=black&logo=githubactions&logoColor=white&style=flat-square
-[github-action-test-link]: https://github.com/perfect-panel/frontend/actions/workflows/test.yml
-[github-action-test-shield]: https://img.shields.io/github/actions/workflow/status/perfect-panel/ppanel-web/test.yml?label=test&labelColor=black&logo=githubactions&logoColor=white&style=flat-square
-[github-contributors-link]: https://github.com/perfect-panel/frontend/graphs/contributors
-[github-contributors-shield]: https://img.shields.io/github/contributors/perfect-panel/ppanel-web?color=c4f042&labelColor=black&style=flat-square
-[github-forks-link]: https://github.com/perfect-panel/frontend/network/members
-[github-forks-shield]: https://img.shields.io/github/forks/perfect-panel/ppanel-web?color=8ae8ff&labelColor=black&style=flat-square
-[github-issues-link]: https://github.com/perfect-panel/frontend/issues
-[github-issues-shield]: https://img.shields.io/github/issues/perfect-panel/ppanel-web?color=ff80eb&labelColor=black&style=flat-square
-[github-license-link]: https://github.com/perfect-panel/frontend/blob/master/LICENSE
-[github-license-shield]: https://img.shields.io/github/license/perfect-panel/ppanel-web?color=white&labelColor=black&style=flat-square
-[github-release-link]: https://github.com/perfect-panel/frontend/releases
-[github-release-shield]: https://img.shields.io/github/v/release/perfect-panel/ppanel-web?style=flat-square&sort=semver&logo=github
-[github-releasedate-link]: https://github.com/perfect-panel/frontend/releases
-[github-releasedate-shield]: https://img.shields.io/github/release-date/perfect-panel/ppanel-web?labelColor=black&style=flat-square
-[github-stars-link]: https://github.com/perfect-panel/frontend/network/stargazers
-[github-stars-shield]: https://img.shields.io/github/stars/perfect-panel/ppanel-web?color=ffcb47&labelColor=black&style=flat-square
-[gitpod-link]: https://gitpod.io/#https://github.com/perfect-panel/frontend
-[issues-link]: https://github.com/perfect-panel/frontend/issues/new/choose
-[pr-welcome-link]: https://github.com/perfect-panel/frontend/pulls
-[pr-welcome-shield]: https://img.shields.io/badge/🤯_pr_welcome-%E2%86%92-ffcb47?labelColor=black&style=for-the-badge
-[profile-link]: https://github.com/perfect-panel
-[split]: https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png
-[ppanel-user-web-github]: https://github.com/perfect-panel/frontend/tree/main/apps/user
-[ppanel-user-web-cover]: https://urlscan.io/liveshot/?width=1920&height=1080&url=https://user.ppanel.dev
-[ppanel-user-web-preview]: https://user.ppanel.dev
-[ppanel-user-web-deploy]: https://vercel.com/new/clone?demo-description=PPanel%20is%20a%20pure%2C%20professional%2C%20and%20perfect%20open-source%20proxy%20panel%20tool%2C%20designed%20to%20be%20your%20ideal%20choice%20for%20learning%20and%20practical%20use&demo-image=https%3A%2F%2Furlscan.io%2Fliveshot%2F%3Fwidth%3D1920%26height%3D1080%26url%3Dhttps%3A%2F%2Fuser.ppanel.dev&demo-title=PPanel%20User%20Web&demo-url=https%3A%2F%2Fuser.ppanel.dev%2F&from=.&project-name=ppanel-user-web&repository-name=ppanel-web&repository-url=https%3A%2F%2Fgithub.com%2Fperfect-panel%2Fppanel-web&root-directory=apps%2Fuser&skippable-integrations=1
-[ppanel-admin-web-github]: https://github.com/perfect-panel/frontend/tree/main/apps/admin
-[ppanel-admin-web-cover]: https://urlscan.io/liveshot/?width=1920&height=1080&url=https://admin.ppanel.dev
-[ppanel-admin-web-preview]: https://admin.ppanel.dev
-[ppanel-admin-web-deploy]: https://vercel.com/new/clone?demo-description=PPanel%20is%20a%20pure%2C%20professional%2C%20and%20perfect%20open-source%20proxy%20panel%20tool%2C%20designed%20to%20be%20your%20ideal%20choice%20for%20learning%20and%20practical%20use&demo-image=https%3A%2F%2Furlscan.io%2Fliveshot%2F%3Fwidth%3D1920%26height%3D1080%26url%3Dhttps%3A%2F%2Fadmin.ppanel.dev&demo-title=PPanel%20Admin%20Web&demo-url=https%3A%2F%2Fadmin.ppanel.dev%2F&from=.&project-name=ppanel-admin-web&repository-name=ppanel-web&repository-url=https%3A%2F%2Fgithub.com%2Fperfect-panel%2Fppanel-web&root-directory=apps%2Fadmin&skippable-integrations=1
+本项目沿用上游的 [GNU GPL v3](./LICENSE)，原版权声明和历史更新日志予以保留。

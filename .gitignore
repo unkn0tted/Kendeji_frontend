@@ -13,7 +13,6 @@ node_modules/
 *.local
 
 # Local tool configuration
-/mise.toml
 mise.local.toml
 .mise.local.toml
 
@@ -58,4 +57,15 @@ Thumbs.db
 *.swo
 *~
 .claude/settings.local.json
-.gitignore
+
+# Local assistants, deployment rehearsals, backups and release archives
+.claude/
+/deploy/local-test/
+/deploy/db-rehearsal/
+/deploy/public-edge/
+/deploy/upload/
+/deploy/artifacts/
+/release/
+*.sql
+*.sql.gz
+*.backup.json

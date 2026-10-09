@@ -1,18 +1,17 @@
+# Only source and manifests belong in a Docker build context.
 .git
-.turbo
-.vercel
+.claude
+.codex
+.github
 node_modules
 **/node_modules
-dist
 **/dist
-# The protocol-config Dockerfile copies this compiled binary into the runtime image.
-!apps/protocol-config/dist
-!apps/protocol-config/dist/ppanel-protocol-config
-# The subscription-rewriter Dockerfile uses the same compiled-binary pattern.
-!apps/subscription-rewriter/dist
-!apps/subscription-rewriter/dist/ppanel-subscription-rewriter
+**/.turbo
+**/.env
+**/.env.*
+**/*.local
+**/*.log
+**/*.tsbuildinfo
+deploy
+release
 coverage
-.env
-.env.*
-npm-debug.log*
-.DS_Store

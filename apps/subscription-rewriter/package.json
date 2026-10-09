@@ -7,7 +7,7 @@
     "start": "bun src/index.ts",
     "check": "biome check src",
     "test": "bun test",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "tsc --noEmit && bun build src/index.ts --outdir dist --target bun",
     "build:binary": "bun build src/index.ts --compile --outfile dist/ppanel-subscription-rewriter"
   },
   "dependencies": {

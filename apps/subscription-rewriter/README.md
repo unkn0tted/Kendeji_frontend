@@ -1,1071 +1,234 @@
-# PPanel Subscription Rewriter
+# 订阅改写服务
 
-独立于 PPanel 原后端和 `protocol-config` 的第三后端。它根据
-`user_subscribe.id` 的连续编号区间或指定编号列表，精确替换订阅内容中的节点
-入口 hostname，不修改 PPanel 数据库结构，也不会修改 SNI、密码、端口或节点名称。
+按 `user_subscribe.id` 的区间或指定编号改写订阅内容中的节点入口 hostname。
+只读查询原 MySQL，不修改数据库结构；SNI、密码、UUID、端口和节点名称保持原值。
 
-生产镜像：
+已发布镜像：[unkn0tted/ppanel-subscription-rewriter:1.4.2](https://hub.docker.com/r/unkn0tted/ppanel-subscription-rewriter)，Linux amd64。
 
-```text
-unkn0tted/ppanel-subscription-rewriter:1.4.2
-```
+## 地址关系
 
-本文以以下实际部署关系为例：
+| 用途 | 示例 | 指向 |
+| --- | --- | --- |
+| 原始订阅 / 服务回源 | `https://origin-sub.example.com/api/linkon` | 原 PPanel 后端 |
+| 用户展示订阅 | `https://sub.example.com/api/linkon` | 本服务 |
+| 管理端配置 | `/subscription-rewriter/` | 本服务，需要管理员登录 |
+| 用户端展示地址 | `/subscription-rewriter/public-config` | 本服务，公开 |
 
-| 用途                | 地址                                          | 最终上游                         |
-| ------------------- | --------------------------------------------- | -------------------------------- |
-| 原系统/内部直连订阅 | `https://internal-sub.xrognet.com/api/linkon` | 原 PPanel 后端 `127.0.0.1:60003` |
-| 用户展示订阅 1      | `https://train.suuwu.de/api/linkon`           | 第三后端 `127.0.0.1:3003`        |
-| 用户展示订阅 2      | `https://train.xrognet.com/api/linkon`        | 第三后端 `127.0.0.1:3003`        |
-| MySQL               | 1Panel 容器 `1Panel-mysql-xxxx:3306`          | `1panel-network`                 |
+请求过程：用户展示地址 → 本服务 → 按 token 查询订阅 ID → 获取原始订阅 → 应用规则 → 返回。
+**回源地址必须直达原后端，不能指向本服务或用户展示地址，否则会循环请求。**
+多个展示地址会向所有用户展示；编号规则只决定节点 hostname 的改写。
 
-部署时请将示例域名、容器名、数据库名和密码替换为实际值。
+## 1. 创建数据库只读账号
 
-## 一、先理解四类地址
-
-### 1. 原系统/内部直连订阅地址
-
-```text
-https://internal-sub.xrognet.com/api/linkon
-```
-
-它直接进入原 PPanel 后端，返回完全未经第三后端处理的原始订阅。第三后端也使用
-这个地址回源。
-
-### 2. 用户展示订阅地址
-
-```text
-https://train.suuwu.de/api/linkon
-https://train.xrognet.com/api/linkon
-```
-
-这些地址全部进入第三后端。管理端允许逐行填写多个地址，所有用户都会看到完整
-列表。它们不是按用户编号分配的；用户编号只决定订阅内容中的入口域名如何改写。
-
-### 3. 管理端配置接口
-
-```text
-/subscription-rewriter/
-```
-
-管理端通过这个路径读取配置、保存规则和检测订阅。第三后端会把管理端请求携带
-的 `Authorization` 转发给原 PPanel 后端，调用
-`/v1/admin/user/current` 验证管理员身份。
-
-### 4. 用户端公开配置接口
-
-```text
-/subscription-rewriter/public-config
-```
-
-用户端通过这个接口取得多个“用户展示订阅地址”。**管理端域名和用户端域名都
-必须反代 `/subscription-rewriter/` 到第三后端。** 只配置管理端会造成管理端
-显示正常，但用户端仍回退到原系统直连域名。
-
-## 二、完整请求链路
-
-原始订阅：
-
-```text
-客户端
-  -> internal-sub.xrognet.com/api/linkon
-  -> 原 PPanel 后端 127.0.0.1:60003
-  -> 返回原始节点入口域名
-```
-
-改写订阅：
-
-```text
-客户端
-  -> train.suuwu.de/api/linkon
-  -> 第三后端 127.0.0.1:3003
-  -> 根据 token 只读查询 user_subscribe.id
-  -> 回源 internal-sub.xrognet.com/api/linkon
-  -> 按 ID 区间或指定编号列表改写节点入口 hostname
-  -> 返回用户
-```
-
-禁止把第三后端的回源地址设置为 `train.suuwu.de` 或其他用户展示地址，否则会
-形成请求循环。
-
-## 三、支持的订阅格式
-
-- Base64 包装的 URI、YAML、JSON 或 CONF
-- 未编码的 URI 列表
-- Clash/Mihomo 风格 YAML 节点
-- sing-box 等常见 JSON 节点对象
-- Surge/Loon/Quantumult X 常见 INI/CONF 代理行
-
-第三后端只替换节点连接 hostname：
-
-- 保留 `sni`
-- 保留 `server_name`
-- 保留密码、UUID、端口和查询参数
-- 保留节点名称和 fragment
-- 未匹配规则的域名保持不变
-- 未识别格式原样返回
-- 普通订阅请求数据库查询失败时原样返回，并在日志中记录错误
-
-规则支持两种用户匹配方式：
-
-- 连续区间：例如 `1–1000`，同时包含起始编号和结束编号。
-- 指定编号：例如 `1, 2, 37, 89`，只命中明确列出的订阅编号。
-
-同一个用户同时命中多条相同入口域名规则时，优先级数字更高的规则优先；优先级
-相同时，指定编号规则优先于连续区间规则。已有配置没有 `match_mode` 字段时会
-自动按连续区间处理，不需要手工迁移。
-
-## 四、部署前检查
-
-服务器需要：
-
-- Linux
-- Docker Engine
-- Docker Compose v2
-- 可用的原 PPanel 后端
-- 可用的 MySQL 8/MariaDB
-- 管理端和用户端前端源码或现有构建流程
-
-检查 Docker 和 Compose：
-
-```bash
-docker version
-docker compose version
-```
-
-检查当前 1Panel 网络：
-
-```bash
-docker network ls
-docker network inspect 1panel-network
-```
-
-检查 MySQL 容器名：
-
-```bash
-docker ps --format 'table {{.Names}}\t{{.Networks}}\t{{.Ports}}'
-```
-
-## 五、创建 MySQL 只读账号
-
-第三后端只需要读取：
-
-```text
-user_subscribe.id
-user_subscribe.token
-```
-
-进入 1Panel MySQL：
-
-```bash
-docker exec -it 1Panel-mysql-xxxx mysql -uroot -p
-```
-
-创建只读账号。密码建议使用随机的纯字母数字或十六进制，避免 URL 编码问题：
+在原 MySQL 中执行，替换数据库名和随机密码。
+只授予 `user_subscribe` 表的 `SELECT` 权限：
 
 ```sql
-CREATE USER IF NOT EXISTS
-  'subscription_rewriter'@'%'
-  IDENTIFIED WITH caching_sha2_password
-  BY '替换为随机密码';
-
-ALTER USER
-  'subscription_rewriter'@'%'
-  IDENTIFIED WITH caching_sha2_password
-  BY '替换为同一个随机密码';
-
-GRANT SELECT
-ON `你的数据库名`.`user_subscribe`
-TO 'subscription_rewriter'@'%';
-
-FLUSH PRIVILEGES;
+CREATE USER 'subscription_rewriter'@'%' IDENTIFIED BY 'replace_with_random_password';
+GRANT SELECT ON `ppanel`.`user_subscribe` TO 'subscription_rewriter'@'%';
 ```
 
-检查账号和授权：
+MySQL 8 使用默认 `caching_sha2_password` 即可，不要强制切换到旧认证方式。
+连接密码如含特殊字符，需要在 `DATABASE_URL` 中进行 URL 编码，
+也可以使用随机十六进制密码。
+MySQL 不需要对公网开放。
 
-```sql
-SELECT user, host, plugin
-FROM mysql.user
-WHERE user = 'subscription_rewriter';
+## 2. Docker Compose 部署
 
-SHOW GRANTS FOR 'subscription_rewriter'@'%';
-```
-
-如果希望限制为当前 Docker 网段，可以把 `%` 换成例如 `172.18.%`，但 Docker
-网络重建后子网可能变化。无论使用哪一种 Host，都只授予目标表的 `SELECT`。
-
-从相同 Docker 网络测试账号：
+从仓库根目录执行：
 
 ```bash
-docker run --rm -it \
-  --network 1panel-network \
-  mysql:8 \
-  mysql \
-  -h 1Panel-mysql-xxxx \
-  -P 3306 \
-  -u subscription_rewriter \
-  -p \
-  你的数据库名 \
-  -e "SELECT id,token FROM user_subscribe ORDER BY id DESC LIMIT 1;"
-```
-
-出现 `Access denied for user ...@172.x.x.x` 说明网络已经连通，但 MySQL Host、
-密码或账号授权不正确。
-
-## 六、Docker Compose 部署（推荐：1Panel 网络）
-
-生产服务器不需要安装 Bun，也不需要执行 `docker build`。
-
-创建目录：
-
-```bash
-mkdir -p /opt/ppanel-subscription-rewriter
-cd /opt/ppanel-subscription-rewriter
-```
-
-将本目录的以下文件上传到服务器：
-
-```text
-compose.yml
-.env.example
-```
-
-创建配置：
-
-```bash
+cd apps/subscription-rewriter
 cp .env.example .env
-nano .env
+# 编辑数据库 URL、Docker 网络、原 PPanel 后端地址
+docker compose pull
+docker compose up -d
+curl --fail http://127.0.0.1:3003/health
+docker compose logs --tail=50
 ```
 
-推荐 Compose：
-
-```yaml
-name: ppanel-subscription-rewriter
-
-services:
-  subscription-rewriter:
-    image: unkn0tted/ppanel-subscription-rewriter:${REWRITER_IMAGE_TAG:-1.4.2}
-    container_name: ppanel-subscription-rewriter
-    restart: unless-stopped
-
-    ports:
-      - 127.0.0.1:${REWRITER_PORT:-3003}:3003
-
-    environment:
-      HOST: 0.0.0.0
-      PORT: 3003
-      CONFIG_FILE: /data/subscription-rewriter.json
-
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set in .env}
-      SUBSCRIPTION_TABLE: ${SUBSCRIPTION_TABLE:-user_subscribe}
-      SUBSCRIPTION_ID_COLUMN: ${SUBSCRIPTION_ID_COLUMN:-id}
-      SUBSCRIPTION_TOKEN_COLUMN: ${SUBSCRIPTION_TOKEN_COLUMN:-token}
-      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-5}
-      DATABASE_IDLE_TIMEOUT: ${DATABASE_IDLE_TIMEOUT:-30}
-
-      PPANEL_API_BASE: ${PPANEL_API_BASE:?PPANEL_API_BASE must be set in .env}
-      PPANEL_ADMIN_CURRENT_PATH: ${PPANEL_ADMIN_CURRENT_PATH:-/v1/admin/user/current}
-
-      UPSTREAM_TIMEOUT_MS: ${UPSTREAM_TIMEOUT_MS:-15000}
-      MAX_RESPONSE_BYTES: ${MAX_RESPONSE_BYTES:-8388608}
-      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-true}
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
-
-    extra_hosts:
-      - host.docker.internal:host-gateway
-
-    networks:
-      - onepanel
-
-    volumes:
-      - subscription-rewriter-data:/data
-
-    read_only: true
-    tmpfs:
-      - /tmp:size=64m,mode=1777
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    stop_grace_period: 15s
-
-networks:
-  onepanel:
-    name: ${DATABASE_DOCKER_NETWORK:-1panel-network}
-    external: true
-
-volumes:
-  subscription-rewriter-data:
-    name: ppanel-subscription-rewriter-data
-```
-
-`.env` 示例：
+`.env` 关键值示例：
 
 ```dotenv
 REWRITER_IMAGE_TAG=1.4.2
-REWRITER_PORT=3003
-
 DATABASE_DOCKER_NETWORK=1panel-network
-DATABASE_URL=mysql://subscription_rewriter:替换为数据库密码@1Panel-mysql-xxxx:3306/替换为数据库名
-
-SUBSCRIPTION_TABLE=user_subscribe
-SUBSCRIPTION_ID_COLUMN=id
-SUBSCRIPTION_TOKEN_COLUMN=token
-DATABASE_POOL_SIZE=5
-DATABASE_IDLE_TIMEOUT=30
-
-PPANEL_API_BASE=https://internal-sub.example.com
-PPANEL_ADMIN_CURRENT_PATH=/v1/admin/user/current
-
-UPSTREAM_TIMEOUT_MS=15000
-MAX_RESPONSE_BYTES=8388608
+DATABASE_URL=mysql://subscription_rewriter:replace_with_password@mysql-container:3306/ppanel
+PPANEL_API_BASE=https://api.example.com
 TRUST_PROXY_HEADERS=true
-CORS_ORIGIN=*
 ```
 
-`PPANEL_API_BASE` 必须是第三后端容器能够访问的原 PPanel 后端：
+默认 Compose 使用已存在的 Docker 网络（通常是 1Panel 的 `1panel-network`）。
+检查 `docker network ls` 和 `docker ps`，数据库 hostname 应为该网络内的实际
+MySQL 容器名或别名。原后端地址也必须能从服务容器访问。
+只监听宿主机 loopback 的后端不能通过 bridge 网络的 `host.docker.internal` 访问。
 
-- 推荐使用反代所有原后端路径的内部域名，例如
-  `https://internal-sub.xrognet.com`。
-- 如果原后端 `60003` 监听宿主机非 loopback 地址，也可以使用
-  `http://host.docker.internal:60003`。
-- 如果原后端也是 `1panel-network` 中的容器，最好使用它的容器名和内部端口。
-
-检查配置展开结果：
+若 MySQL 和原后端直接运行在 Linux 宿主机，可改用：
 
 ```bash
-docker compose config
+# .env 中改成实际的 127.0.0.1 数据库与后端地址
+docker compose -f compose.host-network.yml up -d
 ```
 
-确认网络存在：
+不要同时运行两份 Compose。之后更新和查看日志也使用同一 `-f` 参数。
 
-```bash
-docker network inspect 1panel-network >/dev/null
-```
+默认端口只绑定宿主机 `127.0.0.1:3003`，交给本机 Nginx 反代。
+只有入口代理和其他可信容器可以访问此服务时，才启用 `TRUST_PROXY_HEADERS=true`。
+配置保存在 volume `ppanel-subscription-rewriter-data` 的
+`/data/subscription-rewriter.json`。
 
-启动：
+## 3. Nginx 反代
 
-```bash
-docker compose pull
-docker compose up -d
-docker compose ps
-docker compose logs --tail 100
-```
-
-确认容器能够解析 MySQL：
-
-```bash
-docker compose exec subscription-rewriter \
-  getent hosts 1Panel-mysql-xxxx
-```
-
-确认服务只通过宿主机回环地址提供：
-
-```bash
-curl http://127.0.0.1:3003/health
-```
-
-预期：
-
-```json
-{ "code": 200, "message": "ok", "data": { "service": "subscription-rewriter" } }
-```
-
-## 七、宿主机 MySQL 的替代部署
-
-仅当 MySQL 和原后端都真正通过宿主机 TCP 端口访问时，才使用：
-
-```text
-compose.host-network.yml
-```
-
-此方案使用 `network_mode: host`，数据库连接应填写
-`127.0.0.1:宿主机映射端口`，不能使用 `1Panel-mysql-xxxx` 之类的 Docker
-容器名。
-
-启动：
-
-```bash
-docker compose \
-  -f compose.host-network.yml \
-  --env-file .env \
-  up -d
-```
-
-不要同时使用 `network_mode: host` 和 `1panel-network`；Docker 不允许一个
-服务同时采用 host 网络模式和普通 Docker 网络。
-
-## 八、Nginx：原始订阅域名
-
-`internal-sub.xrognet.com` 必须进入原 PPanel 后端，不能进入第三后端。
+管理端和用户端站点都添加：
 
 ```nginx
-server {
-    listen 443 ssl http2;
-    server_name internal-sub.xrognet.com;
-
-    # SSL 证书配置按实际面板生成内容保留
-    #
-    # 只信任第三后端实际连接到本 Nginx 时使用的来源地址。
-    # 如果 access log 中看到的来源不是 127.0.0.1，必须替换为实际地址
-    # 或仅包含第三后端的可信 Docker 子网。
-    set_real_ip_from 127.0.0.1;
-    real_ip_header X-Forwarded-For;
-    real_ip_recursive on;
-
-    location ^~ / {
-        proxy_pass http://127.0.0.1:60003;
-        proxy_http_version 1.1;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Port $server_port;
-    }
-}
-```
-
-验证：
-
-```bash
-curl -I 'https://internal-sub.xrognet.com/api/linkon'
-```
-
-该响应不应包含：
-
-```text
-x-subscription-rewriter: 1
-```
-
-## 九、Nginx：所有用户展示订阅域名
-
-`train.suuwu.de`、`train.xrognet.com` 等用户展示域名的 `/api/linkon` 必须
-进入第三后端：
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name train.suuwu.de train.xrognet.com;
-
-    # SSL 证书配置按实际面板生成内容保留
-
-    location ^~ /api/linkon {
-        proxy_pass http://127.0.0.1:3003;
-        proxy_http_version 1.1;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        # 入口 Nginx 直接面向公网时覆盖客户端提供的 XFF，防止伪造。
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Port $server_port;
-
-        proxy_read_timeout 30s;
-        proxy_buffering off;
-    }
-}
-```
-
-如果两个域名的 SSL 证书或站点配置不同，可以使用两个 `server` 块，但
-`location /api/linkon` 内容相同。
-
-验证：
-
-```bash
-curl -I 'https://train.suuwu.de/api/linkon'
-curl -I 'https://train.xrognet.com/api/linkon'
-```
-
-经过第三后端的响应应包含：
-
-```text
-x-subscription-rewriter: 1
-```
-
-### 保留订阅用户的真实 IP
-
-`1.4.1` 及以上版本可以把入口 Nginx 提供的真实客户端 IP 继续传给原 PPanel 后端。需要同时
-满足以下条件：
-
-1. Compose 中设置 `TRUST_PROXY_HEADERS=true`。
-2. 第三后端的 `3003` 端口只能由本机 Nginx 和可信 Docker 容器访问。
-3. 用户展示域名用 `X-Real-IP $remote_addr` 和
-   `X-Forwarded-For $remote_addr` 覆盖客户端自己提交的头。
-4. `internal-sub` 使用 `set_real_ip_from` 只信任第三后端实际来源。
-
-第三后端优先读取 `X-Real-IP`，校验它确实是 IPv4 或 IPv6 后，将单一规范地址
-写入回源请求的 `X-Real-IP` 和 `X-Forwarded-For`。它不会原样复制整条
-`X-Forwarded-For`，避免把客户端伪造的地址带进原系统日志。
-
-确认第三后端连接 `internal-sub` 时使用的来源地址：
-
-```nginx
-# 放在 Nginx 的 http {} 中，临时用于诊断。
-log_format rewriter_ip
-    '$remote_addr x-real="$http_x_real_ip" xff="$http_x_forwarded_for" '
-    '"$request"';
-```
-
-然后在 `internal-sub` 的 `server {}` 中临时使用：
-
-```nginx
-access_log /var/log/nginx/internal-sub-ip.log rewriter_ip;
-```
-
-请求一次用户展示订阅，再查看日志：
-
-```bash
-tail -n 20 /var/log/nginx/internal-sub-ip.log
-```
-
-日志第一个地址是第三后端连接过来的来源，将它填写到
-`set_real_ip_from`。常见值可能是 `127.0.0.1`、服务器内网地址、服务器公网地址
-或 Docker 网关/子网。不要设置为 `0.0.0.0/0`。
-
-修改后检查并平滑加载：
-
-```bash
-nginx -t
-nginx -s reload
-```
-
-如果用户展示域名前还有 Cloudflare 或其他 CDN，必须先按该 CDN 的官方 IP
-网段配置 Nginx Real IP 模块，让 `$remote_addr` 恢复成用户地址；不能直接信任
-公网请求自己携带的 `CF-Connecting-IP` 或 `X-Forwarded-For`。
-
-## 十、最容易漏掉：管理端和用户端都要配置同源反代
-
-以下配置要同时添加到：
-
-1. 管理员打开的管理面板域名。
-2. 普通用户打开的用户面板域名。
-
-公开配置 GET 响应允许缓存 30 秒，并允许代理在回源失败时使用旧缓存。先在
-Nginx 的 `http {}` 中定义缓存区和可复用上游连接：
-
-```nginx
-proxy_cache_path /var/cache/nginx/subscription-rewriter-config
-    levels=1:2
-    keys_zone=rewriter_config_cache:10m
-    max_size=50m
-    inactive=10m
-    use_temp_path=off;
-
-upstream subscription_rewriter_backend {
-    server 127.0.0.1:3003;
-    keepalive 16;
-}
-```
-
-再把下面两个 `location` 放进管理端和用户端站点的 `server {}`。精确匹配必须
-写在通用管理路径之前：
-
-```nginx
-location = /subscription-rewriter/public-config {
-    proxy_pass http://subscription_rewriter_backend;
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-
-    proxy_connect_timeout 3s;
-    proxy_send_timeout 15s;
-    proxy_read_timeout 15s;
-
-    proxy_cache rewriter_config_cache;
-    proxy_cache_methods GET HEAD;
-    proxy_cache_valid 200 30s;
-    proxy_cache_lock on;
-    proxy_cache_background_update on;
-    proxy_cache_use_stale error timeout invalid_header updating
-        http_500 http_502 http_503 http_504;
-    add_header X-Cache-Status $upstream_cache_status always;
-}
-
 location ^~ /subscription-rewriter/ {
-    proxy_pass http://subscription_rewriter_backend;
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-
+    proxy_pass http://127.0.0.1:3003;
     proxy_set_header Host $host;
     proxy_set_header Authorization $http_authorization;
+}
+```
+
+缺少用户端反代时，用户端不能正常取得展示订阅地址。
+前端默认同源访问；独立域名部署时，在两个前端构建前设置
+`VITE_SUBSCRIPTION_REWRITER_BASE_URL`，并配置服务的 `CORS_ORIGIN`。
+
+原始订阅域名反代到原后端，保留原订阅路径：
+
+```nginx
+# origin-sub.example.com 的 server {} 中
+location ^~ /api/linkon {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
-
-    proxy_connect_timeout 3s;
-    proxy_send_timeout 15s;
-    proxy_read_timeout 15s;
 }
 ```
 
-管理员 GET/PUT、健康检查和订阅内容继续返回 `no-store`，不会进入这个公开配置
-缓存。不要让通用的 `limit_req` 或 `limit_conn` 对公开配置路径使用过低阈值；
-已有全局限流时，应给它单独的宽松规则或排除规则。修改后先执行 `nginx -t`，
-再平滑加载配置。
+所有用户展示订阅域名反代到本服务：
 
-为什么两个域名都必须配置：
-
-- 管理端使用 `/subscription-rewriter/config` 和
-  `/subscription-rewriter/rules` 管理配置。
-- 用户端使用 `/subscription-rewriter/public-config` 取得展示订阅地址。
-- 只配置管理端时，管理页面看起来完全正常，但用户端会读取失败并回退
-  `internal-sub.xrognet.com`。
-
-分别验证，注意必须替换成真正的管理端和用户端域名：
-
-```bash
-curl 'https://管理端域名/subscription-rewriter/public-config'
-curl 'https://用户端域名/subscription-rewriter/public-config'
-```
-
-两者都应返回：
-
-```json
-{
-  "code": 200,
-  "message": "ok",
-  "data": {
-    "public_base_url": "https://train.suuwu.de/api/linkon",
-    "public_base_urls": [
-      "https://train.suuwu.de/api/linkon",
-      "https://train.xrognet.com/api/linkon"
-    ]
-  }
+```nginx
+# sub.example.com 等展示域名的 server {} 中
+location ^~ /api/linkon {
+    proxy_pass http://127.0.0.1:3003;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 30s;
 }
 ```
 
-推荐使用同源反代，并在管理端和用户端构建环境中保持：
+这里假设宿主机 Nginx 直接面向客户端；使用 CDN 等前置代理时，
+先正确配置 Nginx real_ip 的可信来源，再透传解析后的 `$remote_addr`。
+不要在公开入口信任客户端自带的 `X-Forwarded-For`。
+容器化 Nginx 应将 loopback 地址替换为可达的服务地址。
+`PPANEL_API_BASE` 还需要能访问管理员验证路径，因此不能只反代订阅路径。
 
-```dotenv
-VITE_SUBSCRIPTION_REWRITER_BASE_URL=
-```
+## 4. 管理端首次配置
 
-如果显式设置跨域地址，则需要额外处理 CORS、Authorization 和浏览器凭据；
-除非确有需要，不推荐跨域。
+进入管理端订阅配置的改写面板：
 
-## 十一、重新构建并部署两个前端
+1. 原系统直连地址填写 `https://origin-sub.example.com/api/linkon`。
+2. 用户展示地址逐行填写所有指向本服务的订阅 URL。
+3. 添加原入口 hostname、目标 hostname，以及区间或指定订阅编号规则。
+4. 保存后按实际订阅 ID 执行检测，再用客户端导入展示地址验证。
 
-第三后端镜像、管理端和用户端是三个独立部署单元。更新第三后端不会自动更新
-网页；更新管理端也不会自动更新用户端。
+这里的编号是 `user_subscribe.id`，并非用户账号 ID。
+优先级数字更高的规则先匹配；优先级相同则指定编号规则优先于区间规则。
+旧规则没有 `match_mode` 时按区间处理。
 
-在仓库根目录执行：
+支持 URI、Base64 包装订阅、Clash/Mihomo YAML、sing-box JSON，
+以及常见 Surge/Loon/Quantumult X CONF。未匹配或不识别的内容原样返回。
+普通订阅的数据库查询失败时也会返回原文并记日志，因此仅“能下载订阅”
+不代表改写已生效，必须检查结果 hostname。
 
-```bash
-bun install
+## 环境变量与接口
 
-bun --filter ppanel-admin-web build
-bun --filter ppanel-user-web build
-```
+| 变量 | 默认值 / 用途 |
+| --- | --- |
+| `HOST` / `PORT` | `0.0.0.0` / `3003` |
+| `CONFIG_FILE` | `/data/subscription-rewriter.json` |
+| `PUBLIC_PATH` | `/api/linkon` |
+| `DATABASE_URL` | 必填，MySQL TCP URL |
+| `SUBSCRIPTION_TABLE` | `user_subscribe` |
+| `SUBSCRIPTION_ID_COLUMN` / `SUBSCRIPTION_TOKEN_COLUMN` | `id` / `token` |
+| `DATABASE_POOL_SIZE` / `DATABASE_IDLE_TIMEOUT` | `5` / `30` 秒 |
+| `PPANEL_API_BASE` | 必填，原后端管理员验证地址 |
+| `PPANEL_ADMIN_CURRENT_PATH` | `/v1/admin/user/current` |
+| `UPSTREAM_TIMEOUT_MS` | `15000` |
+| `MAX_RESPONSE_BYTES` | `8388608` |
+| `TRUST_PROXY_HEADERS` | 服务默认 `false`，提供的 Compose 默认 `true` |
+| `CORS_ORIGIN` | `*` |
 
-构建结果：
+管理员接口包括 `/subscription-rewriter/config`、`/rules`、`/rules/:id`、
+`/rules/order`、`/inspect`，均验证原 PPanel 管理员登录态。
+`/subscription-rewriter/public-config` 为公开展示地址，
+`/health` 仅检查服务存活，不测试数据库及上游连接。
 
-```text
-apps/admin/dist
-apps/user/dist
-```
+## 故障排查
 
-分别部署到管理端站点和用户端站点。部署后：
+- MySQL `Access denied`：检查账号密码、授权的数据库和 MySQL Host 范围。
+- `Connection closed`：检查数据库网络、TCP 端口、URL 和 MySQL 认证方式。
+- 管理接口 403：检查 `PPANEL_API_BASE`、验证路径以及 Nginx 是否传递 `Authorization`。
+- 用户展示地址未更新：检查两个前端站点的同源反代，再检查公开配置接口。
+- 下载成功但未改写：检查规则启用状态、订阅编号、源 hostname 和数据库日志。
+- 502 / 超时：检查回源可达性，并确认回源地址没有指回本服务。
 
-1. 清理 Cloudflare/CDN 缓存。
-2. 清理站点静态资源缓存。
-3. 使用浏览器无痕窗口重新登录。
-4. 在浏览器 Network 中确认出现
-   `/subscription-rewriter/public-config`。
+## 从源码构建与发布
 
-用户页面仍显示原直连域名时，在用户页面控制台执行：
-
-```js
-fetch("/subscription-rewriter/public-config", { cache: "no-store" })
-  .then((response) => response.json())
-  .then(console.log);
-```
-
-- 没有发起请求：用户端仍是旧前端。
-- 返回 404：用户面板域名缺少同源反代。
-- 返回正确 JSON 但界面仍旧：静态资源或 CDN 缓存尚未更新。
-
-## 十二、管理面板首次配置
-
-进入“订阅配置”：
-
-```text
-订阅路径：
-/api/linkon
-
-原系统/直连订阅域名：
-internal-sub.xrognet.com
-
-用户展示订阅地址（每行一个）：
-https://train.suuwu.de/api/linkon
-https://train.xrognet.com/api/linkon
-```
-
-保存后，在“订阅入口域名分组”中：
-
-1. 查询真实的 `user_subscribe.id`。
-2. 在“读取当前入口域名”中输入该 ID。
-3. 确认读取出的原入口域名。
-4. 选择“连续区间”并添加小范围规则，例如 `97–97`；或者选择“指定编号”并输入
-   `1, 2, 37, 89`。
-5. 原入口域名必须精确填写完整 hostname。
-6. 新入口域名只填写 hostname，不填写协议、端口或路径。
-7. 保存后再次读取，确认“替换数量”大于 0。
-8. 验证完成后再扩大编号区间或增加指定编号。
-
-查询真实订阅 ID：
-
-```sql
-SELECT id, user_id, subscribe_id, token, status
-FROM user_subscribe
-WHERE token = '替换为实际token';
-```
-
-规则使用的是 `user_subscribe.id`，不是：
-
-- `user_id`
-- `subscribe_id`
-- 套餐编号
-- 页面排序编号
-
-## 十三、上线验证清单
-
-### 1. 容器和健康检查
+克隆后在仓库根目录即可构建，无需已有二进制或本机 Node/Bun：
 
 ```bash
-docker compose ps
-docker compose logs --tail 100
-curl http://127.0.0.1:3003/health
+docker build -f apps/subscription-rewriter/Dockerfile -t ppanel-subscription-rewriter:local .
 ```
 
-### 2. MySQL
+使用本地镜像运行时，将生产 Compose 的 `image` 改为该本地标签，
+沿用相同的配置和 volume。
+
+向自己的 Docker Hub 发布新版本：
 
 ```bash
-docker compose exec subscription-rewriter \
-  getent hosts 1Panel-mysql-xxxx
-```
-
-然后在管理端按订阅 ID 执行“读取”。日志中不应出现：
-
-```text
-Subscription lookup failed
-Access denied
-Connection closed
-```
-
-### 3. 公开配置
-
-```bash
-curl 'https://管理端域名/subscription-rewriter/public-config'
-curl 'https://用户端域名/subscription-rewriter/public-config'
-```
-
-两者都必须返回全部用户展示订阅地址。
-
-### 4. 原始订阅
-
-```bash
-curl -D - -o /dev/null \
-  'https://internal-sub.xrognet.com/api/linkon?token=测试token'
-```
-
-不应出现 `x-subscription-rewriter: 1`。
-
-### 5. 改写订阅
-
-```bash
-curl -D - -o /dev/null \
-  'https://train.suuwu.de/api/linkon?token=测试token&protocol=anytls'
-```
-
-应出现：
-
-```text
-x-subscription-rewriter: 1
-```
-
-命中规则时，日志会出现类似：
-
-```text
-Rewrote 18 subscription endpoint(s) for subscriber 97 (base64/uri-list)
-```
-
-## 十四、常见错误排查
-
-### `Access denied for user ...@172.18.x.x`
-
-含义：Docker DNS 和 MySQL TCP 已经连通，但账号 Host、密码或授权不正确。
-
-处理：
-
-```sql
-SELECT user, host, plugin
-FROM mysql.user
-WHERE user = 'subscription_rewriter';
-
-ALTER USER 'subscription_rewriter'@'%'
-IDENTIFIED WITH caching_sha2_password
-BY '与DATABASE_URL完全相同的密码';
-
-GRANT SELECT
-ON `你的数据库名`.`user_subscribe`
-TO 'subscription_rewriter'@'%';
-```
-
-修改 `.env` 后：
-
-```bash
-docker compose up -d --force-recreate
-```
-
-### `Connection closed`
-
-通常是数据库连接失败。先查看：
-
-```bash
-docker compose logs --tail 200
-```
-
-重点检查：
-
-- `DATABASE_URL`
-- 数据库密码是否一致
-- MySQL 容器名
-- `DATABASE_DOCKER_NETWORK`
-- MySQL 用户 Host
-
-### 打开管理订阅面板返回 403
-
-含义：第三后端没有通过原 PPanel 后端验证管理员。
-
-检查：
-
-- 管理端请求是否包含 `Authorization`
-- 管理端 Nginx 是否设置
-  `proxy_set_header Authorization $http_authorization`
-- `PPANEL_API_BASE` 是否能从第三后端容器访问
-- `PPANEL_ADMIN_CURRENT_PATH` 是否为 `/v1/admin/user/current`
-
-推荐：
-
-```dotenv
-PPANEL_API_BASE=https://internal-sub.xrognet.com
-```
-
-前提是该域名的 `/` 全部反代原 PPanel 后端。
-
-### 管理端正常，用户端仍显示 internal 域名
-
-这是用户面板域名缺少：
-
-```text
-/subscription-rewriter/
-```
-
-同源反代，或用户前端仍是旧构建。
-
-依次检查：
-
-1. 用户面板域名的 `/subscription-rewriter/public-config`。
-2. 用户端是否重新构建。
-3. CDN 和浏览器缓存。
-
-### 用户展示域名返回原始入口
-
-先检查响应头：
-
-```bash
-curl -I 'https://用户展示域名/api/linkon'
-```
-
-没有 `x-subscription-rewriter: 1`：Nginx 没有进入第三后端。
-
-有该响应头但没有替换：
-
-- 数据库查询失败时普通订阅会安全返回原内容。
-- 规则编号区间或指定编号列表没有覆盖真实 `user_subscribe.id`。
-- 原入口 hostname 没有精确匹配。
-- 规则被禁用。
-
-### 管理端“读取”失败但普通订阅能打开
-
-普通订阅在数据库查询失败时会原样返回，因此“能打开”不代表数据库正常。
-管理端读取会把数据库或回源错误明确暴露出来，应优先检查第三后端日志。
-
-### 502 或回源超时
-
-检查第三后端保存的原系统地址是否为：
-
-```text
-https://internal-sub.xrognet.com/api/linkon
-```
-
-不要填写用户展示域名。可以直接测试：
-
-```bash
-curl -I 'https://internal-sub.xrognet.com/api/linkon'
-```
-
-### 请求循环
-
-典型错误：
-
-```text
-train.suuwu.de -> 第三后端
-第三后端 origin_base_url -> train.suuwu.de
-```
-
-正确配置：
-
-```text
-train.suuwu.de -> 第三后端
-第三后端 origin_base_url -> internal-sub.xrognet.com
-internal-sub.xrognet.com -> 原后端
-```
-
-### 确认正在运行的镜像版本
-
-```bash
-docker inspect ppanel-subscription-rewriter \
-  --format '{{.Config.Image}}'
-```
-
-应为：
-
-```text
-unkn0tted/ppanel-subscription-rewriter:1.4.2
-```
-
-## 十五、升级、回滚和数据
-
-升级：
-
-```bash
-cd /opt/ppanel-subscription-rewriter
-docker compose pull
-docker compose up -d
-docker compose logs --tail 100
-```
-
-强制刷新 `.env`：
-
-```bash
-docker compose up -d --force-recreate
-```
-
-回滚时修改：
-
-```dotenv
-REWRITER_IMAGE_TAG=之前的版本
-```
-
-然后：
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-第三后端规则和两个系统地址保存在命名卷：
-
-```text
-ppanel-subscription-rewriter-data
-```
-
-更新或重建容器不会删除该卷。备份：
-
-```bash
-mkdir -p backup
-
-docker run --rm \
-  -v ppanel-subscription-rewriter-data:/data:ro \
-  -v "$PWD/backup:/backup" \
-  alpine \
-  tar -czf /backup/subscription-rewriter-data.tar.gz -C /data .
-```
-
-不要在未备份时执行：
-
-```bash
-docker compose down -v
-```
-
-因为 `-v` 会删除配置卷。
-
-## 十六、环境变量参考
-
-| 变量                        | 默认值                             | 说明                                   |
-| --------------------------- | ---------------------------------- | -------------------------------------- |
-| `HOST`                      | `0.0.0.0`                          | 容器监听地址；桥接网络必须是 `0.0.0.0` |
-| `PORT`                      | `3003`                             | 容器内监听端口                         |
-| `CONFIG_FILE`               | `/data/subscription-rewriter.json` | 地址和规则配置文件                     |
-| `PUBLIC_PATH`               | `/api/linkon`                      | 对外订阅路径                           |
-| `DATABASE_URL`              | 必填                               | MySQL TCP URL                          |
-| `SUBSCRIPTION_TABLE`        | `user_subscribe`                   | token 所在表                           |
-| `SUBSCRIPTION_ID_COLUMN`    | `id`                               | 用户订阅顺序编号字段                   |
-| `SUBSCRIPTION_TOKEN_COLUMN` | `token`                            | token 字段                             |
-| `DATABASE_POOL_SIZE`        | `5`                                | 数据库连接池上限                       |
-| `DATABASE_IDLE_TIMEOUT`     | `30`                               | 数据库空闲连接超时秒数                 |
-| `PPANEL_API_BASE`           | 必填                               | 第三后端可访问的原 PPanel 后端         |
-| `PPANEL_ADMIN_CURRENT_PATH` | `/v1/admin/user/current`           | 管理员验证接口                         |
-| `UPSTREAM_TIMEOUT_MS`       | `15000`                            | 原订阅回源超时                         |
-| `MAX_RESPONSE_BYTES`        | `8388608`                          | 最大订阅响应字节数                     |
-| `TRUST_PROXY_HEADERS`       | `false`                            | 信任入口代理头并向原订阅系统透传真实 IP |
-| `CORS_ORIGIN`               | `*`                                | 跨域来源；同源反代通常无需修改         |
-
-表名和字段名只接受简单 SQL 标识符，token 查询使用参数绑定。
-
-## 十七、接口参考
-
-| 方法         | 路径                                   | 权限   | 说明                      |
-| ------------ | -------------------------------------- | ------ | ------------------------- |
-| `GET`        | `/api/linkon`                          | token  | 公开订阅入口              |
-| `GET`        | `/health`                              | 公开   | 健康检查                  |
-| `GET`        | `/subscription-rewriter/public-config` | 公开   | 用户端读取展示地址        |
-| `GET/PUT`    | `/subscription-rewriter/config`        | 管理员 | 读取/保存原系统和展示地址 |
-| `GET/POST`   | `/subscription-rewriter/rules`         | 管理员 | 查询/新增改写规则         |
-| `PUT`        | `/subscription-rewriter/rules/order`   | 管理员 | 调整管理端规则显示顺序    |
-| `PUT/DELETE` | `/subscription-rewriter/rules/:id`     | 管理员 | 修改/删除规则             |
-| `POST`       | `/subscription-rewriter/inspect`       | 管理员 | 按订阅 ID 检测入口域名    |
-
-管理员接口使用当前管理端的 `Authorization`，并调用原 PPanel 后端验证身份。
-
-## 十八、本地开发
-
-安装依赖：
-
-```bash
-bun install
-```
-
-运行：
-
-```bash
-DATABASE_URL='mysql://readonly:password@127.0.0.1:3306/ppanel' \
-PPANEL_API_BASE='http://127.0.0.1:8080' \
-CONFIG_FILE='/tmp/subscription-rewriter.json' \
-bun --filter ppanel-subscription-rewriter-service dev
-```
-
-测试和构建：
-
-```bash
-bun --filter ppanel-subscription-rewriter-service test
-bunx tsc -p apps/subscription-rewriter/tsconfig.json --noEmit
-bun --filter ppanel-subscription-rewriter-service check
-bun --filter ppanel-subscription-rewriter-service build
-bun --filter ppanel-subscription-rewriter-service build:binary
-```
-
-本地构建镜像：
-
-```bash
-bun --filter ppanel-subscription-rewriter-service build:binary
-
-docker build \
+docker login
+docker buildx build --platform linux/amd64 \
   -f apps/subscription-rewriter/Dockerfile \
-  -t ppanel-subscription-rewriter:local .
+  -t yourname/ppanel-subscription-rewriter:1.4.3 --push .
 ```
+
+不要覆盖已有固定版本。多架构发布需要可用的 QEMU/native builders，
+再将 `--platform` 改为 `linux/amd64,linux/arm64`。
+已发布的 `1.4.2` 目前仍只支持 amd64。
+
+本地开发：
+
+```bash
+bun install --frozen-lockfile
+DATABASE_URL='mysql://readonly:password@127.0.0.1:3306/ppanel' \
+PPANEL_API_BASE=http://127.0.0.1:8080 \
+CONFIG_FILE=/tmp/subscription-rewriter.json \
+bun --filter ppanel-subscription-rewriter-service dev
+bun run test
+```
+
+## 升级、回滚和备份
+
+修改 `.env` 的 `REWRITER_IMAGE_TAG` 后执行：
+
+```bash
+docker compose pull
+docker compose up -d
+docker compose logs --tail=50
+```
+
+回滚时改回旧版本后执行同样命令，再检测真实订阅。
+配置备份与恢复（文件首次保存后才存在）：
+
+```bash
+docker compose cp subscription-rewriter:/data/subscription-rewriter.json ./subscription-rewriter.backup.json
+# 恢复
+docker compose cp ./subscription-rewriter.backup.json subscription-rewriter:/data/subscription-rewriter.json
+docker compose restart
+```
+
+备份文件留在本地，不要提交仓库。不要执行 `docker compose down -v`。

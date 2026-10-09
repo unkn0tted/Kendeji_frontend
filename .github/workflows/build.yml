@@ -1,0 +1,58 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+      - run: bun run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kendeji-frontend-${{ github.sha }}
+          path: release/
+          if-no-files-found: error
+
+  docker:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [protocol-config, subscription-rewriter]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build service image from source
+        run: docker build -f apps/${{ matrix.service }}/Dockerfile -t service:test .
+      - name: Check health and public config
+        run: |
+          if [ '${{ matrix.service }}' = 'protocol-config' ]; then
+            port=3002
+            config_path=protocol-config
+          else
+            port=3003
+            config_path=subscription-rewriter/public-config
+          fi
+          docker run -d --name service-test -p "127.0.0.1:18080:$port" service:test
+          trap 'docker logs service-test; docker rm -fv service-test' EXIT
+          curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:18080/health
+          curl --fail "http://127.0.0.1:18080/$config_path"

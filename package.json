@@ -1,16 +1,16 @@
 {
-  "name": "frontend",
+  "name": "kendeji-frontend",
   "version": "1.13.0",
   "private": true,
-  "homepage": "https://github.com/perfect-panel/frontend",
+  "homepage": "https://github.com/unkn0tted/Kendeji_frontend",
   "bugs": {
-    "url": "https://github.com/perfect-panel/frontend/issues/new"
+    "url": "https://github.com/unkn0tted/Kendeji_frontend/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/perfect-panel/frontend.git"
+    "url": "https://github.com/unkn0tted/Kendeji_frontend.git"
   },
-  "license": "GUN",
+  "license": "GPL-3.0-only",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
@@ -18,13 +18,12 @@
     "docs:build": "turbo docs:build",
     "lint": "turbo lint",
     "check": "turbo check",
-    "test": "turbo test",
+    "test": "bun test tests apps/subscription-rewriter/src",
     "openapi": "turbo openapi",
     "i18n:extract": "turbo i18n:extract",
     "i18n:sync": "turbo i18n:sync",
     "i18n:status": "turbo i18n:status",
-    "prepare": "husky && npx gitmoji -i",
-    "release": "semantic-release"
+    "package": "bun run build && node scripts/package.mjs"
   },
   "overrides": {
     "react": "^19.2.0",
@@ -34,61 +33,21 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.6",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/exec": "^7.0.3",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.3",
     "@types/react-copy-to-clipboard": "^5.0.7",
     "@workspace/typescript-config": "workspace:*",
-    "commitlint": "^20.1.0",
-    "commitlint-config-gitmoji": "^2.3.1",
-    "conventional-changelog-conventionalcommits": "^9.1.0",
-    "gitmoji-cli": "^9.7.0",
-    "husky": "^9.1.7",
     "i18next-cli": "^1.24.20",
-    "lefthook": "^2.0.4",
-    "lint-staged": "^16.2.7",
-    "semantic-release": "^24.2.5",
     "turbo": "^2.5.8",
     "typescript": "^5.9.3",
     "ultracite": "^6.3.4"
   },
-  "packageManager": "bun@1.3.1",
+  "packageManager": "bun@1.3.14",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0",
+    "bun": ">=1.3.14"
   },
   "workspaces": [
     "apps/*",
     "packages/*",
     "docs"
-  ],
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "bun x ultracite fix"
-    ]
-  },
-  "gitmoji": {
-    "autoAdd": false,
-    "emojiFormat": "emoji",
-    "scopePrompt": false,
-    "messagePrompt": false,
-    "capitalizeTitle": false,
-    "gitmojisUrl": "https://gitmoji.dev/api/gitmojis"
-  },
-  "commitlint": {
-    "extends": [
-      "gitmoji"
-    ],
-    "parserPreset": {
-      "parserOpts": {
-        "headerPattern": "^(?:(\\u00a9|\\u00ae|[\\u2000-\\u3300]|\\ud83c[\\ud000-\\udfff]|\\ud83d[\\ud000-\\udfff]|\\ud83e[\\ud000-\\udfff])\\s*)?(\\w*)(?:\\((.*)\\))?!?:\\s*(.*)$",
-        "headerCorrespondence": [
-          "emoji",
-          "type",
-          "scope",
-          "subject"
-        ]
-      }
-    }
-  }
+  ]
 }

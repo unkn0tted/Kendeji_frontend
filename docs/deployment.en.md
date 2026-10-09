@@ -1,7 +1,11 @@
 # Kendeji Frontend
 
-This repository contains the PPanel-based admin and user websites, plus two optional services.
+This repository contains the PPanel-based admin and user websites, plus two extension services.
 The production branch is `main`. The original PPanel backend and MySQL are deployed separately.
+
+Protocol selection, default/recommended protocols, card/compact styles, subscription link
+integration and hostname rewrite controls are included. See the
+[complete integration guide (Chinese)](./custom-components-deployment.zh-CN.md).
 
 ## Build From a Clean Checkout
 
@@ -29,9 +33,14 @@ Deploy each website to a separate site root. Configure Nginx SPA fallback with
 preserving the path and Authorization header. This frontend has been used with
 PPanel Server `1.20.3`; other versions must provide compatible APIs.
 
-Enable optional services by proxying `/protocol-config` to port 3002 and
+Connect the extension services by proxying `/protocol-config` to port 3002 and
 `/subscription-rewriter/` to port 3003 on **both** frontend domains.
 See the [Nginx example](../README.zh-CN.md#nginx-静态站点).
+
+The current user app waits for the rewriter's public configuration before generating
+subscription links. Keep the rewriter running even when rewriting is unused;
+leave public URLs and rules empty to use direct subscription URLs.
+The protocol service is needed to save custom selector settings.
 
 For custom build configuration, copy each frontend's `.env.example` to `.env.local`:
 
@@ -80,7 +89,7 @@ docker build -f apps/subscription-rewriter/Dockerfile -t ppanel-subscription-rew
 
 Run `bun --filter ppanel-admin-web dev` (port 3001) or
 `bun --filter ppanel-user-web dev` (port 3000) in separate terminals.
-API proxies default to localhost:8080; optional services use ports 3002 and 3003.
+API proxies default to localhost:8080; extension services use ports 3002 and 3003.
 
 GitHub Actions installs locked dependencies, runs tests, builds archives and
 checks both Docker images. Download website archives from the run's Artifacts.

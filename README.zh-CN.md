@@ -2,6 +2,9 @@
 
 [构建与项目说明](./README.md) · [协议配置服务](./apps/protocol-config/README.md) · [订阅改写服务](./apps/subscription-rewriter/README.md)
 
+协议选择器、默认/推荐协议、展示订阅地址及入口改写的完整流程，见
+[自定义组件联动部署教程](./docs/custom-components-deployment.zh-CN.md)，包含 1Panel/OpenResty 网络配置和管理端首次设置。
+
 ## 最短部署流程
 
 ```bash
@@ -47,14 +50,14 @@ location ^~ /v1/ {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 
-# 启用了协议配置服务时，在管理端和用户端都加入。
+# 协议配置服务，在管理端和用户端都加入。
 location = /protocol-config {
     proxy_pass http://127.0.0.1:3002;
     proxy_set_header Host $host;
     proxy_set_header Authorization $http_authorization;
 }
 
-# 启用了订阅改写服务时，在管理端和用户端都加入。
+# 订阅改写服务，在管理端和用户端都加入。
 location ^~ /subscription-rewriter/ {
     proxy_pass http://127.0.0.1:3003;
     proxy_set_header Host $host;
@@ -102,6 +105,9 @@ location ^~ /api/v1/ {
 不是 `index.html`。
 
 ## Docker Hub 扩展服务
+
+完整使用当前用户端时应部署两个服务。即使不用改写规则，订阅改写服务的
+`/subscription-rewriter/public-config` 也需连通；将展示地址和规则留空即可使用直连订阅。
 
 部署已发布镜像不需要编译源码，进入对应目录：
 

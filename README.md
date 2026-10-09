@@ -1,9 +1,12 @@
 # Kendeji Frontend
 
-基于 [PPanel frontend](https://github.com/perfect-panel/frontend) 的管理端、用户端和两个可选扩展服务。
+基于 [PPanel frontend](https://github.com/perfect-panel/frontend) 的管理端、用户端和两个扩展服务。
 正式代码统一在 `main`；项目不包含原 PPanel 后端、数据库或生产配置。
 
-[English](./docs/deployment.en.md) · [部署说明](./README.zh-CN.md) · [问题反馈](https://github.com/unkn0tted/Kendeji_frontend/issues)
+[English](./docs/deployment.en.md) · [部署说明](./README.zh-CN.md) · [自定义组件联动部署](./docs/custom-components-deployment.zh-CN.md) · [问题反馈](https://github.com/unkn0tted/Kendeji_frontend/issues)
+
+协议选择器、默认/推荐协议、卡片/紧凑样式、订阅链接联动和节点入口改写面板均保留。
+完整的前端、原后端及扩展服务连接流程见[自定义组件联动部署教程](./docs/custom-components-deployment.zh-CN.md)。
 
 ## 从源码构建
 
@@ -76,7 +79,9 @@ cp apps/user/.env.example apps/user/.env.local
 已发布的这两个版本是 **Linux amd64** 镜像，前端静态文件不在其中。
 部署这些镜像只需要 Docker 和 Compose，无需 Node/Bun。
 服务均依赖现有 PPanel 后端验证管理员；订阅改写额外需要 MySQL 只读账号。
-两项扩展按需启用，不替代原后端。
+两个扩展服务不替代原后端。当前用户端需要订阅改写服务的公开配置接口正常返回后
+才生成订阅链接；不使用改写时，仍启动该服务，展示地址和规则留空。
+自定义协议选择器设置通过协议配置服务保存。
 
 克隆后，也能直接从源码构建镜像，无需预先生成二进制：
 

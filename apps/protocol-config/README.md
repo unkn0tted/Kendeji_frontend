@@ -6,6 +6,8 @@
 
 已发布镜像：[unkn0tted/ppanel-protocol-config:1.0.4](https://hub.docker.com/r/unkn0tted/ppanel-protocol-config)，Linux amd64。
 
+前端、原后端和两个扩展服务一起部署时，先看[自定义组件联动部署教程](../../docs/custom-components-deployment.zh-CN.md)。
+
 ## 使用 Docker Hub 镜像
 
 从仓库根目录执行：
@@ -47,6 +49,17 @@ location = /protocol-config {
 `VITE_PROTOCOL_CONFIG_BASE_URL=https://config.example.com`，并配置服务的 `CORS_ORIGIN`。
 容器化 Nginx 请改为能访问此服务的地址。
 
+1Panel/OpenResty 位于已有 Docker 网络时，设置 `.env` 的
+`PROXY_DOCKER_NETWORK=1panel-network`（替换为实际网络），并使用：
+
+```bash
+docker compose -f compose.yml -f compose.proxy-network.yml pull
+docker compose -f compose.yml -f compose.proxy-network.yml up -d
+```
+
+入口代理也必须在该网络内，反代目标可使用 `http://protocol-config:3002`。
+后续升级、重建继续使用这两个 `-f` 参数。
+
 ## 环境变量
 
 | 变量 | 默认值 / 用途 |
@@ -58,6 +71,7 @@ location = /protocol-config {
 | `CORS_ORIGIN` | `*`，允许的跨域来源 |
 | `PROTOCOL_CONFIG_IMAGE_TAG` | Compose 使用的镜像版本，默认 `1.0.4` |
 | `PROTOCOL_CONFIG_PORT` | Compose 使用的宿主机端口，默认 `3002` |
+| `PROXY_DOCKER_NETWORK` | 网络附加配置使用的已有代理网络，默认 `1panel-network` |
 
 ## 接口与配置
 

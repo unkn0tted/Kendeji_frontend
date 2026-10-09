@@ -5,6 +5,10 @@
 
 已发布镜像：[unkn0tted/ppanel-subscription-rewriter:1.4.2](https://hub.docker.com/r/unkn0tted/ppanel-subscription-rewriter)，Linux amd64。
 
+前端、协议选择器和原后端一起部署时，先看[自定义组件联动部署教程](../../docs/custom-components-deployment.zh-CN.md)。
+当前用户端等待本服务的公开配置后才生成订阅链接；不使用改写时也应启动本服务，
+将展示地址和规则留空即可使用原系统直连订阅。
+
 ## 地址关系
 
 | 用途 | 示例 | 指向 |
